@@ -5,10 +5,13 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  // Garante que a chave seja lida do ambiente da Vercel (process.env) ou do arquivo .env
+  const GEMINI_KEY = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || '';
+  
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || ''),
+      'process.env.GEMINI_API_KEY': JSON.stringify(GEMINI_KEY),
     },
     envPrefix: ['VITE_', 'GEMINI_'], // Permite que variáveis começando com GEMINI_ também sejam lidas
     resolve: {

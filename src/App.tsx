@@ -41,9 +41,19 @@ export default function App() {
       const result = await generateAuditReport(data);
       setReport(result);
       setView('report');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
-      alert('Houve um erro ao gerar seu relatório. Por favor, verifique sua conexão ou tente novamente em instantes.');
+      let errorMessage = 'Houve um erro ao gerar seu relatório. Por favor, verifique sua conexão ou tente novamente em instantes.';
+      
+      if (error.message === 'API_KEY_MISSING') {
+        errorMessage = 'ERRO: A chave GEMINI_API_KEY não foi encontrada. Certifique-se de adicioná-la nas "Environment Variables" da Vercel e fazer um novo Deploy.';
+      } else if (error.message?.includes('403') || error.message?.includes('API key not valid')) {
+        errorMessage = 'ERRO: A chave de API fornecida é inválida. Verifique se copiou a chave correta do Google AI Studio.';
+      } else if (error.message) {
+        errorMessage = `Erro técnico: ${error.message}`;
+      }
+
+      alert(errorMessage);
       setView('form');
     }
   };

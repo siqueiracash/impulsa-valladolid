@@ -2,14 +2,10 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AuditFormData, AuditReport } from "../types";
 
 export async function generateAuditReport(data: AuditFormData): Promise<AuditReport> {
-  // Tenta buscar de várias formas possíveis em ambientes de produção (Vite/Vercel)
-  const apiKey = 
-    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
-    import.meta.env.VITE_GEMINI_API_KEY || 
-    import.meta.env.GEMINI_API_KEY;
+  // process.env.GEMINI_API_KEY será substituído pelo valor real durante o build do Vite
+  const apiKey = process.env.GEMINI_API_KEY;
   
-  if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "") {
-    console.error("ERRO: Chave de API não encontrada. Verifique as variáveis de ambiente na Vercel.");
+  if (!apiKey || apiKey === "" || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY") {
     throw new Error("API_KEY_MISSING");
   }
 
