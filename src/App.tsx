@@ -322,21 +322,21 @@ export default function App() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <img 
-                        src="https://images.unsplash.com/photo-1550966842-28c2e202ec91?q=80&w=500&auto=format&fit=crop" 
+                        src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=500&auto=format&fit=crop" 
                         className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Restaurante Lleno"
+                        alt="Restaurante Lleno de Clientes"
                         referrerPolicy="no-referrer" 
                       />
                       <img 
-                        src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=500&auto=format&fit=crop" 
+                        src="https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?q=80&w=500&auto=format&fit=crop" 
                         className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Local con gente"
+                        alt="Ambiente Animado"
                         referrerPolicy="no-referrer" 
                       />
                       <img 
-                        src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=500&auto=format&fit=crop" 
+                        src="https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?q=80&w=500&auto=format&fit=crop" 
                         className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Fila de espera"
+                        alt="Mesas Llenas"
                         referrerPolicy="no-referrer" 
                       />
                     </div>
