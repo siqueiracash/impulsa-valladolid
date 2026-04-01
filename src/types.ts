@@ -6,6 +6,7 @@ export interface AuditFormData {
   location: string;
   whatsapp: string;
   email: string;
+  website?: string;
   instagram?: string;
   facebook?: string;
   googleBusiness?: string;

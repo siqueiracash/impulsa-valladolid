@@ -9,11 +9,12 @@ import { AuditFormData, AuditReport, BusinessType } from './types';
 import { generateAuditReport } from './services/geminiService';
 
 const formSchema = z.object({
-  businessName: z.string().min(2, 'O nome do negócio é obrigatório'),
+  businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
   businessType: z.enum(['restaurante', 'bar', 'padaria', 'barbeiro', 'cabeleireiro', 'cafeteria', 'outro']),
-  location: z.string().min(5, 'A localização é obrigatória'),
-  whatsapp: z.string().min(8, 'WhatsApp é obrigatório'),
+  location: z.string().min(5, 'La ubicación es obligatoria'),
+  whatsapp: z.string().min(8, 'El WhatsApp é obligatorio'),
   email: z.string().email('E-mail inválido'),
+  website: z.string().url('URL inválida').optional().or(z.literal('')),
   instagram: z.string().optional(),
   facebook: z.string().optional(),
   googleBusiness: z.string().optional(),
@@ -76,11 +77,11 @@ export default function App() {
   const businessTypes: { value: BusinessType; label: string; icon: any }[] = [
     { value: 'restaurante', label: 'Restaurante', icon: Utensils },
     { value: 'bar', label: 'Bar', icon: Coffee },
-    { value: 'cafeteria', label: 'Cafeteria', icon: Coffee },
-    { value: 'padaria', label: 'Padaria', icon: Store },
-    { value: 'barbeiro', label: 'Barbeiro', icon: Scissors },
-    { value: 'cabeleireiro', label: 'Cabeleireiro', icon: Scissors },
-    { value: 'outro', label: 'Outro', icon: Building2 },
+    { value: 'cafeteria', label: 'Cafetería', icon: Coffee },
+    { value: 'padaria', label: 'Panadería', icon: Store },
+    { value: 'barbeiro', label: 'Barbería', icon: Scissors },
+    { value: 'cabeleireiro', label: 'Peluquería', icon: Scissors },
+    { value: 'outro', label: 'Otro', icon: Building2 },
   ];
 
   return (
@@ -102,13 +103,13 @@ export default function App() {
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors">Como Funciona</a>
-            <a href="#" className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors">Serviços</a>
+            <a href="#como-funciona" className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors">Cómo Funciona</a>
+            <a href="#planes" className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors">Planes</a>
             <button 
               onClick={() => setView('form')}
               className="bg-brand-red text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-orange transition-all shadow-lg shadow-brand-red/20"
             >
-              Auditoria Gratuita
+              Auditoría Gratuita
             </button>
           </nav>
         </div>
@@ -136,18 +137,18 @@ export default function App() {
                     Valladolid & Madrid Digital
                   </div>
                   <h1 className="text-6xl md:text-8xl font-black text-brand-teal mb-8 leading-[0.95] tracking-tighter">
-                    Multiplique seus <br />
-                    <span className="text-brand-red">Clientes Locais</span>
+                    Multiplique sus <br />
+                    <span className="text-brand-red">Clientes Locales</span>
                   </h1>
                   <p className="text-xl text-slate-600 mb-12 leading-relaxed max-w-xl font-medium">
-                    Transformamos seu restaurante, bar ou comércio em uma máquina de vendas no Google e Redes Sociais. Auditoria gratuita para empreendedores de Valladolid.
+                    Transformamos su restaurante, bar o comercio en una máquina de ventas en Google y Redes Sociales. Auditoría gratuita para emprendedores de Valladolid.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center gap-5">
                     <button 
                       onClick={() => setView('form')}
                       className="w-full sm:w-auto bg-brand-red text-white px-10 py-5 rounded-2xl text-lg font-extrabold hover:bg-brand-orange transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-3 group"
                     >
-                      Quero minha Auditoria
+                      Quiero mi Auditoría
                       <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </button>
                     <div className="flex items-center gap-3 text-slate-500 font-bold text-sm">
@@ -158,7 +159,7 @@ export default function App() {
                           </div>
                         ))}
                       </div>
-                      +50 negócios impulsionados
+                      +50 negocios impulsados
                     </div>
                   </div>
                 </motion.div>
@@ -172,12 +173,12 @@ export default function App() {
                   <div className="relative z-10 bg-white p-4 rounded-[3rem] shadow-2xl border border-brand-cream rotate-2">
                     <img 
                       src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1000&auto=format&fit=crop" 
-                      alt="Restaurante em Valladolid" 
+                      alt="Restaurante en Valladolid" 
                       className="rounded-[2.5rem] w-full h-[500px] object-cover"
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute -bottom-10 -left-10 bg-brand-teal text-white p-8 rounded-3xl shadow-xl max-w-xs -rotate-6">
-                      <p className="text-lg font-bold mb-2">"Duplicamos as reservas em apenas 3 meses"</p>
+                      <p className="text-lg font-bold mb-2">"Duplicamos las reservas en apenas 3 meses"</p>
                       <p className="text-xs opacity-70 font-bold uppercase tracking-widest">— Restaurante Local</p>
                     </div>
                   </div>
@@ -188,12 +189,41 @@ export default function App() {
           </section>
         )}
 
+        {view === 'hero' && (
+          <section className="py-20 bg-white border-y border-brand-cream">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
+                <div className="space-y-2">
+                  <p className="text-5xl font-black text-brand-red">82%</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Visitas Digitales</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Clientes que te ven online antes de entrar</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-5xl font-black text-brand-red">+350%</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Llamadas Directas</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Aumento promedio en contacto directo</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-5xl font-black text-brand-red">Top 3</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Google Maps</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Posicionamiento local garantizado</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-5xl font-black text-brand-red">45</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Reservas Diarias</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Caso de éxito: De la invisibilidad al lleno total</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {view === 'form' && (
           <section className="py-16 px-4 bg-brand-cream/30">
             <div className="max-w-3xl mx-auto">
               <div className="mb-12 text-center">
-                <h2 className="text-4xl font-black text-brand-teal mb-4">Sua Jornada Digital</h2>
-                <p className="text-slate-600 font-medium">Preencha os dados e receba uma análise completa em segundos.</p>
+                <h2 className="text-4xl font-black text-brand-teal mb-4">Su Jornada Digital</h2>
+                <p className="text-slate-600 font-medium">Complete los datos y reciba un análisis completo en segundos.</p>
               </div>
               
               <div className="mb-10">
@@ -231,7 +261,7 @@ export default function App() {
                     className="space-y-8"
                   >
                     <div className="space-y-4">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Qual o seu nicho?</label>
+                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">¿Cuál es su nicho?</label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         {businessTypes.map((t) => {
                           const Icon = t.icon;
@@ -257,7 +287,7 @@ export default function App() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Nome do Negócio</label>
+                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Nombre del Negocio</label>
                       <input 
                         {...register('businessName')}
                         placeholder="Ex: La Parrilla de San Lorenzo"
@@ -267,7 +297,7 @@ export default function App() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Localização</label>
+                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Ubicación</label>
                       <div className="relative">
                         <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
                         <input 
@@ -297,7 +327,7 @@ export default function App() {
                     className="space-y-8"
                   >
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">WhatsApp de Contato</label>
+                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">WhatsApp de Contacto</label>
                       <div className="relative">
                         <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
                         <input 
@@ -310,16 +340,29 @@ export default function App() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">E-mail Profissional</label>
+                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">E-mail Profesional</label>
                       <div className="relative">
                         <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
                         <input 
                           {...register('email')}
-                          placeholder="contato@restaurante.es"
+                          placeholder="contacto@restaurante.es"
                           className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
                         />
                       </div>
                       {errors.email && <p className="text-brand-red text-xs font-bold mt-1">{errors.email.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Sitio Web (Opcional)</label>
+                      <div className="relative">
+                        <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
+                        <input 
+                          {...register('website')}
+                          placeholder="https://suweb.com"
+                          className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
+                        />
+                      </div>
+                      {errors.website && <p className="text-brand-red text-xs font-bold mt-1">{errors.website.message}</p>}
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4">
@@ -329,14 +372,14 @@ export default function App() {
                         className="flex-1 bg-slate-100 text-brand-teal py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
                       >
                         <ArrowLeft className="w-5 h-5" />
-                        Voltar
+                        Volver
                       </button>
                       <button 
                         type="button" 
                         onClick={handleNextStep}
                         className="flex-[2] bg-brand-teal text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all flex items-center justify-center gap-3 shadow-xl"
                       >
-                        Próximo Passo
+                        Próximo Paso
                         <ArrowRight className="w-5 h-5" />
                       </button>
                     </div>
@@ -392,19 +435,115 @@ export default function App() {
                         className="flex-1 bg-slate-100 text-brand-teal py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
                       >
                         <ArrowLeft className="w-5 h-5" />
-                        Voltar
+                        Volver
                       </button>
                       <button 
                         type="submit"
                         className="flex-[2] bg-brand-red text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-orange transition-all flex items-center justify-center gap-3 shadow-2xl shadow-brand-red/30"
                       >
-                        Gerar Auditoria
+                        Generar Auditoría
                         <Sparkles className="w-6 h-6" />
                       </button>
                     </div>
                   </motion.div>
                 )}
               </form>
+            </div>
+          </section>
+        )}
+
+        {view === 'hero' && (
+          <section id="planes" className="py-24 px-4 bg-brand-cream/20">
+            <div className="max-w-7xl mx-auto">
+              <div className="text-center mb-16">
+                <h2 className="text-5xl font-black text-brand-teal mb-4">Dos caminos para dominar Valladolid</h2>
+                <p className="text-slate-600 font-bold text-xl">Elija el plan que mejor se adapte a su crecimiento</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+                {/* Plan Básico */}
+                <motion.div 
+                  whileHover={{ y: -10 }}
+                  className="bg-white p-12 rounded-[3rem] border-2 border-brand-cream shadow-xl flex flex-col"
+                >
+                  <div className="mb-8">
+                    <h3 className="text-3xl font-black text-brand-teal mb-2">Plan Básico</h3>
+                    <p className="text-brand-red font-black text-4xl">89€ <span className="text-sm text-slate-400 font-bold">/ MES</span></p>
+                    <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-50 mt-2">Visibilidad y Confianza</p>
+                  </div>
+                  <ul className="space-y-4 mb-12 flex-grow">
+                    {[
+                      'Google Business Profile Pro',
+                      'Gestión de Reseñas Estratégica',
+                      '8 Publicaciones Mensuales',
+                      'Informe de Visibilidad Local'
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-3 text-slate-600 font-bold">
+                        <CheckCircle2 className="w-5 h-5 text-brand-red" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <button 
+                    onClick={() => setView('form')}
+                    className="w-full py-5 rounded-2xl border-2 border-brand-teal text-brand-teal font-black uppercase tracking-widest hover:bg-brand-teal hover:text-white transition-all"
+                  >
+                    Empezar Ahora
+                  </button>
+                </motion.div>
+
+                {/* Plan Premium */}
+                <motion.div 
+                  whileHover={{ y: -10 }}
+                  className="bg-brand-teal p-12 rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col"
+                >
+                  <div className="absolute top-0 right-0 bg-brand-red text-white px-6 py-2 font-black text-[10px] uppercase tracking-widest rounded-bl-2xl">
+                    Más Popular
+                  </div>
+                  <div className="mb-8">
+                    <h3 className="text-3xl font-black text-white mb-2">Plan Premium</h3>
+                    <p className="text-brand-orange font-black text-4xl">147€ <span className="text-sm text-white/50 font-bold">/ MES</span></p>
+                    <p className="text-xs font-black uppercase tracking-widest text-white opacity-50 mt-2">Dominio y Crecimiento</p>
+                  </div>
+                  <ul className="space-y-4 mb-12 flex-grow">
+                    {[
+                      'Todo lo del Plan Básico',
+                      'SEO Local Avanzado (Top 3)',
+                      '16 Publicaciones + Reels Virales',
+                      'Sistema de Captación Activa'
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-3 text-white font-bold">
+                        <CheckCircle2 className="w-5 h-5 text-brand-orange" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <button 
+                    onClick={() => setView('form')}
+                    className="w-full py-5 rounded-2xl bg-brand-red text-white font-black uppercase tracking-widest hover:bg-brand-orange transition-all shadow-xl shadow-brand-red/20"
+                  >
+                    Dominar el Mercado
+                  </button>
+                </motion.div>
+              </div>
+
+              <div className="mt-20 text-center">
+                <div className="inline-flex items-center gap-8 px-10 py-6 bg-white rounded-3xl border border-brand-cream shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <span className="font-black text-brand-teal uppercase tracking-widest text-xs">Sin Permanencia</span>
+                  </div>
+                  <div className="w-px h-8 bg-slate-100" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <span className="font-black text-brand-teal uppercase tracking-widest text-xs">Solo Resultados</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         )}
@@ -466,7 +605,7 @@ export default function App() {
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
                         <Sparkles className="w-6 h-6 text-white" />
                       </div>
-                      <h3 className="text-2xl font-black uppercase tracking-widest">A Visão do Futuro</h3>
+                      <h3 className="text-2xl font-black uppercase tracking-widest">La Visión del Futuro</h3>
                     </div>
                     <p className="text-2xl md:text-4xl font-medium leading-[1.3] italic text-brand-cream">
                       "{report.storytelling}"
@@ -485,7 +624,7 @@ export default function App() {
                     <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-8">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                     </div>
-                    <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">Pontos Fortes</h3>
+                    <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">Puntos Fuertes</h3>
                     <ul className="space-y-6">
                       {report.strengths.map((s, i) => (
                         <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
@@ -506,7 +645,7 @@ export default function App() {
                     <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mb-8">
                       <AlertCircle className="w-8 h-8 text-amber-500" />
                     </div>
-                    <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">O que melhorar</h3>
+                    <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">Qué mejorar</h3>
                     <ul className="space-y-6">
                       {report.problems.map((p, i) => (
                         <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
@@ -529,7 +668,7 @@ export default function App() {
                     <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center">
                       <Instagram className="w-8 h-8 text-brand-orange" />
                     </div>
-                    <h3 className="text-2xl font-black uppercase tracking-widest">Presença Digital</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-widest">Presencia Digital</h3>
                   </div>
                   <p className="text-xl text-slate-200 leading-relaxed font-medium">
                     {report.socialMediaAnalysis}
@@ -543,7 +682,7 @@ export default function App() {
                   transition={{ delay: 0.5 }}
                   className="bg-white p-10 md:p-14 rounded-[3rem] border-4 border-brand-cream shadow-2xl"
                 >
-                  <h3 className="text-2xl font-black text-brand-teal mb-12 uppercase tracking-widest text-center">Plano de Ação Imediato</h3>
+                  <h3 className="text-2xl font-black text-brand-teal mb-12 uppercase tracking-widest text-center">Plan de Acción Inmediato</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {report.priorityActions.map((a, i) => (
                       <div key={i} className="flex items-center gap-6 p-6 rounded-3xl bg-slate-50 border border-slate-100 group hover:border-brand-red transition-all">
@@ -564,12 +703,12 @@ export default function App() {
                   className="bg-brand-cream p-10 md:p-16 rounded-[4rem] text-center relative overflow-hidden"
                 >
                   <div className="absolute top-0 left-0 w-full h-full bg-brand-orange/5 -z-10" />
-                  <h3 className="text-3xl md:text-5xl font-black text-brand-red mb-8 leading-tight">Vamos impulsionar seu <br />negócio juntos?</h3>
+                  <h3 className="text-3xl md:text-5xl font-black text-brand-red mb-8 leading-tight">¿Impulsamos su <br />negocio juntos?</h3>
                   <p className="text-brand-teal text-xl mb-12 max-w-2xl mx-auto font-bold leading-relaxed opacity-80">
                     {report.serviceProposal}
                   </p>
                   <button className="bg-brand-red text-white px-12 py-6 rounded-3xl text-2xl font-black uppercase tracking-widest hover:bg-brand-teal transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-4 mx-auto group">
-                    Chamar no WhatsApp
+                    Contactar por WhatsApp
                     <Phone className="w-8 h-8 group-hover:scale-110 transition-transform" />
                   </button>
                 </motion.div>
@@ -599,7 +738,7 @@ export default function App() {
               </div>
             </div>
             <p className="text-brand-cream/60 max-w-sm mb-10 font-medium leading-relaxed">
-              Especialistas em transformar pequenos negócios em referências digitais em Valladolid e Madrid. Tradição espanhola com tecnologia global.
+              Especialistas en transformar pequeños negocios en referencias digitales en Valladolid y Madrid. Tradición española con tecnología global.
             </p>
             <div className="flex gap-5">
               {[Instagram, Facebook, Globe].map((Icon, i) => (
@@ -611,17 +750,17 @@ export default function App() {
           </div>
           
           <div>
-            <h4 className="font-black uppercase tracking-widest text-brand-orange mb-8 text-sm">Navegação</h4>
+            <h4 className="font-black uppercase tracking-widest text-brand-orange mb-8 text-sm">Navegación</h4>
             <ul className="space-y-5 text-brand-cream/70 font-bold">
-              <li><a href="#" className="hover:text-white transition-colors">Início</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Auditoria Gratuita</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Nossos Serviços</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Casos de Sucesso</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Inicio</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Auditoría Gratuita</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Nuestros Servicios</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Casos de Éxito</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-black uppercase tracking-widest text-brand-orange mb-8 text-sm">Contate-nos</h4>
+            <h4 className="font-black uppercase tracking-widest text-brand-orange mb-8 text-sm">Contáctanos</h4>
             <ul className="space-y-6 text-brand-cream/70 font-bold">
               <li className="flex items-start gap-4">
                 <MapPin className="w-5 h-5 text-brand-red shrink-0" />
@@ -629,7 +768,7 @@ export default function App() {
               </li>
               <li className="flex items-center gap-4">
                 <Phone className="w-5 h-5 text-brand-red shrink-0" />
-                +34 000 000 000
+                +34 325 678 398
               </li>
               <li className="flex items-center gap-4">
                 <Mail className="w-5 h-5 text-brand-red shrink-0" />
@@ -643,6 +782,18 @@ export default function App() {
           © {new Date().getFullYear()} Impulsa Valladolid. Hecho con pasión en España.
         </div>
       </footer>
+      {/* Floating WhatsApp Button */}
+      <a 
+        href="https://wa.me/34325678398" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-8 right-8 z-[100] bg-[#25D366] text-white p-5 rounded-full shadow-2xl hover:scale-110 transition-all group"
+      >
+        <Phone className="w-8 h-8" />
+        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-black shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          ¿Hablamos por WhatsApp?
+        </span>
+      </a>
     </div>
   );
 }

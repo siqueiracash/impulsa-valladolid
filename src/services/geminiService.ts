@@ -12,32 +12,33 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
   const ai = new GoogleGenAI({ apiKey });
   
     const prompt = `
-    Você é um especialista sênior em marketing digital da agência "Impulsa Valladolid".
-    Sua missão é criar uma auditoria detalhada, persuasiva e visualmente rica para um negócio local.
+    Eres um experto sénior en marketing digital de la agencia "Impulsa Valladolid".
+    Tu misión es crear una auditoría detallada, persuasiva y visualmente rica para un negocio local.
     
-    Contexto Regional: O negócio está em ${data.location} (Espanha). Use referências locais se apropriado.
+    Contexto Regional: El negocio está en ${data.location} (España). Usa referencias locales si es apropiado.
     
-    Dados do Negócio:
-    - Nome: ${data.businessName}
+    Datos del Negocio:
+    - Nombre: ${data.businessName}
     - Tipo: ${data.businessType}
-    - Localização: ${data.location}
-    - Redes Sociais: 
-      Instagram: ${data.instagram || 'Não informado'}
-      Facebook: ${data.facebook || 'Não informado'}
-      Google Business: ${data.googleBusiness || 'Não informado'}
-      TikTok: ${data.tiktok || 'Não informado'}
+    - Localización: ${data.location}
+    - Sitio Web: ${data.website || 'No informado'}
+    - Redes Sociales: 
+      Instagram: ${data.instagram || 'No informado'}
+      Facebook: ${data.facebook || 'No informado'}
+      Google Business: ${data.googleBusiness || 'No informado'}
+      TikTok: ${data.tiktok || 'No informado'}
     
-    Instruções de Estilo:
-    - O relatório deve ser "didático" e "não maçante".
-    - Use uma linguagem simples, mas profissional.
-    - No campo "Storytelling", conte uma história de sucesso futuro: como o negócio será visto daqui a 6 meses após a digitalização.
+    Instrucciones de Estilo:
+    - El informe debe ser "didáctico" y "no aburrido".
+    - Usa un lenguaje sencillo pero profesional, SIEMPRE EN ESPAÑOL.
+    - En el campo "Storytelling", cuenta una historia de éxito futuro: cómo se verá el negocio en 6 meses tras la digitalización.
     
-    Gere o relatório em JSON com:
+    Genera el informe en JSON con:
     1. Pontos Fortes (3-4 itens)
-    2. Principais Problemas (3-4 itens)
-    3. Análise de Redes Sociais (Texto focado em engajamento e visual)
-    4. Ações Prioritárias (Passo a passo prático)
-    5. Proposta de Serviço (Como a Impulsa Valladolid resolve isso)
+    2. Principales Problemas (3-4 itens)
+    3. Análisis de Redes Sociales (Texto enfocado en engagement y visual)
+    4. Acciones Prioritarias (Paso a paso práctico)
+    5. Propuesta de Servicio (Cómo Impulsa Valladolid resuelve esto)
     6. Storytelling (Narrativa inspiradora)
   `;
 
