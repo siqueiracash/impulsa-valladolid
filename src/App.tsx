@@ -103,8 +103,36 @@ export default function App() {
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#como-funciona" className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors">Cómo Funciona</a>
-            <a href="#planes" className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors">Planes</a>
+            <a 
+              href="#como-funciona" 
+              onClick={(e) => {
+                if (view !== 'hero') {
+                  e.preventDefault();
+                  setView('hero');
+                  setTimeout(() => {
+                    document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }
+              }}
+              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors"
+            >
+              Cómo Funciona
+            </a>
+            <a 
+              href="#planes" 
+              onClick={(e) => {
+                if (view !== 'hero') {
+                  e.preventDefault();
+                  setView('hero');
+                  setTimeout(() => {
+                    document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }
+              }}
+              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors"
+            >
+              Planes
+            </a>
             <button 
               onClick={() => setView('form')}
               className="bg-brand-red text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-orange transition-all shadow-lg shadow-brand-red/20"
@@ -184,6 +212,127 @@ export default function App() {
                   </div>
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-brand-orange/5 rounded-full -z-10 blur-3xl" />
                 </motion.div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {view === 'hero' && (
+          <section id="como-funciona" className="py-24 px-4 bg-slate-50 relative overflow-hidden">
+            <div className="max-w-7xl mx-auto relative z-10">
+              <div className="text-center mb-20">
+                <h2 className="text-5xl font-black text-brand-teal mb-6">¿Cómo transformamos su negocio?</h2>
+                <p className="text-xl text-slate-600 font-medium max-w-2xl mx-auto">
+                  No solo hacemos marketing, creamos una presencia digital que obliga a los clientes a elegirte.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
+                {/* Antes */}
+                <motion.div 
+                  initial={{ opacity: 0, x: -50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  className="bg-white p-10 rounded-[3rem] border-2 border-slate-100 shadow-xl relative"
+                >
+                  <div className="absolute -top-6 left-10 bg-slate-400 text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest">
+                    Antes: Invisibilidad
+                  </div>
+                  <div className="space-y-8 opacity-50 grayscale">
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                      <div className="w-12 h-12 bg-slate-200 rounded-xl" />
+                      <div className="space-y-2 flex-grow">
+                        <div className="h-4 bg-slate-200 rounded w-3/4" />
+                        <div className="h-3 bg-slate-200 rounded w-1/2" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="aspect-square bg-slate-200 rounded-2xl" />
+                      <div className="aspect-square bg-slate-200 rounded-2xl" />
+                      <div className="aspect-square bg-slate-200 rounded-2xl" />
+                    </div>
+                    <div className="space-y-4">
+                      <p className="text-sm font-bold text-slate-400">● Sin fotos profesionales</p>
+                      <p className="text-sm font-bold text-slate-400">● Reseñas negativas sin respuesta</p>
+                      <p className="text-sm font-bold text-slate-400">● Horarios desactualizados</p>
+                      <p className="text-sm font-bold text-slate-400">● Pocas o ninguna reserva online</p>
+                    </div>
+                  </div>
+                  <div className="mt-10 pt-10 border-t border-slate-100 text-center">
+                    <p className="text-slate-400 font-black text-2xl">Bajo Engajamento</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase mt-1">El cliente pasa de largo</p>
+                  </div>
+                </motion.div>
+
+                {/* Después */}
+                <motion.div 
+                  initial={{ opacity: 0, x: 50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  className="bg-brand-teal p-10 rounded-[3rem] shadow-2xl relative border-4 border-brand-orange/30"
+                >
+                  <div className="absolute -top-6 left-10 bg-brand-red text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-lg">
+                    Después: Dominio Total
+                  </div>
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-4 p-4 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
+                      <div className="w-12 h-12 bg-brand-orange rounded-xl flex items-center justify-center">
+                        <CheckCircle2 className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="space-y-2 flex-grow">
+                        <div className="h-4 bg-white rounded w-3/4" />
+                        <div className="h-3 bg-white/50 rounded w-1/2" />
+                      </div>
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map(i => <Sparkles key={i} className="w-3 h-3 text-brand-orange" />)}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <img src="https://picsum.photos/seed/food1/200/200" className="aspect-square rounded-2xl object-cover border-2 border-white/20" referrerPolicy="no-referrer" />
+                      <img src="https://picsum.photos/seed/food2/200/200" className="aspect-square rounded-2xl object-cover border-2 border-white/20" referrerPolicy="no-referrer" />
+                      <img src="https://picsum.photos/seed/food3/200/200" className="aspect-square rounded-2xl object-cover border-2 border-white/20" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="space-y-4">
+                      <p className="text-sm font-bold text-white flex items-center gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Fotografía Gastronómica de Impacto
+                      </p>
+                      <p className="text-sm font-bold text-white flex items-center gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Gestión Estratégica de Reseñas
+                      </p>
+                      <p className="text-sm font-bold text-white flex items-center gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> SEO Local: Top 3 en Google Maps
+                      </p>
+                      <p className="text-sm font-bold text-white flex items-center gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Reels Virales que llenan mesas
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-10 pt-10 border-t border-white/10 text-center">
+                    <p className="text-brand-orange font-black text-3xl">Altíssimo Engajamento</p>
+                    <p className="text-xs text-white/70 font-bold uppercase mt-1">El cliente reserva al instante</p>
+                  </div>
+                </motion.div>
+              </div>
+
+              <div className="mt-20 flex flex-col items-center gap-8">
+                <div className="flex items-center gap-4 text-brand-teal font-black uppercase tracking-widest text-sm">
+                  <ArrowRight className="w-6 h-6 rotate-90 text-brand-red" />
+                  Nuestro Proceso
+                  <ArrowRight className="w-6 h-6 rotate-90 text-brand-red" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+                  {[
+                    { step: "01", title: "Auditoría", desc: "Analizamos su presencia actual y detectamos fugas de clientes." },
+                    { step: "02", title: "Optimización", desc: "Pulimos su imagen y configuramos sus canales de venta." },
+                    { step: "03", title: "Impulso", desc: "Lanzamos contenido estratégico para atraer público real." }
+                  ].map((s, i) => (
+                    <div key={i} className="bg-white p-8 rounded-3xl border border-brand-cream shadow-lg text-center group hover:border-brand-red transition-all">
+                      <span className="text-4xl font-black text-brand-red/20 group-hover:text-brand-red transition-colors">{s.step}</span>
+                      <h4 className="text-xl font-black text-brand-teal mt-4 mb-2">{s.title}</h4>
+                      <p className="text-sm text-slate-500 font-medium">{s.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
