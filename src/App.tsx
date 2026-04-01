@@ -238,14 +238,32 @@ export default function App() {
                   <div className="absolute -top-6 left-10 bg-slate-400 text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest">
                     Antes: Invisibilidad
                   </div>
-                  <div className="space-y-8 opacity-50 grayscale">
+                  <div className="space-y-8 opacity-40 grayscale blur-[1px]">
                     <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                      <div className="w-12 h-12 bg-slate-200 rounded-xl" />
-                      <div className="space-y-2 flex-grow">
+                      <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center">
+                        <span className="text-xl font-black text-slate-400">3.2</span>
+                      </div>
+                      <div className="space-y-1 flex-grow">
                         <div className="h-4 bg-slate-200 rounded w-3/4" />
-                        <div className="h-3 bg-slate-200 rounded w-1/2" />
+                        <div className="flex gap-1">
+                          {[1,2,3].map(i => <div key={i} className="w-3 h-3 bg-slate-300 rounded-full" />)}
+                          <div className="w-3 h-3 bg-slate-100 rounded-full" />
+                          <div className="w-3 h-3 bg-slate-100 rounded-full" />
+                        </div>
                       </div>
                     </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+                        <p className="text-xs font-black text-slate-400 uppercase">Instagram</p>
+                        <p className="text-xl font-black text-slate-500">120</p>
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+                        <p className="text-xs font-black text-slate-400 uppercase">Facebook</p>
+                        <p className="text-xl font-black text-slate-500">45</p>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-3 gap-4">
                       <div className="aspect-square bg-slate-200 rounded-2xl" />
                       <div className="aspect-square bg-slate-200 rounded-2xl" />
@@ -255,7 +273,7 @@ export default function App() {
                       <p className="text-sm font-bold text-slate-400">● Sin fotos profesionales</p>
                       <p className="text-sm font-bold text-slate-400">● Reseñas negativas sin respuesta</p>
                       <p className="text-sm font-bold text-slate-400">● Horarios desactualizados</p>
-                      <p className="text-sm font-bold text-slate-400">● Pocas o ninguna reserva online</p>
+                      <p className="text-sm font-bold text-slate-400">● Local vacío la mayor parte del día</p>
                     </div>
                   </div>
                   <div className="mt-10 pt-10 border-t border-slate-100 text-center">
@@ -276,21 +294,51 @@ export default function App() {
                   </div>
                   <div className="space-y-8">
                     <div className="flex items-center gap-4 p-4 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
-                      <div className="w-12 h-12 bg-brand-orange rounded-xl flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6 text-white" />
+                      <div className="w-12 h-12 bg-brand-orange rounded-xl flex items-center justify-center shadow-lg shadow-brand-orange/40">
+                        <span className="text-xl font-black text-white">4.9</span>
                       </div>
-                      <div className="space-y-2 flex-grow">
+                      <div className="space-y-1 flex-grow">
                         <div className="h-4 bg-white rounded w-3/4" />
-                        <div className="h-3 bg-white/50 rounded w-1/2" />
+                        <div className="flex gap-1">
+                          {[1,2,3,4,5].map(i => <Sparkles key={i} className="w-3 h-3 text-brand-orange fill-brand-orange" />)}
+                        </div>
                       </div>
-                      <div className="flex gap-1">
-                        {[1,2,3,4,5].map(i => <Sparkles key={i} className="w-3 h-3 text-brand-orange" />)}
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-white/60 uppercase">Google Maps</p>
+                        <p className="text-xs font-black text-white">Top 3 Valladolid</p>
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-white/10 rounded-2xl border border-white/20 text-center backdrop-blur-sm">
+                        <p className="text-xs font-black text-white/60 uppercase">Instagram</p>
+                        <p className="text-xl font-black text-white">12.5k</p>
+                      </div>
+                      <div className="p-4 bg-white/10 rounded-2xl border border-white/20 text-center backdrop-blur-sm">
+                        <p className="text-xs font-black text-white/60 uppercase">Facebook</p>
+                        <p className="text-xl font-black text-white">8.2k</p>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-3 gap-4">
-                      <img src="https://picsum.photos/seed/food1/200/200" className="aspect-square rounded-2xl object-cover border-2 border-white/20" referrerPolicy="no-referrer" />
-                      <img src="https://picsum.photos/seed/food2/200/200" className="aspect-square rounded-2xl object-cover border-2 border-white/20" referrerPolicy="no-referrer" />
-                      <img src="https://picsum.photos/seed/food3/200/200" className="aspect-square rounded-2xl object-cover border-2 border-white/20" referrerPolicy="no-referrer" />
+                      <img 
+                        src="https://images.unsplash.com/photo-1550966842-28c2e202ec91?q=80&w=500&auto=format&fit=crop" 
+                        className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
+                        alt="Restaurante Lleno"
+                        referrerPolicy="no-referrer" 
+                      />
+                      <img 
+                        src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=500&auto=format&fit=crop" 
+                        className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
+                        alt="Local con gente"
+                        referrerPolicy="no-referrer" 
+                      />
+                      <img 
+                        src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=500&auto=format&fit=crop" 
+                        className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
+                        alt="Fila de espera"
+                        referrerPolicy="no-referrer" 
+                      />
                     </div>
                     <div className="space-y-4">
                       <p className="text-sm font-bold text-white flex items-center gap-3">
@@ -303,12 +351,18 @@ export default function App() {
                         <CheckCircle2 className="w-4 h-4 text-brand-orange" /> SEO Local: Top 3 en Google Maps
                       </p>
                       <p className="text-sm font-bold text-white flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Reels Virales que llenan mesas
+                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Establecimiento lleno con lista de espera
                       </p>
                     </div>
                   </div>
                   <div className="mt-10 pt-10 border-t border-white/10 text-center">
-                    <p className="text-brand-orange font-black text-3xl">Altíssimo Engajamento</p>
+                    <motion.p 
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-brand-orange font-black text-3xl drop-shadow-[0_0_10px_rgba(255,165,0,0.5)]"
+                    >
+                      Altíssimo Engajamento
+                    </motion.p>
                     <p className="text-xs text-white/70 font-bold uppercase mt-1">El cliente reserva al instante</p>
                   </div>
                 </motion.div>
