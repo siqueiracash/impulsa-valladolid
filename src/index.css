@@ -1,27 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
   
-  --color-brand-50: #f0f7ff;
-  --color-brand-100: #e0effe;
-  --color-brand-200: #bae0fd;
-  --color-brand-300: #7cc8fb;
-  --color-brand-400: #38a9f8;
-  --color-brand-500: #0e8ce4;
-  --color-brand-600: #026fc3;
-  --color-brand-700: #03589d;
-  --color-brand-800: #074b82;
-  --color-brand-900: #0c3f6c;
+  /* Valladolid Brand Palette */
+  --color-brand-red: #B11E1E;
+  --color-brand-orange: #F4A236;
+  --color-brand-cream: #F9E8D2;
+  --color-brand-teal: #264653;
+  
+  --color-brand-50: #fef2f2;
+  --color-brand-100: #fee2e2;
+  --color-brand-200: #fecaca;
+  --color-brand-300: #fca5a5;
+  --color-brand-400: #f87171;
+  --color-brand-500: #B11E1E; /* Primary Red */
+  --color-brand-600: #991b1b;
+  --color-brand-700: #7f1d1d;
 }
 
 @layer base {
   body {
-    @apply font-sans text-slate-900 bg-slate-50;
+    @apply font-sans text-slate-900 bg-[#FDFBF7];
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
+    @apply font-display tracking-tight;
   }
+}
+
+.bg-valladolid-gradient {
+  background: linear-gradient(135deg, #B11E1E 0%, #F4A236 100%);
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-red to-brand-orange;
 }
