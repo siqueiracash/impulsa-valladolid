@@ -322,21 +322,21 @@ export default function App() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <img 
-                        src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=500&auto=format&fit=crop" 
+                        src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=500&auto=format&fit=crop" 
                         className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Restaurante Lleno de Clientes"
+                        alt="Panadería con Clientes"
                         referrerPolicy="no-referrer" 
                       />
                       <img 
-                        src="https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?q=80&w=500&auto=format&fit=crop" 
+                        src="https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=500&auto=format&fit=crop" 
                         className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Ambiente Animado"
+                        alt="Clientes Felices"
                         referrerPolicy="no-referrer" 
                       />
                       <img 
-                        src="https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?q=80&w=500&auto=format&fit=crop" 
+                        src="https://images.unsplash.com/photo-1533900298318-6b8da08a523e?q=80&w=500&auto=format&fit=crop" 
                         className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Mesas Llenas"
+                        alt="Mercado de Frutas Lleno"
                         referrerPolicy="no-referrer" 
                       />
                     </div>
