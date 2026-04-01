@@ -2,7 +2,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AuditFormData, AuditReport } from "../types";
 
 export async function generateAuditReport(data: AuditFormData): Promise<AuditReport> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+  const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+  
+  if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY") {
+    throw new Error("API_KEY_MISSING: A chave GEMINI_API_KEY não foi configurada corretamente no ambiente (Vercel).");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
     Você é um especialista em marketing digital da agência "Impulsa Valladolid".
