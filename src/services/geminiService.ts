@@ -2,17 +2,24 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AuditFormData, AuditReport } from "../types";
 
 export async function generateAuditReport(data: AuditFormData): Promise<AuditReport> {
-  const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+  // Tenta buscar de várias formas possíveis em ambientes de produção (Vite/Vercel)
+  const apiKey = 
+    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
+    import.meta.env.VITE_GEMINI_API_KEY || 
+    import.meta.env.GEMINI_API_KEY;
   
-  if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY") {
-    throw new Error("API_KEY_MISSING: A chave GEMINI_API_KEY não foi configurada corretamente no ambiente (Vercel).");
+  if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "") {
+    console.error("ERRO: Chave de API não encontrada. Verifique as variáveis de ambiente na Vercel.");
+    throw new Error("API_KEY_MISSING");
   }
 
   const ai = new GoogleGenAI({ apiKey });
   
-  const prompt = `
-    Você é um especialista em marketing digital da agência "Impulsa Valladolid".
-    Sua missão é criar uma auditoria gratuita e personalizada para um pequeno negócio em Valladolid ou Madrid.
+    const prompt = `
+    Você é um especialista sênior em marketing digital da agência "Impulsa Valladolid".
+    Sua missão é criar uma auditoria detalhada, persuasiva e visualmente rica para um negócio local.
+    
+    Contexto Regional: O negócio está em ${data.location} (Espanha). Use referências locais se apropriado.
     
     Dados do Negócio:
     - Nome: ${data.businessName}
@@ -24,15 +31,18 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
       Google Business: ${data.googleBusiness || 'Não informado'}
       TikTok: ${data.tiktok || 'Não informado'}
     
-    Gere um relatório detalhado e didático com os seguintes campos:
-    1. Pontos Fortes (Lista de 3-4 itens)
-    2. Principais Problemas Detectados (Lista de 3-4 itens)
-    3. Análise de Presença nas Redes Sociais (Texto explicativo)
-    4. Ações Prioritárias (Lista de 3-5 itens)
-    5. Proposta de Serviço (Uma conclusão persuasiva da Impulsa Valladolid)
-    6. Storytelling (Um texto curto que conta a história do negócio do cliente sob uma perspectiva de crescimento digital, de forma inspiradora).
+    Instruções de Estilo:
+    - O relatório deve ser "didático" e "não maçante".
+    - Use uma linguagem simples, mas profissional.
+    - No campo "Storytelling", conte uma história de sucesso futuro: como o negócio será visto daqui a 6 meses após a digitalização.
     
-    O tom deve ser profissional, mas próximo e encorajador. Use Português do Brasil.
+    Gere o relatório em JSON com:
+    1. Pontos Fortes (3-4 itens)
+    2. Principais Problemas (3-4 itens)
+    3. Análise de Redes Sociais (Texto focado em engajamento e visual)
+    4. Ações Prioritárias (Passo a passo prático)
+    5. Proposta de Serviço (Como a Impulsa Valladolid resolve isso)
+    6. Storytelling (Narrativa inspiradora)
   `;
 
   const response = await ai.models.generateContent({
