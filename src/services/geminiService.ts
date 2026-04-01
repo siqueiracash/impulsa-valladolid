@@ -2,10 +2,10 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AuditFormData, AuditReport } from "../types";
 
 export async function generateAuditReport(data: AuditFormData): Promise<AuditReport> {
-  // process.env.GEMINI_API_KEY será substituído pelo valor real durante o build do Vite
-  const apiKey = process.env.GEMINI_API_KEY;
+  // Ajustado para buscar VITE_API_KEY conforme sua configuração na Vercel
+  const apiKey = import.meta.env.VITE_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
   
-  if (!apiKey || apiKey === "" || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY") {
+  if (!apiKey || apiKey === "" || apiKey === "undefined") {
     throw new Error("API_KEY_MISSING");
   }
 
