@@ -266,9 +266,24 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="aspect-square bg-slate-200 rounded-2xl" />
-                      <div className="aspect-square bg-slate-200 rounded-2xl" />
-                      <div className="aspect-square bg-slate-200 rounded-2xl" />
+                      <img 
+                        src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=500&auto=format&fit=crop" 
+                        className="aspect-square rounded-2xl object-cover border border-slate-200" 
+                        alt="Local Vacío"
+                        referrerPolicy="no-referrer" 
+                      />
+                      <img 
+                        src="https://images.unsplash.com/photo-1544717297-fa95b6ee9643?q=80&w=500&auto=format&fit=crop" 
+                        className="aspect-square rounded-2xl object-cover border border-slate-200" 
+                        alt="Dueño Desanimado"
+                        referrerPolicy="no-referrer" 
+                      />
+                      <img 
+                        src="https://images.unsplash.com/photo-1516939162983-c57ad5331f7d?q=80&w=500&auto=format&fit=crop" 
+                        className="aspect-square rounded-2xl object-cover border border-slate-200" 
+                        alt="Local Abandonado"
+                        referrerPolicy="no-referrer" 
+                      />
                     </div>
                     <div className="space-y-4">
                       <p className="text-sm font-bold text-slate-400">● Sin fotos profesionales</p>
