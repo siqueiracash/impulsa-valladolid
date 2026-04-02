@@ -338,9 +338,9 @@ export default function App() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <img 
-                        src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=500&auto=format&fit=crop" 
+                        src="https://images.unsplash.com/photo-1534258936925-c58bed479fcb?q=80&w=500&auto=format&fit=crop" 
                         className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Panadería con Clientes"
+                        alt="Gimnasio Lleno de Clientes"
                         referrerPolicy="no-referrer" 
                       />
                       <img 
@@ -358,7 +358,7 @@ export default function App() {
                     </div>
                     <div className="space-y-4">
                       <p className="text-sm font-bold text-white flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Fotografía Gastronómica de Impacto
+                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Fotografía Profesional de Impacto
                       </p>
                       <p className="text-sm font-bold text-white flex items-center gap-3">
                         <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Gestión Estratégica de Reseñas
