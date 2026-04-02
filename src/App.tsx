@@ -228,7 +228,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div id="casos-de-exito" className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
                 {/* Antes */}
                 <motion.div 
                   initial={{ opacity: 0, x: -50 }}
@@ -394,7 +394,7 @@ export default function App() {
         )}
 
         {view === 'hero' && (
-          <section className="py-20 bg-white border-y border-brand-cream">
+          <section id="casos-de-exito" className="py-20 bg-white border-y border-brand-cream">
             <div className="max-w-7xl mx-auto px-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
                 <div className="space-y-2">
