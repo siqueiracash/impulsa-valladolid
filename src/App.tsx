@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Rocket, MapPin, Phone, Mail, Instagram, Facebook, Globe, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Loader2, Sparkles, Building2, Utensils, Scissors, Coffee, Store } from 'lucide-react';
+import { Rocket, MapPin, Phone, Mail, Instagram, Facebook, Globe, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Loader2, Sparkles, Building2, Utensils, Scissors, Coffee, Store, Dumbbell } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +10,7 @@ import { generateAuditReport } from './services/geminiService';
 
 const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
-  businessType: z.enum(['restaurante', 'bar', 'padaria', 'barbeiro', 'cabeleireiro', 'cafeteria', 'outro']),
+  businessType: z.enum(['restaurante', 'bar', 'padaria', 'barbeiro', 'cabeleireiro', 'cafeteria', 'gimnasio', 'outro']),
   location: z.string().min(5, 'La ubicación es obligatoria'),
   whatsapp: z.string().min(8, 'El WhatsApp é obligatorio'),
   email: z.string().email('E-mail inválido'),
@@ -80,7 +80,8 @@ export default function App() {
     { value: 'cafeteria', label: 'Cafetería', icon: Coffee },
     { value: 'padaria', label: 'Panadería', icon: Store },
     { value: 'barbeiro', label: 'Barbería', icon: Scissors },
-    { value: 'cabeleireiro', label: 'Peluquería', icon: Scissors },
+    { value: 'cabeleireiro', label: 'Peluquería', icon: Sparkles },
+    { value: 'gimnasio', label: 'Gimnasio', icon: Dumbbell },
     { value: 'outro', label: 'Otro', icon: Building2 },
   ];
 
@@ -116,22 +117,22 @@ export default function App() {
               }}
               className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors"
             >
-              Cómo Funciona
+              Nuestros Servicios
             </a>
             <a 
-              href="#planes" 
+              href="#casos-de-exito" 
               onClick={(e) => {
                 if (view !== 'hero') {
                   e.preventDefault();
                   setView('hero');
                   setTimeout(() => {
-                    document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth' });
+                    document.getElementById('casos-de-exito')?.scrollIntoView({ behavior: 'smooth' });
                   }, 100);
                 }
               }}
               className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors"
             >
-              Planes
+              Casos de Éxito
             </a>
             <button 
               onClick={() => setView('form')}
@@ -227,7 +228,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
+              <div id="casos-de-exito" className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
                 {/* Antes */}
                 <motion.div 
                   initial={{ opacity: 0, x: -50 }}
@@ -955,10 +956,51 @@ export default function App() {
           <div>
             <h4 className="font-black uppercase tracking-widest text-brand-orange mb-8 text-sm">Navegación</h4>
             <ul className="space-y-5 text-brand-cream/70 font-bold">
-              <li><a href="#" className="hover:text-white transition-colors">Inicio</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Auditoría Gratuita</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Nuestros Servicios</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Casos de Éxito</a></li>
+              <li>
+                <button 
+                  onClick={() => {
+                    setView('hero');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
+                  className="hover:text-white transition-colors"
+                >
+                  Inicio
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => setView('form')} 
+                  className="hover:text-white transition-colors"
+                >
+                  Auditoría Gratuita
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => {
+                    if (view !== 'hero') setView('hero');
+                    setTimeout(() => {
+                      document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }} 
+                  className="hover:text-white transition-colors"
+                >
+                  Nuestros Servicios
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => {
+                    if (view !== 'hero') setView('hero');
+                    setTimeout(() => {
+                      document.getElementById('casos-de-exito')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }} 
+                  className="hover:text-white transition-colors"
+                >
+                  Casos de Éxito
+                </button>
+              </li>
             </ul>
           </div>
 

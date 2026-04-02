@@ -1,4 +1,4 @@
-export type BusinessType = 'restaurante' | 'bar' | 'padaria' | 'barbeiro' | 'cabeleireiro' | 'cafeteria' | 'outro';
+export type BusinessType = 'restaurante' | 'bar' | 'padaria' | 'barbeiro' | 'cabeleireiro' | 'cafeteria' | 'gimnasio' | 'outro';
 
 export interface AuditFormData {
   businessName: string;
