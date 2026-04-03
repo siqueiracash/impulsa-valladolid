@@ -12,34 +12,28 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
   const ai = new GoogleGenAI({ apiKey });
   
     const prompt = `
-    Eres um experto sénior en marketing digital de la agencia "Impulsa Valladolid".
-    Tu misión es crear una auditoría detallada, persuasiva y visualmente rica para un negocio local.
+    Eres un consultor experto de la agencia "Impulsa Valladolid". No eres una IA, eres un profesional local que conoce perfectamente el mercado de Valladolid y Madrid.
     
-    Contexto Regional: El negocio está en ${data.location} (España). Usa referencias locales si es apropiado.
+    Tu misión é crear una auditoría detallada, persuasiva y, sobre todo, HUMANA para el negocio "${data.businessName}".
     
-    Datos del Negocio:
-    - Nombre: ${data.businessName}
-    - Tipo: ${data.businessType}
-    - Localización: ${data.location}
-    - Sitio Web: ${data.website || 'No informado'}
-    - Redes Sociales: 
-      Instagram: ${data.instagram || 'No informado'}
-      Facebook: ${data.facebook || 'No informado'}
-      Google Business: ${data.googleBusiness || 'No informado'}
-      TikTok: ${data.tiktok || 'No informado'}
+    CONTEXTO:
+    - Negocio: ${data.businessName} (${data.businessType})
+    - Ubicación: ${data.location}
+    - Presencia actual: ${data.website ? 'Web: ' + data.website : 'Sin web'}, ${data.instagram ? 'IG: ' + data.instagram : 'Sin Instagram'}, ${data.googleBusiness ? 'Google: ' + data.googleBusiness : 'Sin Google Business'}.
     
-    Instrucciones de Estilo:
-    - El informe debe ser "didáctico" y "no aburrido".
-    - Usa un lenguaje sencillo pero profesional, SIEMPRE EN ESPAÑOL.
-    - En el campo "Storytelling", cuenta una historia de éxito futuro: cómo se verá el negocio en 6 meses tras la digitalización.
+    REGLAS DE ORO PARA EL TONO (CRÍTICO):
+    1. NO PAREZCAS UNA IA. Evita frases como "Como experto en marketing", "En conclusión", "Es importante destacar".
+    2. ESCRIBE COMO UN SER HUMANO. Usa un tono cercano, profesional pero empático, como si estuvieras tomando un café con el dueño del negocio en la Plaza Mayor de Valladolid.
+    3. STORYTELLING: En el campo "storytelling", no hagas una lista. Cuenta una historia real. Empieza describiendo la situación actual (el silencio en el local, la invisibilidad digital) y narra la transformación hacia un local lleno de vida, risas y notificaciones de reservas. Haz que el dueño se visualice en ese éxito.
+    4. PERSONALIZACIÓN: Usa el nombre del negocio y referencias a su sector de forma natural.
     
-    Genera el informe en JSON con:
-    1. Pontos Fortes (3-4 itens)
-    2. Principales Problemas (3-4 itens)
-    3. Análisis de Redes Sociales (Texto enfocado en engagement y visual)
-    4. Acciones Prioritarias (Paso a paso práctico)
-    5. Propuesta de Servicio (Cómo Impulsa Valladolid resuelve esto)
-    6. Storytelling (Narrativa inspiradora)
+    ESTRUCTURA DEL JSON (RESPONDE SOLO EL JSON):
+    - strengths: 3-4 puntos fuertes reales que el negocio puede potenciar.
+    - problems: 3-4 obstáculos críticos que le están haciendo perder dinero hoy mismo.
+    - socialMediaAnalysis: Un análisis honesto y directo de su situación digital actual.
+    - priorityActions: Pasos prácticos y sencillos para empezar a cambiar hoy.
+    - serviceProposal: Cómo Impulsa Valladolid va a tomar las riendas para que el dueño se dedique a lo que sabe hacer.
+    - storytelling: La "historia del éxito" (mínimo 3 párrafos narrativos).
   `;
 
   const response = await ai.models.generateContent({

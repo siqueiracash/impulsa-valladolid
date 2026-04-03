@@ -25,6 +25,7 @@ const formSchema = z.object({
 export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
+  const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -44,17 +45,23 @@ export default function App() {
       setView('report');
     } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
-      let errorMessage = 'Houve um erro ao gerar seu relatório. Por favor, verifique sua conexão ou tente novamente em instantes.';
+      let errorMessage = 'Ops! Algo não saiu como esperado. Por favor, verifique sua conexão ou tente novamente em instantes.';
       
       if (error.message === 'API_KEY_MISSING') {
-        errorMessage = 'ERRO: A chave GEMINI_API_KEY não foi encontrada. Certifique-se de adicioná-la nas "Environment Variables" da Vercel e fazer um novo Deploy.';
+        errorMessage = 'A chave de acesso não foi encontrada. Por favor, entre em contato com o suporte técnico.';
       } else if (error.message?.includes('403') || error.message?.includes('API key not valid')) {
-        errorMessage = 'ERRO: A chave de API fornecida é inválida. Verifique se copiou a chave correta do Google AI Studio.';
+        errorMessage = 'A chave de acesso é inválida. Por favor, entre em contato com o suporte técnico.';
+      } else if (error.message?.includes('503') || error.message?.includes('high demand')) {
+        errorMessage = 'Estamos com muita demanda no momento! Nossa inteligência está um pouco sobrecarregada. Por favor, aguarde alguns segundos e tente novamente.';
+      } else if (error.message?.includes('429')) {
+        errorMessage = 'Muitas solicitações seguidas! Por favor, aguarde um minuto antes de tentar uma nova auditoria.';
+      } else if (error.message?.includes('Safety') || error.message?.includes('blocked')) {
+        errorMessage = 'Não conseguimos gerar o relatório devido às políticas de segurança. Certifique-se de que o nome do negócio e as informações são apropriadas.';
       } else if (error.message) {
-        errorMessage = `Erro técnico: ${error.message}`;
+        errorMessage = `Não conseguimos processar sua auditoria agora. Detalhe: ${error.message}`;
       }
 
-      alert(errorMessage);
+      setErrorModal({ show: true, message: errorMessage });
       setView('form');
     }
   };
@@ -1054,6 +1061,30 @@ export default function App() {
           ¿Hablamos por WhatsApp?
         </span>
       </a>
+      {/* Error Modal */}
+      {errorModal.show && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-brand-teal/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border-4 border-brand-red/20"
+          >
+            <div className="w-16 h-16 bg-brand-red/10 rounded-2xl flex items-center justify-center mb-6">
+              <AlertCircle className="w-10 h-10 text-brand-red" />
+            </div>
+            <h3 className="text-2xl font-black text-brand-teal mb-4 uppercase tracking-tight">Aviso Importante</h3>
+            <p className="text-slate-600 font-medium leading-relaxed mb-8">
+              {errorModal.message}
+            </p>
+            <button 
+              onClick={() => setErrorModal({ show: false, message: '' })}
+              className="w-full bg-brand-teal text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-lg"
+            >
+              Entendido
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
