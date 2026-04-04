@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { cn } from './lib/utils';
 import { AuditFormData, AuditReport, BusinessType } from './types';
 import { generateAuditReport } from './services/geminiService';
+import { supabase } from './lib/supabase';
 
 const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
@@ -43,6 +44,27 @@ export default function App() {
       const result = await generateAuditReport(data);
       setReport(result);
       setView('report');
+
+      // Salvar no Supabase em segundo plano
+      try {
+        await supabase.from('auditoria').insert([{
+          business_name: data.businessName,
+          business_type: data.businessType,
+          location: data.location,
+          whatsapp: data.whatsapp,
+          email: data.email,
+          website: data.website,
+          instagram: data.instagram,
+          facebook: data.facebook,
+          google_business: data.googleBusiness,
+          tiktok: data.tiktok,
+          other_platforms: data.otherPlatforms,
+          report: result,
+          created_at: new Date().toISOString()
+        }]);
+      } catch (dbError) {
+        console.error('Erro ao salvar no Supabase:', dbError);
+      }
     } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
       let errorMessage = 'Ops! Algo não saiu como esperado. Por favor, verifique sua conexão ou tente novamente em instantes.';
