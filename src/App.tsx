@@ -785,7 +785,7 @@ export default function App() {
             </motion.div>
             <h2 className="text-4xl font-black text-brand-teal mb-4 uppercase tracking-widest">Analisando seu negócio...</h2>
             <p className="text-slate-600 max-w-md font-medium">
-              Nossa inteligência artificial está auditando sua presença digital e preparando um relatório personalizado para a <span className="font-black text-brand-red">Impulsa Valladolid</span>.
+              Nossa inteligência artificial está auditando sua presença digital e preparando um relatório personalizado para <span className="font-black text-brand-red">{watch('businessName')}</span>.
             </p>
             <div className="mt-12 space-y-3 w-full max-w-xs">
               <div className="h-2 bg-brand-cream rounded-full overflow-hidden p-0.5">
@@ -809,6 +809,7 @@ export default function App() {
                     Auditoria Exclusiva
                   </div>
                   <h2 className="text-5xl font-black text-brand-teal leading-none">Diagnóstico <br /><span className="text-brand-red">Estratégico</span></h2>
+                  <p className="mt-2 text-brand-teal font-black uppercase tracking-widest text-sm opacity-60">Para: {watch('businessName')}</p>
                 </div>
                 <button 
                   onClick={() => window.print()}
