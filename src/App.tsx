@@ -138,15 +138,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Status do Banco de Dados (Apenas para Debug) */}
-      {dbStatus !== 'connected' && dbStatus !== 'idle' && (
-        <div className="fixed bottom-4 right-4 z-50 bg-white p-3 rounded-lg shadow-xl border border-red-100 flex items-center gap-2 text-xs font-medium animate-bounce">
-          <AlertCircle className="w-4 h-4 text-red-500" />
-          <span className="text-red-600">
-            {dbStatus === 'missing_keys' ? 'Supabase: Chaves não configuradas' : 'Supabase: Erro ao salvar dados'}
-          </span>
-        </div>
-      )}
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-brand-cream">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
