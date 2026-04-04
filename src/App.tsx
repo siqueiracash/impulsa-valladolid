@@ -27,6 +27,7 @@ export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
+  const [dbStatus, setDbStatus] = React.useState<'connected' | 'missing_keys' | 'error' | 'idle'>('idle');
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -36,6 +37,14 @@ export default function App() {
       businessType: 'restaurante',
     }
   });
+
+  React.useEffect(() => {
+    if (!supabase) {
+      setDbStatus('missing_keys');
+    } else {
+      setDbStatus('connected');
+    }
+  }, []);
 
   const onSubmit = async (data: AuditFormData) => {
     console.log('Iniciando submissão do formulário...', data);
@@ -66,10 +75,13 @@ export default function App() {
           
           if (dbError) {
             console.error('Erro retornado pelo Supabase:', dbError.message, dbError.details);
+            setDbStatus('error');
           } else {
             console.log('Dados salvos com sucesso no Supabase!');
+            setDbStatus('connected');
           }
         } else {
+          setDbStatus('missing_keys');
           console.warn('Supabase não inicializado. Verifique as chaves VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
         }
       } catch (err) {
@@ -126,6 +138,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Status do Banco de Dados (Apenas para Debug) */}
+      {dbStatus !== 'connected' && dbStatus !== 'idle' && (
+        <div className="fixed bottom-4 right-4 z-50 bg-white p-3 rounded-lg shadow-xl border border-red-100 flex items-center gap-2 text-xs font-medium animate-bounce">
+          <AlertCircle className="w-4 h-4 text-red-500" />
+          <span className="text-red-600">
+            {dbStatus === 'missing_keys' ? 'Supabase: Chaves não configuradas' : 'Supabase: Erro ao salvar dados'}
+          </span>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-brand-cream">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
