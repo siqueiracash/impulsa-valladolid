@@ -48,7 +48,7 @@ export default function App() {
       // Salvar no Supabase em segundo plano
       try {
         if (supabase) {
-          await supabase.from('auditoria').insert([{
+          const { error: dbError } = await supabase.from('audits').insert([{
             business_name: data.businessName,
             business_type: data.businessType,
             location: data.location,
@@ -63,9 +63,17 @@ export default function App() {
             report: result,
             created_at: new Date().toISOString()
           }]);
+          
+          if (dbError) {
+            console.error('Erro retornado pelo Supabase:', dbError.message, dbError.details);
+          } else {
+            console.log('Dados salvos com sucesso no Supabase!');
+          }
+        } else {
+          console.warn('Supabase não inicializado. Verifique as chaves VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
         }
-      } catch (dbError) {
-        console.error('Erro ao salvar no Supabase:', dbError);
+      } catch (err) {
+        console.error('Erro de conexão ao tentar salvar no Supabase:', err);
       }
     } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
