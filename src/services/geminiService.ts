@@ -11,7 +11,7 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
 
   const ai = new GoogleGenAI({ apiKey });
   
-    const prompt = `
+  const prompt = `
     Eres un consultor experto de la agencia "Impulsa Valladolid". No eres una IA, eres un profesional local que conoce perfectamente el mercado de Valladolid y Madrid.
     
     Tu misión é crear una auditoría detallada, persuasiva y, sobre todo, HUMANA para el negocio "${data.businessName}".
@@ -36,25 +36,45 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
     - storytelling: La "historia del éxito" (mínimo 3 párrafos narrativos).
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-          problems: { type: Type.ARRAY, items: { type: Type.STRING } },
-          socialMediaAnalysis: { type: Type.STRING },
-          priorityActions: { type: Type.ARRAY, items: { type: Type.STRING } },
-          serviceProposal: { type: Type.STRING },
-          storytelling: { type: Type.STRING },
-        },
-        required: ["strengths", "problems", "socialMediaAnalysis", "priorityActions", "serviceProposal", "storytelling"],
-      },
-    },
-  });
+  const maxRetries = 3;
+  let lastError: any = null;
 
-  return JSON.parse(response.text || "{}") as AuditReport;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              problems: { type: Type.ARRAY, items: { type: Type.STRING } },
+              socialMediaAnalysis: { type: Type.STRING },
+              priorityActions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              serviceProposal: { type: Type.STRING },
+              storytelling: { type: Type.STRING },
+            },
+            required: ["strengths", "problems", "socialMediaAnalysis", "priorityActions", "serviceProposal", "storytelling"],
+          },
+        },
+      });
+
+      return JSON.parse(response.text || "{}") as AuditReport;
+    } catch (error: any) {
+      lastError = error;
+      const isRetryable = error.message?.includes('503') || error.message?.includes('high demand') || error.message?.includes('429');
+      
+      if (isRetryable && i < maxRetries - 1) {
+        // Wait before retrying (exponential backoff: 1s, 2s, 4s...)
+        const waitTime = Math.pow(2, i) * 1000;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError;
 }
