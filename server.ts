@@ -27,21 +27,21 @@ async function startServer() {
   // API Route to send audit email
   app.post("/api/send-audit", async (req, res) => {
     const { email, businessName, pdfBase64 } = req.body;
-    console.log(`[API] Recebida solicitação de e-mail para: ${businessName} (${email})`);
+    console.log(`[API] Recibida solicitud de correo electrónico para: ${businessName} (${email})`);
 
     try {
       const resendClient = getResend();
-      console.log(`[API] Enviando e-mail via Resend para siqueiracash@gmail.com...`);
+      console.log(`[API] Enviando correo electrónico vía Resend a siqueiracash@gmail.com...`);
       
       const { data, error } = await resendClient.emails.send({
-        from: 'Auditoria IA <onboarding@resend.dev>',
+        from: 'Auditoría IA <onboarding@resend.dev>',
         to: ['siqueiracash@gmail.com'], // Destinatário fixo para o teste
-        subject: `Nova Auditoria Gerada: ${businessName}`,
+        subject: `Nueva Auditoría Gerada: ${businessName}`,
         html: `
-          <h1>Nova Auditoria de Marketing Digital</h1>
-          <p><strong>Estabelecimento:</strong> ${businessName}</p>
-          <p><strong>E-mail do Cliente:</strong> ${email}</p>
-          <p>Uma nova auditoria foi gerada pelo sistema. O relatório detalhado em PDF está em anexo.</p>
+          <h1>Nueva Auditoría de Marketing Digital</h1>
+          <p><strong>Establecimiento:</strong> ${businessName}</p>
+          <p><strong>Correo del Cliente:</strong> ${email}</p>
+          <p>Una nueva auditoría ha sido generada por el sistema. El informe detallado en PDF está adjunto.</p>
         `,
         attachments: [
           {
@@ -52,14 +52,14 @@ async function startServer() {
       });
 
       if (error) {
-        console.error('Erro no Resend:', error);
+        console.error('Error en Resend:', error);
         return res.status(400).json({ error: error.message });
       }
 
       res.json({ success: true, data });
     } catch (err: any) {
-      console.error('Erro ao enviar e-mail:', err);
-      res.status(500).json({ error: err.message || 'Erro interno ao enviar e-mail' });
+      console.error('Error al enviar correo electrónico:', err);
+      res.status(500).json({ error: err.message || 'Error interno al enviar correo electrónico' });
     }
   });
 

@@ -14,7 +14,7 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
   const prompt = `
     Eres un consultor experto de la agencia "Impulsa Valladolid". No eres una IA, eres un profesional local que conoce perfectamente el mercado de Valladolid y Madrid.
     
-    Tu misión é crear una auditoría detallada, persuasiva y, sobre todo, HUMANA para el negocio "${data.businessName}".
+    Tu misión es crear una auditoría detallada, persuasiva y, sobre todo, HUMANA para el negocio "${data.businessName}".
     
     CONTEXTO:
     - Negocio: ${data.businessName} (${data.businessType})
@@ -66,14 +66,14 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
 
       const report = JSON.parse(response.text || "{}") as AuditReport;
       
-      // Extrair fontes da busca do Google
+      // Extraer fuentes de la búsqueda de Google
       const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
       if (groundingChunks) {
         const sources: { title: string; uri: string }[] = [];
         for (const chunk of groundingChunks) {
           if (chunk.web) {
             sources.push({
-              title: chunk.web.title || "Fonte do Google",
+              title: chunk.web.title || "Fuente de Google",
               uri: chunk.web.uri || ""
             });
           }

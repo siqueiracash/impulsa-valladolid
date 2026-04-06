@@ -11,10 +11,10 @@ import { jsPDF } from 'jspdf';
 
 const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
-  businessType: z.enum(['restaurante', 'bar', 'padaria', 'barbeiro', 'cabeleireiro', 'cafeteria', 'gimnasio', 'outro']),
+  businessType: z.enum(['restaurante', 'bar', 'panaderia', 'barberia', 'peluqueria', 'cafeteria', 'gimnasio', 'otro']),
   location: z.string().min(5, 'La ubicación es obligatoria'),
   whatsapp: z.string().min(8, 'El WhatsApp é obligatorio'),
-  email: z.string().email('E-mail inválido'),
+  email: z.string().email('Correo electrónico inválido'),
   website: z.string().url('URL inválida').optional().or(z.literal('')),
   instagram: z.string().optional(),
   facebook: z.string().optional(),
@@ -116,10 +116,10 @@ export default function App() {
   const sendAuditEmail = async (data: AuditFormData, report: AuditReport) => {
     try {
       setEmailStatus('sending');
-      console.log('Gerando PDF para envio por e-mail...');
+      console.log('Generando PDF para envío por correo electrónico...');
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
-      console.log(`PDF gerado (tamanho: ${pdfBase64.length} caracteres). Enviando para o servidor...`);
+      console.log(`PDF generado (tamaño: ${pdfBase64.length} caracteres). Enviando al servidor...`);
 
       const response = await fetch('/api/send-audit', {
         method: 'POST',
@@ -133,44 +133,44 @@ export default function App() {
 
       if (!response.ok) {
         const errData = await response.json();
-        console.error('Erro ao enviar e-mail:', errData.error);
+        console.error('Error al enviar correo electrónico:', errData.error);
         setEmailStatus('error');
       } else {
-        console.log('E-mail enviado com sucesso!');
+        console.log('¡Correo electrónico enviado con éxito!');
         setEmailStatus('success');
       }
     } catch (emailErr) {
-      console.error('Erro na rotina de e-mail:', emailErr);
+      console.error('Error en la rutina de correo electrónico:', emailErr);
       setEmailStatus('error');
     }
   };
 
   const onSubmit = async (data: AuditFormData) => {
-    console.log('Iniciando submissão do formulário...', data);
+    console.log('Iniciando envío del formulario...', data);
     setView('loading');
     try {
       const result = await generateAuditReport(data);
       setReport(result);
       setView('report');
 
-      // Enviar e-mail com PDF em segundo plano
+      // Enviar correo electrónico con PDF en segundo plano
       sendAuditEmail(data, result);
     } catch (error: any) {
-      console.error('Erro detalhado na geração do relatório:', error);
-      let errorMessage = 'Ops! Algo não saiu como esperado. Por favor, verifique sua conexão ou tente novamente em instantes.';
+      console.error('Error detallado en la generación del informe:', error);
+      let errorMessage = '¡Ups! Algo no salió como se esperaba. Por favor, verifique su conexión o inténtelo de nuevo en unos instantes.';
       
       if (error.message === 'API_KEY_MISSING') {
-        errorMessage = 'A chave de acesso não foi encontrada. Por favor, entre em contato com o suporte técnico.';
+        errorMessage = 'La clave de acceso no fue encontrada. Por favor, póngase en contacto con el soporte técnico.';
       } else if (error.message?.includes('403') || error.message?.includes('API key not valid')) {
-        errorMessage = 'A chave de acesso é inválida. Por favor, entre em contato com o suporte técnico.';
+        errorMessage = 'La clave de acceso es inválida. Por favor, póngase en contacto con el soporte técnico.';
       } else if (error.message?.includes('503') || error.message?.includes('high demand')) {
-        errorMessage = 'Estamos com muita demanda no momento! Nossa inteligência está um pouco sobrecarregada. Por favor, aguarde alguns segundos e tente novamente.';
+        errorMessage = '¡Tenemos mucha demanda en este momento! Nuestra inteligencia está un poco sobrecargada. Por favor, espere unos segundos e inténtelo de nuevo.';
       } else if (error.message?.includes('429')) {
-        errorMessage = 'Muitas solicitações seguidas! Por favor, aguarde um minuto antes de tentar uma nova auditoria.';
+        errorMessage = '¡Demasiadas solicitudes seguidas! Por favor, espere un minuto antes de intentar una nueva auditoría.';
       } else if (error.message?.includes('Safety') || error.message?.includes('blocked')) {
-        errorMessage = 'Não conseguimos gerar o relatório devido às políticas de segurança. Certifique-se de que o nome do negócio e as informações são apropriadas.';
+        errorMessage = 'No pudimos generar el informe debido a las políticas de seguridad. Asegúrese de que el nombre del negocio y la información sean apropiados.';
       } else if (error.message) {
-        errorMessage = `Não conseguimos processar sua auditoria agora. Detalhe: ${error.message}`;
+        errorMessage = `No pudimos procesar su auditoría ahora. Detalle: ${error.message}`;
       }
 
       setErrorModal({ show: true, message: errorMessage });
@@ -187,7 +187,7 @@ export default function App() {
     if (isStepValid) {
       setStep(s => Math.min(s + 1, totalSteps));
     } else {
-      console.log('Validação do passo falhou:', errors);
+      console.log('La validación del paso falló:', errors);
     }
   };
 
@@ -197,11 +197,11 @@ export default function App() {
     { value: 'restaurante', label: 'Restaurante', icon: Utensils },
     { value: 'bar', label: 'Bar', icon: Coffee },
     { value: 'cafeteria', label: 'Cafetería', icon: Coffee },
-    { value: 'padaria', label: 'Panadería', icon: Store },
-    { value: 'barbeiro', label: 'Barbería', icon: Scissors },
-    { value: 'cabeleireiro', label: 'Peluquería', icon: Sparkles },
+    { value: 'panaderia', label: 'Panadería', icon: Store },
+    { value: 'barberia', label: 'Barbería', icon: Scissors },
+    { value: 'peluqueria', label: 'Peluquería', icon: Sparkles },
     { value: 'gimnasio', label: 'Gimnasio', icon: Dumbbell },
-    { value: 'outro', label: 'Otro', icon: Building2 },
+    { value: 'otro', label: 'Otro', icon: Building2 },
   ];
 
   return (
@@ -412,7 +412,7 @@ export default function App() {
                     </div>
                   </div>
                   <div className="mt-10 pt-10 border-t border-slate-100 text-center">
-                    <p className="text-slate-400 font-black text-2xl">Bajo Engajamento</p>
+                    <p className="text-slate-400 font-black text-2xl">Bajo Compromiso</p>
                     <p className="text-xs text-slate-400 font-bold uppercase mt-1">El cliente pasa de largo</p>
                   </div>
                 </motion.div>
@@ -496,7 +496,7 @@ export default function App() {
                       transition={{ duration: 2, repeat: Infinity }}
                       className="text-brand-orange font-black text-3xl drop-shadow-[0_0_10px_rgba(255,165,0,0.5)]"
                     >
-                      Altíssimo Engajamento
+                      Altísimo Compromiso
                     </motion.p>
                     <p className="text-xs text-white/70 font-bold uppercase mt-1">El cliente reserva al instante</p>
                   </div>
@@ -747,7 +747,7 @@ export default function App() {
                         <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
                           <Globe className="w-4 h-4 text-brand-red" /> Google Business
                         </label>
-                        <input {...register('googleBusiness')} placeholder="Link do perfil" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
+                        <input {...register('googleBusiness')} placeholder="Enlace del perfil" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
@@ -758,10 +758,10 @@ export default function App() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Outras Notas</label>
+                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Otras Notas</label>
                       <textarea 
                         {...register('otherPlatforms')}
-                        placeholder="Algum detalhe extra sobre sua presença digital?"
+                        placeholder="¿Algún detalle extra sobre su presencia digital?"
                         className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 h-32 resize-none"
                       />
                     </div>
@@ -895,9 +895,9 @@ export default function App() {
             >
               <Loader2 className="w-16 h-16 text-brand-red" />
             </motion.div>
-            <h2 className="text-4xl font-black text-brand-teal mb-4 uppercase tracking-widest">Analisando seu negócio...</h2>
+            <h2 className="text-4xl font-black text-brand-teal mb-4 uppercase tracking-widest">Analizando su negocio...</h2>
             <p className="text-slate-600 max-w-md font-medium">
-              Nossa inteligência artificial está auditando sua presença digital e preparando um relatório personalizado para <span className="font-black text-brand-red">{watch('businessName')}</span>.
+              Nuestra inteligencia artificial está auditando su presencia digital y preparando un informe personalizado para <span className="font-black text-brand-red">{watch('businessName')}</span>.
             </p>
             <div className="mt-12 space-y-3 w-full max-w-xs">
               <div className="h-2 bg-brand-cream rounded-full overflow-hidden p-0.5">
@@ -907,7 +907,7 @@ export default function App() {
                   transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                 />
               </div>
-              <p className="text-[10px] text-brand-teal font-black uppercase tracking-widest opacity-40">Processando dados estratégicos</p>
+              <p className="text-[10px] text-brand-teal font-black uppercase tracking-widest opacity-40">Procesando datos estratégicos</p>
             </div>
           </section>
         )}
@@ -926,14 +926,14 @@ export default function App() {
                   {emailStatus === 'sending' && (
                     <div className="mt-4 flex items-center gap-2 text-brand-orange animate-pulse">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Enviando cópia para siqueiracash@gmail.com...</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">Enviando copia a siqueiracash@gmail.com...</span>
                     </div>
                   )}
                   
                   {emailStatus === 'success' && (
                     <div className="mt-4 flex items-center gap-2 text-emerald-500">
                       <CheckCircle2 className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Cópia enviada com sucesso!</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">¡Copia enviada con éxito!</span>
                     </div>
                   )}
 
@@ -941,13 +941,13 @@ export default function App() {
                     <div className="mt-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-red-500">
                         <AlertCircle className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Erro ao enviar e-mail automático.</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Error al enviar correo electrónico automático.</span>
                       </div>
                       <button 
                         onClick={() => sendAuditEmail(watch(), report!)}
                         className="text-[9px] font-bold uppercase tracking-widest text-brand-teal underline text-left"
                       >
-                        Tentar reenviar e-mail
+                        Intentar reenviar correo electrónico
                       </button>
                     </div>
                   )}
@@ -962,7 +962,7 @@ export default function App() {
                   }}
                   className="bg-white text-brand-teal border-2 border-brand-cream px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand-teal/5"
                 >
-                  Baixar Relatório PDF
+                  Descargar Informe PDF
                 </button>
               </div>
 
