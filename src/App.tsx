@@ -90,6 +90,16 @@ export default function App() {
     y += 10;
 
     doc.setFontSize(16);
+    doc.text('Análisis Técnico:', margin, y);
+    y += 10;
+    doc.setFontSize(11);
+    if (report.technicalAnalysis) {
+      const splitTech = doc.splitTextToSize(report.technicalAnalysis, 170);
+      doc.text(splitTech, margin, y);
+      y += (splitTech.length * 6) + 10;
+    }
+
+    doc.setFontSize(16);
     doc.text('Plan de Acción Inmediato:', margin, y);
     y += 10;
     doc.setFontSize(11);
@@ -1039,6 +1049,27 @@ export default function App() {
                   </p>
                 </motion.div>
 
+                {/* Technical Analysis */}
+                {report.technicalAnalysis && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.45 }}
+                    className="bg-slate-900 text-white p-10 md:p-14 rounded-[3rem] shadow-2xl relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-red/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px]" />
+                    <div className="flex items-center gap-4 mb-10">
+                      <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center">
+                        <Globe className="w-8 h-8 text-brand-red" />
+                      </div>
+                      <h3 className="text-2xl font-black uppercase tracking-widest">Análisis Técnico (Google)</h3>
+                    </div>
+                    <p className="text-xl text-slate-300 leading-relaxed font-medium">
+                      {report.technicalAnalysis}
+                    </p>
+                  </motion.div>
+                )}
+
                 {/* Priority Actions */}
                 <motion.div 
                   initial={{ opacity: 0, y: 30 }}
@@ -1076,6 +1107,31 @@ export default function App() {
                     <Phone className="w-8 h-8 group-hover:scale-110 transition-transform" />
                   </button>
                 </motion.div>
+
+                {/* Sources Section */}
+                {report.sources && report.sources.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-10 p-8 bg-white/50 rounded-3xl border border-brand-cream"
+                  >
+                    <h4 className="text-sm font-black text-brand-teal uppercase tracking-widest mb-4 opacity-60">Fuentes de Información (Google Search)</h4>
+                    <div className="flex flex-wrap gap-4">
+                      {report.sources.map((source, i) => (
+                        <a 
+                          key={i} 
+                          href={source.uri} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-brand-red hover:underline flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-brand-cream shadow-sm"
+                        >
+                          <Globe className="w-3 h-3" />
+                          {source.title}
+                        </a>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
           </section>

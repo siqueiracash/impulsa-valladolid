@@ -21,4 +21,6 @@ export interface AuditReport {
   priorityActions: string[];
   serviceProposal: string;
   storytelling: string;
+  technicalAnalysis?: string;
+  sources?: { title: string; uri: string }[];
 }

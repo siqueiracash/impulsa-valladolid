@@ -31,6 +31,7 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
     - strengths: 3-4 puntos fuertes reales que el negocio puede potenciar.
     - problems: 3-4 obstáculos críticos que le están haciendo perder dinero hoy mismo.
     - socialMediaAnalysis: Un análisis honesto y directo de su situación digital actual.
+    - technicalAnalysis: Un análisis técnico del sitio web (si existe) basado en datos de Google PageSpeed/Lighthouse.
     - priorityActions: Pasos prácticos y sencillos para empezar a cambiar hoy.
     - serviceProposal: Cómo Impulsa Valladolid va a tomar las riendas para que el dueño se dedique a lo que sabe hacer.
     - storytelling: La "historia del éxito" (mínimo 3 párrafos narrativos).
@@ -45,6 +46,7 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
+          tools: [{ googleSearch: {} }],
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -52,16 +54,34 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
               strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
               problems: { type: Type.ARRAY, items: { type: Type.STRING } },
               socialMediaAnalysis: { type: Type.STRING },
+              technicalAnalysis: { type: Type.STRING },
               priorityActions: { type: Type.ARRAY, items: { type: Type.STRING } },
               serviceProposal: { type: Type.STRING },
               storytelling: { type: Type.STRING },
             },
-            required: ["strengths", "problems", "socialMediaAnalysis", "priorityActions", "serviceProposal", "storytelling"],
+            required: ["strengths", "problems", "socialMediaAnalysis", "technicalAnalysis", "priorityActions", "serviceProposal", "storytelling"],
           },
         },
       });
 
-      return JSON.parse(response.text || "{}") as AuditReport;
+      const report = JSON.parse(response.text || "{}") as AuditReport;
+      
+      // Extrair fontes da busca do Google
+      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (groundingChunks) {
+        const sources: { title: string; uri: string }[] = [];
+        for (const chunk of groundingChunks) {
+          if (chunk.web) {
+            sources.push({
+              title: chunk.web.title || "Fonte do Google",
+              uri: chunk.web.uri || ""
+            });
+          }
+        }
+        report.sources = sources;
+      }
+
+      return report;
     } catch (error: any) {
       lastError = error;
       const isRetryable = error.message?.includes('503') || error.message?.includes('high demand') || error.message?.includes('429');
