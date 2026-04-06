@@ -27,9 +27,11 @@ async function startServer() {
   // API Route to send audit email
   app.post("/api/send-audit", async (req, res) => {
     const { email, businessName, pdfBase64 } = req.body;
+    console.log(`[API] Recebida solicitação de e-mail para: ${businessName} (${email})`);
 
     try {
       const resendClient = getResend();
+      console.log(`[API] Enviando e-mail via Resend para siqueiracash@gmail.com...`);
       
       const { data, error } = await resendClient.emails.send({
         from: 'Auditoria IA <onboarding@resend.dev>',

@@ -27,7 +27,7 @@ export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
-  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
+  const [emailStatus, setEmailStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -103,6 +103,38 @@ export default function App() {
     return doc;
   };
 
+  const sendAuditEmail = async (data: AuditFormData, report: AuditReport) => {
+    try {
+      setEmailStatus('sending');
+      console.log('Gerando PDF para envio por e-mail...');
+      const doc = generatePDF(data, report);
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      console.log(`PDF gerado (tamanho: ${pdfBase64.length} caracteres). Enviando para o servidor...`);
+
+      const response = await fetch('/api/send-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email,
+          businessName: data.businessName,
+          pdfBase64: pdfBase64
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        console.error('Erro ao enviar e-mail:', errData.error);
+        setEmailStatus('error');
+      } else {
+        console.log('E-mail enviado com sucesso!');
+        setEmailStatus('success');
+      }
+    } catch (emailErr) {
+      console.error('Erro na rotina de e-mail:', emailErr);
+      setEmailStatus('error');
+    }
+  };
+
   const onSubmit = async (data: AuditFormData) => {
     console.log('Iniciando submissão do formulário...', data);
     setView('loading');
@@ -112,32 +144,7 @@ export default function App() {
       setView('report');
 
       // Enviar e-mail com PDF em segundo plano
-      try {
-        setIsSendingEmail(true);
-        const doc = generatePDF(data, result);
-        const pdfBase64 = doc.output('datauristring').split(',')[1];
-
-        const response = await fetch('/api/send-audit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: data.email,
-            businessName: data.businessName,
-            pdfBase64: pdfBase64
-          })
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          console.error('Erro ao enviar e-mail:', errData.error);
-        } else {
-          console.log('E-mail enviado com sucesso!');
-        }
-      } catch (emailErr) {
-        console.error('Erro na rotina de e-mail:', emailErr);
-      } finally {
-        setIsSendingEmail(false);
-      }
+      sendAuditEmail(data, result);
     } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
       let errorMessage = 'Ops! Algo não saiu como esperado. Por favor, verifique sua conexão ou tente novamente em instantes.';
@@ -905,10 +912,33 @@ export default function App() {
                   </div>
                   <h2 className="text-5xl font-black text-brand-teal leading-none">Diagnóstico <br /><span className="text-brand-red">Estratégico</span></h2>
                   <p className="mt-2 text-brand-teal font-black uppercase tracking-widest text-sm opacity-60">Para: {watch('businessName')}</p>
-                  {isSendingEmail && (
+                  
+                  {emailStatus === 'sending' && (
                     <div className="mt-4 flex items-center gap-2 text-brand-orange animate-pulse">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span className="text-[10px] font-black uppercase tracking-widest">Enviando cópia para siqueiracash@gmail.com...</span>
+                    </div>
+                  )}
+                  
+                  {emailStatus === 'success' && (
+                    <div className="mt-4 flex items-center gap-2 text-emerald-500">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Cópia enviada com sucesso!</span>
+                    </div>
+                  )}
+
+                  {emailStatus === 'error' && (
+                    <div className="mt-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-2 text-red-500">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Erro ao enviar e-mail automático.</span>
+                      </div>
+                      <button 
+                        onClick={() => sendAuditEmail(watch(), report!)}
+                        className="text-[9px] font-bold uppercase tracking-widest text-brand-teal underline text-left"
+                      >
+                        Tentar reenviar e-mail
+                      </button>
                     </div>
                   )}
                 </div>
