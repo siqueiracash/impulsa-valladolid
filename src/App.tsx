@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Rocket, MapPin, Phone, Mail, Instagram, Facebook, Globe, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Loader2, Sparkles, Building2, Utensils, Scissors, Coffee, Store, Dumbbell } from 'lucide-react';
+import { Rocket, MapPin, Phone, Mail, Instagram, Facebook, Globe, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Loader2, Sparkles, Building2, Utensils, Scissors, Coffee, Store, Dumbbell, Linkedin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,12 +15,17 @@ const formSchema = z.object({
   location: z.string().min(5, 'La ubicación es obligatoria'),
   whatsapp: z.string().min(8, 'El WhatsApp es obligatorio'),
   email: z.string().email('Correo electrónico inválido'),
-  website: z.string().url('URL inválida').optional().or(z.literal('')),
+  website: z.string().optional(),
   instagram: z.string().optional(),
   facebook: z.string().optional(),
-  googleBusiness: z.string().optional(),
+  linkedin: z.string().optional(),
   tiktok: z.string().optional(),
   otherPlatforms: z.string().optional(),
+}).refine((data) => {
+  return data.instagram || data.facebook || data.linkedin || data.tiktok || data.website;
+}, {
+  message: "Debe proporcionar al menos una red social o sitio web para el análisis",
+  path: ["instagram"], // Mostramos el error en instagram por defecto
 });
 
 export default function App() {
@@ -55,8 +60,13 @@ export default function App() {
     y += 10;
     doc.text(`Tipo: ${data.businessType}`, margin, y);
     y += 10;
-    doc.text(`Localização: ${data.location}`, margin, y);
-    y += 15;
+    doc.text(`Localización: ${data.location}`, margin, y);
+    y += 10;
+    if (data.website) {
+      doc.text(`Sitio Web: ${data.website}`, margin, y);
+      y += 10;
+    }
+    y += 5;
 
     doc.setFontSize(18);
     doc.text('Visión del Futuro', margin, y);
@@ -719,7 +729,7 @@ export default function App() {
                         <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
                         <input 
                           {...register('website')}
-                          placeholder="https://suweb.com"
+                          placeholder="suweb.com"
                           className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
                         />
                       </div>
@@ -754,6 +764,12 @@ export default function App() {
                     className="space-y-8"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {errors.instagram && (
+                        <div className="col-span-full bg-red-50 p-3 rounded-xl border border-red-100 flex items-center gap-2 text-red-600 text-xs font-bold">
+                          <AlertCircle className="w-4 h-4" />
+                          {errors.instagram.message}
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
                           <Instagram className="w-4 h-4 text-brand-red" /> Instagram
@@ -768,9 +784,9 @@ export default function App() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
-                          <Globe className="w-4 h-4 text-brand-red" /> Google Business
+                          <Linkedin className="w-4 h-4 text-brand-red" /> LinkedIn
                         </label>
-                        <input {...register('googleBusiness')} placeholder="Enlace del perfil" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
+                        <input {...register('linkedin')} placeholder="linkedin.com/in/usuario" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">

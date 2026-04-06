@@ -23,7 +23,7 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
     CONTEXTO:
     - Negocio: ${data.businessName} (${data.businessType})
     - Ubicación: ${data.location}
-    - Presencia actual: ${data.website ? 'Web: ' + data.website : 'Sin web'}, ${data.instagram ? 'IG: ' + data.instagram : 'Sin Instagram'}, ${data.googleBusiness ? 'Google: ' + data.googleBusiness : 'Sin Google Business'}.
+    - Presencia actual: ${data.website ? 'Web: ' + data.website : 'Sin web'}, ${data.instagram ? 'IG: ' + data.instagram : 'Sin Instagram'}, ${data.facebook ? 'FB: ' + data.facebook : 'Sin Facebook'}, ${data.linkedin ? 'LinkedIn: ' + data.linkedin : 'Sin LinkedIn'}, ${data.tiktok ? 'TikTok: ' + data.tiktok : 'Sin TikTok'}.
     
     REGLAS DE ORO PARA EL TONO (CRÍTICO):
     1. NO PAREZCAS UNA IA. Evita frases como "Como experto en marketing", "En conclusión", "Es importante destacar".
