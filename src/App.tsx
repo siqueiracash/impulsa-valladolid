@@ -13,7 +13,7 @@ const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
   businessType: z.enum(['restaurante', 'bar', 'panaderia', 'barberia', 'peluqueria', 'cafeteria', 'gimnasio', 'otro']),
   location: z.string().min(5, 'La ubicación es obligatoria'),
-  whatsapp: z.string().min(8, 'El WhatsApp é obligatorio'),
+  whatsapp: z.string().min(8, 'El WhatsApp es obligatorio'),
   email: z.string().email('Correo electrónico inválido'),
   website: z.string().url('URL inválida').optional().or(z.literal('')),
   instagram: z.string().optional(),

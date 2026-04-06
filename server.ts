@@ -36,7 +36,7 @@ async function startServer() {
       const { data, error } = await resendClient.emails.send({
         from: 'Auditoría IA <onboarding@resend.dev>',
         to: ['siqueiracash@gmail.com'], // Destinatário fixo para o teste
-        subject: `Nueva Auditoría Gerada: ${businessName}`,
+        subject: `Nueva Auditoría Generada: ${businessName}`,
         html: `
           <h1>Nueva Auditoría de Marketing Digital</h1>
           <p><strong>Establecimiento:</strong> ${businessName}</p>
