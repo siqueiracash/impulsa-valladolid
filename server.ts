@@ -45,7 +45,7 @@ async function startServer() {
         `,
         attachments: [
           {
-            filename: `Auditoria_${businessName.replace(/\s+/g, '_')}.pdf`,
+            filename: `Auditoría_${businessName.replace(/\s+/g, '_')}.pdf`,
             content: pdfBase64,
           },
         ],

@@ -37,7 +37,7 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
     - storytelling: La "historia del éxito" (mínimo 3 párrafos narrativos).
   `;
 
-  const maxRetries = 3;
+  const maxRetries = 5;
   let lastError: any = null;
 
   for (let i = 0; i < maxRetries; i++) {
@@ -87,8 +87,9 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
       const isRetryable = error.message?.includes('503') || error.message?.includes('high demand') || error.message?.includes('429');
       
       if (isRetryable && i < maxRetries - 1) {
-        // Wait before retrying (exponential backoff: 1s, 2s, 4s...)
-        const waitTime = Math.pow(2, i) * 1000;
+        // Wait before retrying (exponential backoff: 2s, 4s, 8s, 16s...)
+        const waitTime = Math.pow(2, i + 1) * 1000;
+        console.warn(`[Gemini] Error reintentable (${error.message}). Reintentando en ${waitTime/1000}s... (Intento ${i+1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }

@@ -45,7 +45,7 @@ export default function App() {
 
     doc.setFontSize(22);
     doc.setTextColor(239, 68, 68); // Brand Red
-    doc.text('Auditoria de Marketing Digital', margin, y);
+    doc.text('Auditoría de Marketing Digital', margin, y);
     y += 15;
 
     doc.setFontSize(14);
@@ -918,7 +918,7 @@ export default function App() {
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-brand-red text-white text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                    Auditoria Exclusiva
+                    Auditoría Exclusiva
                   </div>
                   <h2 className="text-5xl font-black text-brand-teal leading-none">Diagnóstico <br /><span className="text-brand-red">Estratégico</span></h2>
                   <p className="mt-2 text-brand-teal font-black uppercase tracking-widest text-sm opacity-60">Para: {watch('businessName')}</p>
@@ -957,7 +957,7 @@ export default function App() {
                     const data = watch();
                     if (report) {
                       const doc = generatePDF(data, report);
-                      doc.save(`Auditoria_${data.businessName.replace(/\s+/g, '_')}.pdf`);
+                      doc.save(`Auditoría_${data.businessName.replace(/\s+/g, '_')}.pdf`);
                     }
                   }}
                   className="bg-white text-brand-teal border-2 border-brand-cream px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand-teal/5"
