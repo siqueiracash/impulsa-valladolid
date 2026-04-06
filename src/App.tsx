@@ -167,9 +167,16 @@ export default function App() {
       )}
 
       {dbStatus === 'missing_keys' && (
-        <div className="fixed bottom-4 right-4 z-50 bg-amber-50 p-4 rounded-xl shadow-2xl border border-amber-200 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-500" />
-          <p className="text-xs text-amber-700 font-medium">Supabase: Configure as chaves nos Secrets.</p>
+        <div className="fixed bottom-4 right-4 z-50 bg-amber-50 p-4 rounded-xl shadow-2xl border border-amber-200 flex flex-col gap-2 max-w-xs animate-bounce">
+          <div className="flex items-center gap-2 text-amber-700 font-bold">
+            <AlertCircle className="w-5 h-5" />
+            <span>Conexão Pendente</span>
+          </div>
+          <p className="text-[10px] text-amber-600 leading-tight">
+            O site não encontrou as chaves. Verifique se nos <b>Secrets</b> os nomes estão exatamente assim:<br/>
+            <code className="bg-amber-100 px-1">VITE_SUPABASE_URL</code><br/>
+            <code className="bg-amber-100 px-1">VITE_SUPABASE_ANON_KEY</code>
+          </p>
         </div>
       )}
 

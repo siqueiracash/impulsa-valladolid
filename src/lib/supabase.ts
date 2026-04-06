@@ -1,13 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Função para obter variáveis de ambiente de forma mais robusta
+const getEnv = (key: string) => {
+  return import.meta.env[key] || (typeof process !== 'undefined' ? process.env[key] : undefined);
+};
 
-console.log('Supabase URL exists:', !!supabaseUrl);
-console.log('Supabase Anon Key exists:', !!supabaseAnonKey);
+const supabaseUrl = getEnv('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
 // Somente inicializa se as chaves existirem para evitar erro de tela branca
-export const supabase = (supabaseUrl && supabaseAnonKey) 
+export const supabase = (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')) 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
