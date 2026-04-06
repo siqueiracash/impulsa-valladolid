@@ -29,6 +29,7 @@ export default function App() {
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
   const [dbStatus, setDbStatus] = React.useState<'connected' | 'missing_keys' | 'error' | 'success' | 'idle'>('idle');
   const [dbErrorMessage, setDbErrorMessage] = React.useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = React.useState<{ url: string; key: string }>({ url: '', key: '' });
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -40,6 +41,14 @@ export default function App() {
   });
 
   React.useEffect(() => {
+    // Tenta ler as chaves novamente para debug
+    const url = import.meta.env.VITE_SUPABASE_URL || '';
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+    setDebugInfo({ 
+      url: url ? `${url.substring(0, 15)}...` : 'Vazio', 
+      key: key ? `${key.substring(0, 10)}...` : 'Vazio' 
+    });
+
     if (!supabase) {
       setDbStatus('missing_keys');
     } else {
@@ -177,6 +186,11 @@ export default function App() {
             <code className="bg-amber-100 px-1">VITE_SUPABASE_URL</code><br/>
             <code className="bg-amber-100 px-1">VITE_SUPABASE_ANON_KEY</code>
           </p>
+          <div className="mt-2 p-2 bg-amber-100/50 rounded text-[9px] text-amber-800 font-mono">
+            <p>DEBUG:</p>
+            <p>URL: {debugInfo.url}</p>
+            <p>KEY: {debugInfo.key}</p>
+          </div>
         </div>
       )}
 
