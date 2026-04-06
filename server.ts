@@ -9,7 +9,13 @@ const PORT = 3000;
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cors());
+
+  // API Route to check server health
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", message: "Servidor activo" });
+  });
 
   // Initialize Resend (Lazy)
   let resend: Resend | null = null;

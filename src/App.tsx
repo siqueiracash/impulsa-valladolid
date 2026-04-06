@@ -134,9 +134,14 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        console.error('Error al enviar correo electrónico:', errData.error);
-        setEmailError(errData.error || 'Error desconocido');
+        const text = await response.text();
+        console.error('Error del servidor (crudo):', text);
+        try {
+          const errData = JSON.parse(text);
+          setEmailError(errData.error || 'Error desconocido');
+        } catch (e) {
+          setEmailError(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
         setEmailStatus('error');
       } else {
         console.log('¡Correo electrónico enviado con éxito!');
