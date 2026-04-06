@@ -7,7 +7,6 @@ import * as z from 'zod';
 import { cn } from './lib/utils';
 import { AuditFormData, AuditReport, BusinessType } from './types';
 import { generateAuditReport } from './services/geminiService';
-import { supabase } from './lib/supabase';
 
 const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
@@ -27,9 +26,6 @@ export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
-  const [dbStatus, setDbStatus] = React.useState<'connected' | 'missing_keys' | 'error' | 'success' | 'idle'>('idle');
-  const [dbErrorMessage, setDbErrorMessage] = React.useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = React.useState<{ url: string; key: string }>({ url: '', key: '' });
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -40,22 +36,6 @@ export default function App() {
     }
   });
 
-  React.useEffect(() => {
-    // Tenta ler as chaves novamente para debug
-    const url = import.meta.env.VITE_SUPABASE_URL || '';
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-    setDebugInfo({ 
-      url: url ? `${url.substring(0, 15)}...` : 'Vazio', 
-      key: key ? `${key.substring(0, 10)}...` : 'Vazio' 
-    });
-
-    if (!supabase) {
-      setDbStatus('missing_keys');
-    } else {
-      setDbStatus('connected');
-    }
-  }, []);
-
   const onSubmit = async (data: AuditFormData) => {
     console.log('Iniciando submissão do formulário...', data);
     setView('loading');
@@ -63,43 +43,6 @@ export default function App() {
       const result = await generateAuditReport(data);
       setReport(result);
       setView('report');
-
-      // Salvar no Supabase em segundo plano
-      try {
-        if (supabase) {
-          const { error: dbError } = await supabase.from('audits').insert([{
-            business_name: data.businessName,
-            business_type: data.businessType,
-            location: data.location,
-            whatsapp: data.whatsapp,
-            email: data.email,
-            website: data.website,
-            instagram: data.instagram,
-            facebook: data.facebook,
-            google_business: data.googleBusiness,
-            tiktok: data.tiktok,
-            other_platforms: data.otherPlatforms,
-            report: result,
-            created_at: new Date().toISOString()
-          }]);
-          
-          if (dbError) {
-            console.error('Erro retornado pelo Supabase:', dbError.message, dbError.details);
-            setDbStatus('error');
-            setDbErrorMessage(dbError.message);
-          } else {
-            console.log('Dados salvos com sucesso no Supabase!');
-            setDbStatus('success');
-            setTimeout(() => setDbStatus('connected'), 5000);
-          }
-        } else {
-          setDbStatus('missing_keys');
-        }
-      } catch (err: any) {
-        console.error('Erro de conexão ao tentar salvar no Supabase:', err);
-        setDbStatus('error');
-        setDbErrorMessage(err.message || 'Erro de conexão');
-      }
     } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
       let errorMessage = 'Ops! Algo não saiu como esperado. Por favor, verifique sua conexão ou tente novamente em instantes.';
@@ -151,49 +94,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Notificações de Banco de Dados */}
-      {dbStatus === 'error' && (
-        <div className="fixed bottom-4 right-4 z-50 bg-red-50 p-4 rounded-xl shadow-2xl border border-red-200 flex flex-col gap-1 max-w-xs animate-in fade-in slide-in-from-bottom-4">
-          <div className="flex items-center gap-2 text-red-600 font-bold">
-            <AlertCircle className="w-5 h-5" />
-            <span>Erro no Banco de Dados</span>
-          </div>
-          <p className="text-xs text-red-500">{dbErrorMessage || 'Verifique as colunas da sua tabela.'}</p>
-          <button onClick={() => setDbStatus('connected')} className="text-[10px] underline text-red-400 text-left mt-1">Fechar</button>
-        </div>
-      )}
-
-      {dbStatus === 'success' && (
-        <div className="fixed bottom-4 right-4 z-50 bg-green-50 p-4 rounded-xl shadow-2xl border border-green-200 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
-          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-green-800">Sucesso!</p>
-            <p className="text-xs text-green-600">Auditoria salva no Supabase.</p>
-          </div>
-        </div>
-      )}
-
-      {dbStatus === 'missing_keys' && (
-        <div className="fixed bottom-4 right-4 z-50 bg-amber-50 p-4 rounded-xl shadow-2xl border border-amber-200 flex flex-col gap-2 max-w-xs animate-bounce">
-          <div className="flex items-center gap-2 text-amber-700 font-bold">
-            <AlertCircle className="w-5 h-5" />
-            <span>Conexão Pendente</span>
-          </div>
-          <p className="text-[10px] text-amber-600 leading-tight">
-            O site não encontrou as chaves. Verifique se nos <b>Secrets</b> os nomes estão exatamente assim:<br/>
-            <code className="bg-amber-100 px-1">VITE_SUPABASE_URL</code><br/>
-            <code className="bg-amber-100 px-1">VITE_SUPABASE_ANON_KEY</code>
-          </p>
-          <div className="mt-2 p-2 bg-amber-100/50 rounded text-[9px] text-amber-800 font-mono">
-            <p>DEBUG:</p>
-            <p>URL: {debugInfo.url}</p>
-            <p>KEY: {debugInfo.key}</p>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-brand-cream">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
