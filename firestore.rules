@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper para verificar autenticación
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Validación de datos de auditoría
+    function isValidAudit(data) {
+      return data.businessName is string && data.businessName.size() > 0 &&
+             data.email is string && data.email.size() > 0 &&
+             data.createdAt != null;
+    }
+
+    match /audits/{auditId} {
+      // Permitimos crear auditorías a cualquier usuario autenticado (incluyendo anónimos)
+      allow create: if isAuthenticated() && isValidAudit(request.resource.data);
+      
+      // Por seguridad, solo permitimos leer si es administrador (puedes ajustar esto luego)
+      // Por ahora, bloqueamos lectura pública para proteger los leads
+      allow read: if false; 
+    }
+  }
+}

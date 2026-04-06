@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { cn } from './lib/utils';
 import { AuditFormData, AuditReport, BusinessType } from './types';
 import { generateAuditReport } from './services/geminiService';
+import { saveAudit } from './firebase';
 import { jsPDF } from 'jspdf';
 
 const formSchema = z.object({
@@ -185,6 +186,14 @@ export default function App() {
       const result = await generateAuditReport(data);
       setReport(result);
       setView('report');
+
+      // Guardar en la base de datos (Firebase)
+      try {
+        await saveAudit(data, result);
+        console.log("[App] Auditoría guardada en Firebase con éxito");
+      } catch (dbErr) {
+        console.error("[App] No se pudo guardar en la base de datos:", dbErr);
+      }
 
       // Enviar correo electrónico con PDF en segundo plano
       sendAuditEmail(data, result);

@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "audits": {
+      "title": "Auditorías",
+      "description": "Registros de las auditorías generadas por los usuarios",
+      "type": "object",
+      "properties": {
+        "businessName": { "type": "string" },
+        "businessType": { "type": "string" },
+        "location": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "website": { "type": "string" },
+        "instagram": { "type": "string" },
+        "facebook": { "type": "string" },
+        "linkedin": { "type": "string" },
+        "tiktok": { "type": "string" },
+        "otherPlatforms": { "type": "string" },
+        "report": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["businessName", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/audits/{auditId}": {
+      "schema": "audits",
+      "description": "Colección de auditorías"
+    }
+  }
+}

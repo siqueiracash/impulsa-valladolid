@@ -86,6 +86,12 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Manejador para cualquier otra ruta /api/* que no exista
+  app.all("/api/*", (req, res) => {
+    console.warn(`[API] Ruta no encontrada: ${req.method} ${req.url}`);
+    res.status(404).json({ error: `Ruta API no encontrada: ${req.url}` });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
