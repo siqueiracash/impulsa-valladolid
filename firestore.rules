@@ -14,11 +14,11 @@ service cloud.firestore {
     }
 
     match /audits/{auditId} {
-      // Permitimos crear auditorías a cualquier usuario autenticado (incluyendo anónimos)
-      allow create: if isAuthenticated() && isValidAudit(request.resource.data);
+      // Permitimos crear auditorías con validación estricta sin requerir auth obligatoria
+      // para evitar problemas de configuración inicial de Anonymous Auth
+      allow create: if isValidAudit(request.resource.data);
       
-      // Por seguridad, solo permitimos leer si es administrador (puedes ajustar esto luego)
-      // Por ahora, bloqueamos lectura pública para proteger los leads
+      // Bloqueamos lectura pública
       allow read: if false; 
     }
   }

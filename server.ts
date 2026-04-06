@@ -37,7 +37,7 @@ async function startServer() {
 
   // API Routes PRIMERO y con prioridad
   app.post("/api/send-audit", async (req, res) => {
-    console.log(`[API] Recibida solicitud POST en /api/send-audit`);
+    console.log(`[API] >>> PETICIÓN POST RECIBIDA EN /api/send-audit <<<`);
     const { email, businessName, pdfBase64 } = req.body;
     
     if (!pdfBase64) {
@@ -49,6 +49,7 @@ async function startServer() {
     
     try {
       const resendClient = getResend();
+      console.log("[API] Enviando a Resend...");
       const { data, error } = await resendClient.emails.send({
         from: 'Auditoria IA <onboarding@resend.dev>',
         to: ['siqueiracash@gmail.com'],
@@ -70,10 +71,10 @@ async function startServer() {
         return res.status(400).json({ error: error.message });
       }
       
-      console.log("[API] Correo enviado con éxito");
+      console.log("[API] Correo enviado con éxito a Resend");
       res.json({ success: true, data });
     } catch (err: any) {
-      console.error('[API] Error interno:', err);
+      console.error('[API] Error interno capturado:', err);
       res.status(500).json({ error: err.message || 'Error interno del servidor' });
     }
   });

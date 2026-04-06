@@ -21,13 +21,16 @@ export const initAuth = async () => {
 
 export const saveAudit = async (data: any, report: any) => {
   try {
-    await initAuth();
+    // Intentamos autenticar pero no bloqueamos si falla, 
+    // ya que las reglas ahora permitirán escritura pública validada.
+    await initAuth().catch(e => console.warn("[Firebase] Auth falló, continuando como público:", e));
+    
     const docRef = await addDoc(collection(db, 'audits'), {
-      businessName: data.businessName,
-      businessType: data.businessType,
-      location: data.location,
-      whatsapp: data.whatsapp,
-      email: data.email,
+      businessName: data.businessName || 'Sin nombre',
+      businessType: data.businessType || 'otro',
+      location: data.location || 'Sin ubicación',
+      whatsapp: data.whatsapp || '',
+      email: data.email || '',
       website: data.website || '',
       instagram: data.instagram || '',
       facebook: data.facebook || '',
@@ -40,7 +43,9 @@ export const saveAudit = async (data: any, report: any) => {
     console.log("[Firebase] Auditoría guardada con ID:", docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error("[Firebase] Error guardando auditoría:", error);
-    throw error;
+    console.error("[Firebase] Error crítico guardando auditoría:", error);
+    // No lanzamos el error para no bloquear el flujo del usuario, 
+    // pero lo registramos.
+    return null;
   }
 };

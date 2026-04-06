@@ -189,10 +189,14 @@ export default function App() {
 
       // Guardar en la base de datos (Firebase)
       try {
-        await saveAudit(data, result);
-        console.log("[App] Auditoría guardada en Firebase con éxito");
+        const docId = await saveAudit(data, result);
+        if (docId) {
+          console.log(`[App] Auditoría guardada en Firebase con éxito (ID: ${docId})`);
+        } else {
+          console.warn("[App] La auditoría no se guardó en Firebase (posible error silencioso)");
+        }
       } catch (dbErr) {
-        console.error("[App] No se pudo guardar en la base de datos:", dbErr);
+        console.error("[App] Error al intentar guardar en Firebase:", dbErr);
       }
 
       // Enviar correo electrónico con PDF en segundo plano
