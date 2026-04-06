@@ -34,7 +34,7 @@ async function startServer() {
       console.log(`[API] Enviando correo electrónico vía Resend a siqueiracash@gmail.com...`);
       
       const { data, error } = await resendClient.emails.send({
-        from: 'Auditoría IA <onboarding@resend.dev>',
+        from: 'Auditoria IA <onboarding@resend.dev>',
         to: ['siqueiracash@gmail.com'], // Destinatário fixo para o teste
         subject: `Nueva Auditoría Generada: ${businessName}`,
         html: `

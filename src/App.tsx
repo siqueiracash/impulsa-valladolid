@@ -28,6 +28,7 @@ export default function App() {
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
   const [emailStatus, setEmailStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [emailError, setEmailError] = React.useState<string | null>(null);
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -116,6 +117,7 @@ export default function App() {
   const sendAuditEmail = async (data: AuditFormData, report: AuditReport) => {
     try {
       setEmailStatus('sending');
+      setEmailError(null);
       console.log('Generando PDF para envío por correo electrónico...');
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
@@ -134,13 +136,15 @@ export default function App() {
       if (!response.ok) {
         const errData = await response.json();
         console.error('Error al enviar correo electrónico:', errData.error);
+        setEmailError(errData.error || 'Error desconocido');
         setEmailStatus('error');
       } else {
         console.log('¡Correo electrónico enviado con éxito!');
         setEmailStatus('success');
       }
-    } catch (emailErr) {
+    } catch (emailErr: any) {
       console.error('Error en la rutina de correo electrónico:', emailErr);
+      setEmailError(emailErr.message || 'Error de conexión');
       setEmailStatus('error');
     }
   };
@@ -941,7 +945,9 @@ export default function App() {
                     <div className="mt-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-red-500">
                         <AlertCircle className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Error al enviar correo electrónico automático.</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Error al enviar correo: {emailError}
+                        </span>
                       </div>
                       <button 
                         onClick={() => sendAuditEmail(watch(), report!)}
