@@ -8,14 +8,16 @@ const PORT = 3000;
 
 async function startServer() {
   const app = express();
+  
+  // Middleware de log para depuración
+  app.use((req, res, next) => {
+    console.log(`[SERVER] ${req.method} ${req.url}`);
+    next();
+  });
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cors());
-
-  // API Route to check server health
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Servidor activo" });
-  });
 
   // Initialize Resend (Lazy)
   let resend: Resend | null = null;
@@ -30,43 +32,42 @@ async function startServer() {
     return resend;
   };
 
-  // API Route to send audit email
+  // API Routes PRIMERO y con prioridad
   app.post("/api/send-audit", async (req, res) => {
     const { email, businessName, pdfBase64 } = req.body;
-    console.log(`[API] Recibida solicitud de correo electrónico para: ${businessName} (${email})`);
-
+    console.log(`[API] Solicitud de correo para: ${businessName}`);
+    
     try {
       const resendClient = getResend();
-      console.log(`[API] Enviando correo electrónico vía Resend a siqueiracash@gmail.com...`);
-      
       const { data, error } = await resendClient.emails.send({
         from: 'Auditoria IA <onboarding@resend.dev>',
-        to: ['siqueiracash@gmail.com'], // Destinatário fixo para o teste
+        to: ['siqueiracash@gmail.com'],
         subject: `Nueva Auditoría Generada: ${businessName}`,
         html: `
           <h1>Nueva Auditoría de Marketing Digital</h1>
           <p><strong>Establecimiento:</strong> ${businessName}</p>
           <p><strong>Correo del Cliente:</strong> ${email}</p>
-          <p>Una nueva auditoría ha sido generada por el sistema. El informe detallado en PDF está adjunto.</p>
+          <p>Informe adjunto.</p>
         `,
-        attachments: [
-          {
-            filename: `Auditoría_${businessName.replace(/\s+/g, '_')}.pdf`,
-            content: pdfBase64,
-          },
-        ],
+        attachments: [{
+          filename: `Auditoria_${businessName.replace(/\s+/g, '_')}.pdf`,
+          content: pdfBase64,
+        }],
       });
 
       if (error) {
-        console.error('Error en Resend:', error);
+        console.error('Error Resend:', error);
         return res.status(400).json({ error: error.message });
       }
-
       res.json({ success: true, data });
     } catch (err: any) {
-      console.error('Error al enviar correo electrónico:', err);
-      res.status(500).json({ error: err.message || 'Error interno al enviar correo electrónico' });
+      console.error('Error API:', err);
+      res.status(500).json({ error: err.message || 'Error interno' });
     }
+  });
+
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
   });
 
   // Vite middleware for development

@@ -123,7 +123,10 @@ export default function App() {
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       console.log(`PDF generado (tamaño: ${pdfBase64.length} caracteres). Enviando al servidor...`);
 
-      const response = await fetch('/api/send-audit', {
+      const apiUrl = `${window.location.origin}/api/send-audit`;
+      console.log(`Enviando al servidor: ${apiUrl}`);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
