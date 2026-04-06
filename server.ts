@@ -7,6 +7,7 @@ import cors from 'cors';
 const PORT = 3000;
 
 async function startServer() {
+  console.log("[SERVER] Iniciando servidor Express + Vite...");
   const app = express();
   
   // Middleware de log para depuración
@@ -24,8 +25,10 @@ async function startServer() {
   const getResend = () => {
     const key = process.env.RESEND_API_KEY;
     if (!key) {
+      console.error("[SERVER] Error: RESEND_API_KEY no encontrada en process.env");
       throw new Error('RESEND_API_KEY environment variable is required');
     }
+    console.log(`[SERVER] RESEND_API_KEY encontrada (empieza por: ${key.substring(0, 4)}...)`);
     if (!resend) {
       resend = new Resend(key);
     }
@@ -34,8 +37,15 @@ async function startServer() {
 
   // API Routes PRIMERO y con prioridad
   app.post("/api/send-audit", async (req, res) => {
+    console.log(`[API] Recibida solicitud POST en /api/send-audit`);
     const { email, businessName, pdfBase64 } = req.body;
-    console.log(`[API] Solicitud de correo para: ${businessName}`);
+    
+    if (!pdfBase64) {
+      console.error("[API] Error: No se recibió el PDF");
+      return res.status(400).json({ error: "No se recibió el archivo PDF" });
+    }
+
+    console.log(`[API] Procesando auditoría para: ${businessName}`);
     
     try {
       const resendClient = getResend();
@@ -56,14 +66,20 @@ async function startServer() {
       });
 
       if (error) {
-        console.error('Error Resend:', error);
+        console.error('[API] Error de Resend:', error);
         return res.status(400).json({ error: error.message });
       }
+      
+      console.log("[API] Correo enviado con éxito");
       res.json({ success: true, data });
     } catch (err: any) {
-      console.error('Error API:', err);
-      res.status(500).json({ error: err.message || 'Error interno' });
+      console.error('[API] Error interno:', err);
+      res.status(500).json({ error: err.message || 'Error interno del servidor' });
     }
+  });
+
+  app.get("/api/test", (req, res) => {
+    res.json({ message: "API funcionando correctamente" });
   });
 
   app.get("/api/health", (req, res) => {

@@ -123,10 +123,21 @@ export default function App() {
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       console.log(`PDF generado (tamaño: ${pdfBase64.length} caracteres). Enviando al servidor...`);
 
-      const apiUrl = `${window.location.origin}/api/send-audit`;
-      console.log(`Enviando al servidor: ${apiUrl}`);
+      // Prueba de conexión rápida
+      try {
+        const testRes = await fetch('/api/test');
+        if (testRes.ok) {
+          const testData = await testRes.json();
+          console.log("[API Test] Conexión exitosa:", testData.message);
+        } else {
+          console.warn("[API Test] El servidor respondió con error:", testRes.status);
+        }
+      } catch (e) {
+        console.warn("[API Test] No se pudo contactar con el servidor:", e);
+      }
 
-      const response = await fetch(apiUrl, {
+      console.log('Enviando auditoría al servidor...');
+      const response = await fetch('/api/send-audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
