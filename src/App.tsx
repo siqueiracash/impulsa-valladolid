@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { cn } from './lib/utils';
 import { AuditFormData, AuditReport, BusinessType } from './types';
 import { generateAuditReport } from './services/geminiService';
+import { jsPDF } from 'jspdf';
 
 const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
@@ -26,6 +27,7 @@ export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
+  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -36,6 +38,71 @@ export default function App() {
     }
   });
 
+  const generatePDF = (data: AuditFormData, report: AuditReport) => {
+    const doc = new jsPDF();
+    const margin = 20;
+    let y = 20;
+
+    doc.setFontSize(22);
+    doc.setTextColor(239, 68, 68); // Brand Red
+    doc.text('Auditoria de Marketing Digital', margin, y);
+    y += 15;
+
+    doc.setFontSize(14);
+    doc.setTextColor(31, 41, 55);
+    doc.text(`Negócio: ${data.businessName}`, margin, y);
+    y += 10;
+    doc.text(`Tipo: ${data.businessType}`, margin, y);
+    y += 10;
+    doc.text(`Localização: ${data.location}`, margin, y);
+    y += 15;
+
+    doc.setFontSize(18);
+    doc.text('Visión del Futuro', margin, y);
+    y += 10;
+    doc.setFontSize(12);
+    const splitStory = doc.splitTextToSize(report.storytelling, 170);
+    doc.text(splitStory, margin, y);
+    y += (splitStory.length * 7) + 10;
+
+    doc.setFontSize(16);
+    doc.text('Puntos Fuertes:', margin, y);
+    y += 10;
+    doc.setFontSize(11);
+    report.strengths.forEach((s, index) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      const splitS = doc.splitTextToSize(`• ${s}`, 170);
+      doc.text(splitS, margin, y);
+      y += (splitS.length * 6) + 2;
+    });
+    y += 10;
+
+    doc.setFontSize(16);
+    doc.text('Qué mejorar:', margin, y);
+    y += 10;
+    doc.setFontSize(11);
+    report.problems.forEach((p, index) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      const splitP = doc.splitTextToSize(`• ${p}`, 170);
+      doc.text(splitP, margin, y);
+      y += (splitP.length * 6) + 2;
+    });
+    y += 10;
+
+    doc.setFontSize(16);
+    doc.text('Plan de Acción Inmediato:', margin, y);
+    y += 10;
+    doc.setFontSize(11);
+    report.priorityActions.forEach((a, index) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      const splitA = doc.splitTextToSize(`${index + 1}. ${a}`, 170);
+      doc.text(splitA, margin, y);
+      y += (splitA.length * 6) + 4;
+    });
+
+    return doc;
+  };
+
   const onSubmit = async (data: AuditFormData) => {
     console.log('Iniciando submissão do formulário...', data);
     setView('loading');
@@ -43,6 +110,34 @@ export default function App() {
       const result = await generateAuditReport(data);
       setReport(result);
       setView('report');
+
+      // Enviar e-mail com PDF em segundo plano
+      try {
+        setIsSendingEmail(true);
+        const doc = generatePDF(data, result);
+        const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+        const response = await fetch('/api/send-audit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            businessName: data.businessName,
+            pdfBase64: pdfBase64
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          console.error('Erro ao enviar e-mail:', errData.error);
+        } else {
+          console.log('E-mail enviado com sucesso!');
+        }
+      } catch (emailErr) {
+        console.error('Erro na rotina de e-mail:', emailErr);
+      } finally {
+        setIsSendingEmail(false);
+      }
     } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
       let errorMessage = 'Ops! Algo não saiu como esperado. Por favor, verifique sua conexão ou tente novamente em instantes.';
@@ -810,9 +905,21 @@ export default function App() {
                   </div>
                   <h2 className="text-5xl font-black text-brand-teal leading-none">Diagnóstico <br /><span className="text-brand-red">Estratégico</span></h2>
                   <p className="mt-2 text-brand-teal font-black uppercase tracking-widest text-sm opacity-60">Para: {watch('businessName')}</p>
+                  {isSendingEmail && (
+                    <div className="mt-4 flex items-center gap-2 text-brand-orange animate-pulse">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Enviando cópia para siqueiracash@gmail.com...</span>
+                    </div>
+                  )}
                 </div>
                 <button 
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    const data = watch();
+                    if (report) {
+                      const doc = generatePDF(data, report);
+                      doc.save(`Auditoria_${data.businessName.replace(/\s+/g, '_')}.pdf`);
+                    }
+                  }}
                   className="bg-white text-brand-teal border-2 border-brand-cream px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand-teal/5"
                 >
                   Baixar Relatório PDF
