@@ -27,7 +27,8 @@ export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
-  const [dbStatus, setDbStatus] = React.useState<'connected' | 'missing_keys' | 'error' | 'idle'>('idle');
+  const [dbStatus, setDbStatus] = React.useState<'connected' | 'missing_keys' | 'error' | 'success' | 'idle'>('idle');
+  const [dbErrorMessage, setDbErrorMessage] = React.useState<string | null>(null);
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -76,16 +77,19 @@ export default function App() {
           if (dbError) {
             console.error('Erro retornado pelo Supabase:', dbError.message, dbError.details);
             setDbStatus('error');
+            setDbErrorMessage(dbError.message);
           } else {
             console.log('Dados salvos com sucesso no Supabase!');
-            setDbStatus('connected');
+            setDbStatus('success');
+            setTimeout(() => setDbStatus('connected'), 5000);
           }
         } else {
           setDbStatus('missing_keys');
-          console.warn('Supabase não inicializado. Verifique as chaves VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Erro de conexão ao tentar salvar no Supabase:', err);
+        setDbStatus('error');
+        setDbErrorMessage(err.message || 'Erro de conexão');
       }
     } catch (error: any) {
       console.error('Erro detalhado na geração do relatório:', error);
@@ -138,6 +142,37 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Notificações de Banco de Dados */}
+      {dbStatus === 'error' && (
+        <div className="fixed bottom-4 right-4 z-50 bg-red-50 p-4 rounded-xl shadow-2xl border border-red-200 flex flex-col gap-1 max-w-xs animate-in fade-in slide-in-from-bottom-4">
+          <div className="flex items-center gap-2 text-red-600 font-bold">
+            <AlertCircle className="w-5 h-5" />
+            <span>Erro no Banco de Dados</span>
+          </div>
+          <p className="text-xs text-red-500">{dbErrorMessage || 'Verifique as colunas da sua tabela.'}</p>
+          <button onClick={() => setDbStatus('connected')} className="text-[10px] underline text-red-400 text-left mt-1">Fechar</button>
+        </div>
+      )}
+
+      {dbStatus === 'success' && (
+        <div className="fixed bottom-4 right-4 z-50 bg-green-50 p-4 rounded-xl shadow-2xl border border-green-200 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
+          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-green-800">Sucesso!</p>
+            <p className="text-xs text-green-600">Auditoria salva no Supabase.</p>
+          </div>
+        </div>
+      )}
+
+      {dbStatus === 'missing_keys' && (
+        <div className="fixed bottom-4 right-4 z-50 bg-amber-50 p-4 rounded-xl shadow-2xl border border-amber-200 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500" />
+          <p className="text-xs text-amber-700 font-medium">Supabase: Configure as chaves nos Secrets.</p>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-brand-cream">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
