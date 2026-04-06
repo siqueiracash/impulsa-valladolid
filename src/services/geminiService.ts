@@ -3,9 +3,13 @@ import { AuditFormData, AuditReport } from "../types";
 
 export async function generateAuditReport(data: AuditFormData): Promise<AuditReport> {
   // Ajustado para buscar VITE_API_KEY conforme sua configuração na Vercel
-  const apiKey = import.meta.env.VITE_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+  // En AI Studio, process.env.GEMINI_API_KEY es la forma estándar
+  const apiKey = (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || 
+                 import.meta.env.VITE_GEMINI_API_KEY || 
+                 import.meta.env.VITE_API_KEY;
   
   if (!apiKey || apiKey === "" || apiKey === "undefined") {
+    console.error("[Gemini] No se encontró la clave de API");
     throw new Error("API_KEY_MISSING");
   }
 
@@ -42,11 +46,16 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
 
   for (let i = 0; i < maxRetries; i++) {
     try {
+      console.log(`[Gemini] Iniciando generación (Intento ${i+1}/${maxRetries})...`);
+      
+      // En el último intento, probamos sin herramientas por si el límite es del buscador
+      const tools = i === maxRetries - 1 ? [] : [{ googleSearch: {} }];
+      
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
-          tools: [{ googleSearch: {} }],
+          tools,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -64,6 +73,7 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
         },
       });
 
+      console.log("[Gemini] Respuesta recibida con éxito.");
       const report = JSON.parse(response.text || "{}") as AuditReport;
       
       // Extraer fuentes de la búsqueda de Google
@@ -84,12 +94,14 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
       return report;
     } catch (error: any) {
       lastError = error;
+      console.error(`[Gemini] Error en intento ${i+1}:`, error.message || error);
+      
       const isRetryable = error.message?.includes('503') || error.message?.includes('high demand') || error.message?.includes('429');
       
       if (isRetryable && i < maxRetries - 1) {
-        // Wait before retrying (exponential backoff: 2s, 4s, 8s, 16s...)
-        const waitTime = Math.pow(2, i + 1) * 1000;
-        console.warn(`[Gemini] Error reintentable (${error.message}). Reintentando en ${waitTime/1000}s... (Intento ${i+1}/${maxRetries})`);
+        // Wait before retrying (exponential backoff: 3s, 6s, 12s, 24s...)
+        const waitTime = Math.pow(2, i + 1) * 1500;
+        console.warn(`[Gemini] Error reintentable. Reintentando en ${waitTime/1000}s...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
