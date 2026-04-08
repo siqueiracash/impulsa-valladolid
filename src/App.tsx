@@ -207,18 +207,12 @@ export default function App() {
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      // Detectar se estamos no domínio customizado
-      const isCustomDomain = window.location.hostname.includes('impulsavalladolid.es');
-      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
-      
-      // Se estiver no domínio customizado, usamos a URL absoluta para contornar o 404 do servidor estático
-      const apiUrl = isCustomDomain ? `${cloudRunUrl}/api/send-audit` : '/api/send-audit';
-      
-      console.log(`[DEBUG] Enviando para: ${apiUrl} (Domínio Customizado: ${isCustomDomain})`);
+      // Tentar primeiro a rota relativa (mais segura para domínios customizados)
+      const apiUrl = '/api/send-audit';
+      console.log(`[DEBUG] Enviando para: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
-        mode: 'cors',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -237,24 +231,13 @@ export default function App() {
         let errorMsg = `Erro ${response.status}`;
         try {
           const errData = JSON.parse(text);
-          if (typeof errData === 'object' && errData !== null) {
-            const rawError = errData.error || errData.message || errData;
-            errorMsg = typeof rawError === 'string' ? rawError : JSON.stringify(rawError);
-          } else {
-            errorMsg = String(errData);
-          }
+          errorMsg = errData.error || errData.message || JSON.stringify(errData);
         } catch (e) {
           errorMsg = text || `Erro ${response.status}`;
         }
         
-        // Limpeza final para evitar [object Object]
-        if (typeof errorMsg !== 'string' || errorMsg.toLowerCase() === '[object object]') {
-          errorMsg = "Erro técnico no servidor. Verifique a chave do Resend.";
-        }
-        
-        // Se o erro for o 404 do Resend, dar uma instrução clara
-        if (errorMsg.includes("could not be found") || errorMsg.includes("404")) {
-          errorMsg = `Erro 404: O servidor não encontrou a rota de envio. Verifique se o link do site está correto ou tente atualizar a página. (URL: ${apiUrl})`;
+        if (response.status === 404) {
+          errorMsg = "Erro 404: O servidor não encontrou a rota de envio. Isso pode acontecer se o domínio customizado não estiver propagado ou se houver um erro no servidor.";
         }
         
         setEmailError(errorMsg);
@@ -265,11 +248,33 @@ export default function App() {
       }
     } catch (emailErr: any) {
       console.error('Error en la rutina de correo electrónico:', emailErr);
-      let errorMsg = emailErr.message || 'Error de conexión';
+      let errorMsg = emailErr.message || 'Erro de conexão';
+      
       if (errorMsg.includes('Failed to fetch')) {
-        errorMsg = "Erro de conexão (Failed to fetch). Isso pode ser causado por um bloqueador de anúncios, VPN ou problema temporário na rede. Tente atualizar a página.";
+        errorMsg = "Erro de conexão (Failed to fetch). O navegador bloqueou o pedido. Isso acontece em domínios customizados se o SSL ou o CORS não estiverem perfeitos. Tente usar o link oficial do Google Cloud ou verifique sua conexão.";
       }
+      
       setEmailError(errorMsg);
+      setEmailStatus('error');
+    }
+  };
+
+  const testConnection = async () => {
+    try {
+      setEmailStatus('sending');
+      setEmailError("Testando conexão com o servidor...");
+      const response = await fetch('/api/ping');
+      const data = await response.json();
+      if (response.ok) {
+        alert(`Conexão OK!\nStatus: ${data.status}\nServidor: ${data.message}\nResend Key: ${data.hasResendKey ? 'Configurada' : 'NÃO CONFIGURADA'}`);
+        setEmailError(null);
+        setEmailStatus('idle');
+      } else {
+        throw new Error(`Status ${response.status}`);
+      }
+    } catch (err: any) {
+      alert(`Erro na conexão: ${err.message}`);
+      setEmailError(`Falha no teste de conexão: ${err.message}`);
       setEmailStatus('error');
     }
   };
@@ -1124,12 +1129,20 @@ export default function App() {
                           Error de envío: {String(emailError)}
                         </span>
                       </div>
-                      <button 
-                        onClick={() => sendAuditEmail(watch(), report!)}
-                        className="text-[9px] font-bold uppercase tracking-widest text-brand-teal underline text-left"
-                      >
-                        Intentar reenviar informe
-                      </button>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => sendAuditEmail(watch(), report!)}
+                          className="text-[9px] font-bold uppercase tracking-widest text-brand-teal underline text-left"
+                        >
+                          Intentar reenviar informe
+                        </button>
+                        <button 
+                          onClick={testConnection}
+                          className="text-[9px] font-bold uppercase tracking-widest text-gray-400 underline text-left"
+                        >
+                          Diagnosticar Conexão
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
