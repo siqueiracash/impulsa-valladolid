@@ -207,9 +207,8 @@ export default function App() {
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      // Usar a URL do Cloud Run como base para a API para evitar 404 em domínios customizados
-      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
-      const apiUrl = `${cloudRunUrl}/api/send-audit`;
+      // Usar caminho relativo para evitar problemas de CORS e domínios customizados
+      const apiUrl = '/api/send-audit';
       console.log(`[DEBUG] Tentando enviar para: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
@@ -260,7 +259,11 @@ export default function App() {
       }
     } catch (emailErr: any) {
       console.error('Error en la rutina de correo electrónico:', emailErr);
-      setEmailError(emailErr.message || 'Error de conexión');
+      let errorMsg = emailErr.message || 'Error de conexión';
+      if (errorMsg.includes('Failed to fetch')) {
+        errorMsg = "Erro de conexão (Failed to fetch). Isso pode ser causado por um bloqueador de anúncios, VPN ou problema temporário na rede. Tente atualizar a página.";
+      }
+      setEmailError(errorMsg);
       setEmailStatus('error');
     }
   };
