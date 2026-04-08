@@ -207,14 +207,12 @@ export default function App() {
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      // Usar a URL absoluta do Cloud Run para garantir que funcione em domínios customizados
-      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
-      const apiUrl = `${cloudRunUrl}/api/send-audit`;
-      console.log(`[DEBUG] Enviando para URL absoluta: ${apiUrl}`);
+      // Usar caminho relativo para que funcione tanto em dev quanto em produção (Shared App / Domínio Customizado)
+      const apiUrl = '/api/send-audit';
+      console.log(`[DEBUG] Enviando para rota relativa: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
-        mode: 'cors', // Garantir modo CORS
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
