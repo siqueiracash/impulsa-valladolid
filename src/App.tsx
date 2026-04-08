@@ -207,8 +207,9 @@ export default function App() {
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      // Construir URL absoluta para evitar problemas de roteamento
-      const apiUrl = `${window.location.origin}/api/send-audit`;
+      // Usar a URL do Cloud Run como base para a API para evitar 404 em domínios customizados
+      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
+      const apiUrl = `${cloudRunUrl}/api/send-audit`;
       console.log(`[DEBUG] Tentando enviar para: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
