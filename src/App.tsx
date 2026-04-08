@@ -132,10 +132,16 @@ export default function App() {
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      console.log('Enviando auditoría al servidor...');
-      const response = await fetch('/submit-report-now', {
+      // Construir URL absoluta para evitar problemas de roteamento
+      const apiUrl = `${window.location.origin}/api/send-audit`;
+      console.log(`[DEBUG] Tentando enviar para: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
           email: data.email,
           businessName: data.businessName,
@@ -146,17 +152,16 @@ export default function App() {
 
       if (!response.ok) {
         const text = await response.text();
+        console.error(`[DEBUG] Erro do servidor (${response.status}):`, text);
         try {
           const errData = JSON.parse(text);
-          setEmailError(errData.error || 'Error desconocido');
+          setEmailError(errData.error || `Erro ${response.status}`);
         } catch (e) {
-          // Si no es JSON, mostrar el error crudo o un mensaje genérico
-          console.error('Respuesta no JSON del servidor:', text);
-          setEmailError(`Error del servidor (${response.status}): ${text.substring(0, 50)}...`);
+          setEmailError(`Erro ${response.status}: Verifique os logs do servidor.`);
         }
         setEmailStatus('error');
       } else {
-        console.log('¡Correo electrónico enviado con éxito!');
+        console.log('[DEBUG] Sucesso no envio!');
         setEmailStatus('success');
       }
     } catch (emailErr: any) {
