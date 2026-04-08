@@ -45,6 +45,24 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
   render() {
     if (this.state.hasError) {
+      const error = this.state.error;
+      let errorMessage = 'Error desconocido';
+      let errorDetail = '';
+
+      try {
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          errorDetail = error.stack || '';
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error && typeof error === 'object') {
+          errorMessage = (error as any).message || JSON.stringify(error);
+          errorDetail = JSON.stringify(error, null, 2);
+        }
+      } catch (e) {
+        errorMessage = 'Error al procesar el error';
+      }
+
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
           <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-lg w-full border-4 border-brand-red/20 text-center">
@@ -55,8 +73,13 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
             <p className="text-slate-600 font-medium mb-8 leading-relaxed">
               Lo sentimos, ha ocurrido un error inesperado en la aplicación. 
               <br />
-              <span className="text-xs font-mono text-brand-red mt-4 block p-4 bg-slate-50 rounded-xl border border-slate-100 overflow-auto text-left">
-                {this.state.error?.message}
+              <span className="text-xs font-mono text-brand-red mt-4 block p-4 bg-slate-50 rounded-xl border border-slate-100 overflow-auto text-left whitespace-pre-wrap max-h-60">
+                {String(errorMessage)}
+                {errorDetail && (
+                  <div className="mt-4 pt-4 border-t border-brand-red/10 opacity-50 text-[10px]">
+                    {String(errorDetail)}
+                  </div>
+                )}
               </span>
             </p>
             <button 
@@ -1070,7 +1093,7 @@ export default function App() {
                       <div className="flex items-center gap-2 text-red-500">
                         <AlertCircle className="w-4 h-4" />
                         <span className="text-[10px] font-black uppercase tracking-widest">
-                          Error de envío: {emailError}
+                          Error de envío: {String(emailError)}
                         </span>
                       </div>
                       <button 
@@ -1112,7 +1135,7 @@ export default function App() {
                       <h3 className="text-2xl font-black uppercase tracking-widest">La Visión del Futuro</h3>
                     </div>
                     <p className="text-2xl md:text-4xl font-medium leading-[1.3] italic text-brand-cream">
-                      "{report.storytelling}"
+                      "{String(report.storytelling)}"
                     </p>
                   </div>
                 </motion.div>
@@ -1133,7 +1156,7 @@ export default function App() {
                       {(report.strengths || []).map((s, i) => (
                         <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
                           <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2.5 shrink-0" />
-                          {s}
+                          {String(s)}
                         </li>
                       ))}
                     </ul>
@@ -1154,7 +1177,7 @@ export default function App() {
                       {(report.problems || []).map((p, i) => (
                         <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
                           <div className="w-2 h-2 rounded-full bg-amber-500 mt-2.5 shrink-0" />
-                          {p}
+                          {String(p)}
                         </li>
                       ))}
                     </ul>
@@ -1175,7 +1198,7 @@ export default function App() {
                     <h3 className="text-2xl font-black uppercase tracking-widest">Presencia Digital</h3>
                   </div>
                   <p className="text-xl text-slate-200 leading-relaxed font-medium">
-                    {report.socialMediaAnalysis}
+                    {String(report.socialMediaAnalysis)}
                   </p>
                 </motion.div>
 
@@ -1195,7 +1218,7 @@ export default function App() {
                       <h3 className="text-2xl font-black uppercase tracking-widest">Análisis Técnico (Google)</h3>
                     </div>
                     <p className="text-xl text-slate-300 leading-relaxed font-medium">
-                      {report.technicalAnalysis}
+                      {String(report.technicalAnalysis)}
                     </p>
                   </motion.div>
                 )}
@@ -1212,9 +1235,9 @@ export default function App() {
                     {(report.priorityActions || []).map((a, i) => (
                       <div key={i} className="flex items-center gap-6 p-6 rounded-3xl bg-slate-50 border border-slate-100 group hover:border-brand-red transition-all">
                         <div className="w-12 h-12 rounded-2xl bg-brand-red text-white flex items-center justify-center text-xl font-black shrink-0 shadow-lg shadow-brand-red/20 group-hover:rotate-6 transition-transform">
-                          {i + 1}
+                          {String(i + 1)}
                         </div>
-                        <span className="text-slate-700 font-bold leading-tight">{a}</span>
+                        <span className="text-slate-700 font-bold leading-tight">{String(a)}</span>
                       </div>
                     ))}
                   </div>
@@ -1230,7 +1253,7 @@ export default function App() {
                   <div className="absolute top-0 left-0 w-full h-full bg-brand-orange/5 -z-10" />
                   <h3 className="text-3xl md:text-5xl font-black text-brand-red mb-8 leading-tight">¿Impulsamos su <br />negocio juntos?</h3>
                   <p className="text-brand-teal text-xl mb-12 max-w-2xl mx-auto font-bold leading-relaxed opacity-80">
-                    {report.serviceProposal}
+                    {String(report.serviceProposal)}
                   </p>
                   <button className="bg-brand-red text-white px-12 py-6 rounded-3xl text-2xl font-black uppercase tracking-widest hover:bg-brand-teal transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-4 mx-auto group">
                     Contactar por WhatsApp
@@ -1256,7 +1279,7 @@ export default function App() {
                           className="text-xs font-bold text-brand-red hover:underline flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-brand-cream shadow-sm"
                         >
                           <Globe className="w-3 h-3" />
-                          {source.title}
+                          {String(source.title)}
                         </a>
                       ))}
                     </div>
@@ -1398,7 +1421,7 @@ export default function App() {
             </div>
             <h3 className="text-2xl font-black text-brand-teal mb-4 uppercase tracking-tight">Aviso Importante</h3>
             <p className="text-slate-600 font-medium leading-relaxed mb-8">
-              {errorModal.message}
+              {String(errorModal.message)}
             </p>
             <button 
               onClick={() => setErrorModal({ show: false, message: '' })}
