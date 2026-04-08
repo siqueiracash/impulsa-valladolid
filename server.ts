@@ -42,8 +42,13 @@ async function startServer() {
   };
 
   // API Routes
+  app.get("/api/send-audit", (req, res) => {
+    console.log("[SERVER] GET /api/send-audit hit");
+    res.json({ message: "O endpoint existe, mas use POST para enviar dados." });
+  });
+
   app.post("/api/send-audit", async (req, res) => {
-    console.log(`[SERVER] >>> RECEBIDA CHAMADA EM /api/send-audit <<<`);
+    console.log(`[SERVER] >>> RECEBIDA CHAMADA POST EM /api/send-audit <<<`);
     const { email, businessName, pdfBase64, formData } = req.body;
     
     // Log de segurança para não perder dados caso o e-mail falhe

@@ -248,7 +248,7 @@ export default function App() {
         
         // Se o erro for o 404 do Resend, dar uma instrução clara
         if (errorMsg.includes("could not be found") || errorMsg.includes("404")) {
-          errorMsg = "Erro 404: Chave de API não reconhecida pelo Resend. Verifique se copiou a chave corretamente.";
+          errorMsg = `Erro 404: O servidor não encontrou a rota de envio. Verifique se o link do site está correto ou tente atualizar a página. (URL: ${apiUrl})`;
         }
         
         setEmailError(errorMsg);
