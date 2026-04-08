@@ -243,7 +243,12 @@ export default function App() {
         
         // Limpeza final para evitar [object Object]
         if (typeof errorMsg !== 'string' || errorMsg.toLowerCase() === '[object object]') {
-          errorMsg = "Erro técnico no servidor. Verifique se a chave do Resend está correta.";
+          errorMsg = "Erro técnico no servidor. Verifique a chave do Resend.";
+        }
+        
+        // Se o erro for o 404 do Resend, dar uma instrução clara
+        if (errorMsg.includes("could not be found") || errorMsg.includes("404")) {
+          errorMsg = "Erro 404: Chave de API não reconhecida pelo Resend. Verifique se copiou a chave corretamente.";
         }
         
         setEmailError(errorMsg);

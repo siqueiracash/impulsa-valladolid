@@ -55,47 +55,51 @@ async function startServer() {
     }
 
     try {
-      const resendClient = getResend();
-      console.log(`[SERVER] Enviando e-mail para siqueiracash@gmail.com...`);
+      const resendKey = process.env.RESEND_API_KEY;
+      if (!resendKey || resendKey === "" || resendKey.includes("MY_RESEND_API_KEY")) {
+        throw new Error('La clave RESEND_API_KEY no está configurada.');
+      }
+
+      console.log(`[SERVER] Enviando e-mail via Fetch para siqueiracash@gmail.com...`);
       
-      const { data, error } = await resendClient.emails.send({
-        from: 'Auditoria IA <onboarding@resend.dev>',
-        to: ['siqueiracash@gmail.com'],
-        subject: `Nueva Auditoría: ${businessName}`,
-        html: `
-          <div style="font-family: sans-serif; padding: 20px;">
-            <h2>Nueva Auditoría Generada</h2>
-            <p><strong>Negocio:</strong> ${businessName}</p>
-            <p><strong>WhatsApp:</strong> ${formData?.whatsapp || 'N/A'}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p>El informe técnico detallado se encuentra adjunto.</p>
-          </div>
-        `,
-        attachments: [{
-          filename: `Auditoria_${businessName.replace(/\s+/g, '_')}.pdf`,
-          content: pdfBase64,
-        }],
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'onboarding@resend.dev',
+          to: 'siqueiracash@gmail.com',
+          subject: `Nueva Auditoría: ${businessName}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h2>Nueva Auditoría Generada</h2>
+              <p><strong>Negocio:</strong> ${businessName}</p>
+              <p><strong>WhatsApp:</strong> ${formData?.whatsapp || 'N/A'}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p>El informe técnico detallado se encuentra adjunto.</p>
+            </div>
+          `,
+          attachments: [{
+            filename: `Auditoria_${businessName.replace(/\s+/g, '_')}.pdf`,
+            content: pdfBase64,
+          }],
+        })
       });
 
-      if (error) {
-        console.error('[SERVER] Erro Resend Detalhado:', JSON.stringify(error, null, 2));
-        let errorMessage = (error as any).message || 'Erro desconhecido no Resend';
-        
-        // Tratar o erro 404 específico do Resend (geralmente chave inválida)
-        if ((error as any).code === '404' || (error as any).code === 404) {
-          errorMessage = "Erro 404: Chave de API inválida ou não encontrada no Resend. Por favor, gere uma nova API Key no painel do Resend e atualize nos Secrets.";
-        } else if (errorMessage.includes('domain') || (error as any).name === 'validation_error') {
-          errorMessage = "Erro de Domínio/Permissão: Verifique se o remetente está correto ou se o domínio está verificado no Resend.";
-        }
+      const result = await response.json();
 
-        return res.status(400).json({ 
-          error: String(errorMessage),
-          details: error
+      if (!response.ok) {
+        console.error('[SERVER] Erro Resend API:', JSON.stringify(result, null, 2));
+        return res.status(response.status).json({ 
+          error: result.message || result.error || 'Erro na API do Resend',
+          details: result
         });
       }
       
-      console.log("[SERVER] E-mail enviado com sucesso!");
-      res.json({ success: true, data });
+      console.log("[SERVER] E-mail enviado com sucesso!", result.id);
+      res.json({ success: true, id: result.id });
     } catch (err: any) {
       console.error('[SERVER] Erro Interno:', err);
       res.status(500).json({ error: err.message || 'Erro interno do servidor' });
