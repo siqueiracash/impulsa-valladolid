@@ -78,12 +78,14 @@ async function startServer() {
       });
 
       if (error) {
-        console.error('[SERVER] Erro Resend:', JSON.stringify(error));
+        console.error('[SERVER] Erro Resend Detalhado:', JSON.stringify(error, null, 2));
         let errorMessage = (error as any).message || 'Erro desconhecido no Resend';
         
-        // Dica amigável para erros comuns
-        if (errorMessage.includes('domain') || (error as any).name === 'validation_error') {
-          errorMessage = "Erro de Domínio/Permissão: Verifique se está enviando para o e-mail da conta ou se o domínio está verificado.";
+        // Tratar o erro 404 específico do Resend (geralmente chave inválida)
+        if ((error as any).code === '404' || (error as any).code === 404) {
+          errorMessage = "Erro 404: Chave de API inválida ou não encontrada no Resend. Por favor, gere uma nova API Key no painel do Resend e atualize nos Secrets.";
+        } else if (errorMessage.includes('domain') || (error as any).name === 'validation_error') {
+          errorMessage = "Erro de Domínio/Permissão: Verifique se o remetente está correto ou se o domínio está verificado no Resend.";
         }
 
         return res.status(400).json({ 
