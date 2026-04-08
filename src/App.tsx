@@ -207,12 +207,19 @@ export default function App() {
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      // Tentar primeiro a rota relativa (mais segura para domínios customizados)
-      const apiUrl = '/api/send-audit';
-      console.log(`[DEBUG] Enviando para: ${apiUrl}`);
+      // URL oficial do servidor no Cloud Run
+      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
+      
+      // Se estivermos em um domínio customizado (não cloudrun.app), usamos a URL absoluta
+      // Isso evita o erro 404 caso o domínio customizado seja servido de forma estática
+      const isCustomDomain = !window.location.hostname.includes('run.app');
+      const apiUrl = isCustomDomain ? `${cloudRunUrl}/api/send-audit` : '/api/send-audit';
+      
+      console.log(`[DEBUG] Enviando para: ${apiUrl} (Custom Domain: ${isCustomDomain})`);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
+        mode: 'cors', // Crucial para chamadas entre domínios
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -236,10 +243,6 @@ export default function App() {
           errorMsg = text || `Erro ${response.status}`;
         }
         
-        if (response.status === 404) {
-          errorMsg = "Erro 404: O servidor não encontrou a rota de envio. Isso pode acontecer se o domínio customizado não estiver propagado ou se houver um erro no servidor.";
-        }
-        
         setEmailError(errorMsg);
         setEmailStatus('error');
       } else {
@@ -251,7 +254,7 @@ export default function App() {
       let errorMsg = emailErr.message || 'Erro de conexão';
       
       if (errorMsg.includes('Failed to fetch')) {
-        errorMsg = "Erro de conexão (Failed to fetch). O navegador bloqueou o pedido. Isso acontece em domínios customizados se o SSL ou o CORS não estiverem perfeitos. Tente usar o link oficial do Google Cloud ou verifique sua conexão.";
+        errorMsg = "Erro de conexão (CORS/Network). O servidor não permitiu a chamada vinda deste domínio. Tente usar o link oficial do projeto.";
       }
       
       setEmailError(errorMsg);
@@ -262,11 +265,16 @@ export default function App() {
   const testConnection = async () => {
     try {
       setEmailStatus('sending');
-      setEmailError("Testando conexão com o servidor...");
-      const response = await fetch('/api/ping');
+      setEmailError("Testando conexão...");
+      
+      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
+      const isCustomDomain = !window.location.hostname.includes('run.app');
+      const apiUrl = isCustomDomain ? `${cloudRunUrl}/api/ping` : '/api/ping';
+      
+      const response = await fetch(apiUrl, { mode: 'cors' });
       const data = await response.json();
       if (response.ok) {
-        alert(`Conexão OK!\nStatus: ${data.status}\nServidor: ${data.message}\nResend Key: ${data.hasResendKey ? 'Configurada' : 'NÃO CONFIGURADA'}`);
+        alert(`Conexão OK!\nServidor: ${data.message}\nResend Key: ${data.hasResendKey ? 'Configurada' : 'NÃO CONFIGURADA'}`);
         setEmailError(null);
         setEmailStatus('idle');
       } else {
@@ -274,7 +282,7 @@ export default function App() {
       }
     } catch (err: any) {
       alert(`Erro na conexão: ${err.message}`);
-      setEmailError(`Falha no teste de conexão: ${err.message}`);
+      setEmailError(`Falha no teste: ${err.message}`);
       setEmailStatus('error');
     }
   };
