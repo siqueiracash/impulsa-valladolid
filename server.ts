@@ -46,6 +46,9 @@ async function startServer() {
     console.log(`[SERVER] >>> RECEBIDA CHAMADA EM /api/send-audit <<<`);
     const { email, businessName, pdfBase64, formData } = req.body;
     
+    // Log de segurança para não perder dados caso o e-mail falhe
+    console.log(`[DATA RECOVERY] Dados recebidos para ${businessName}:`, JSON.stringify(formData));
+    
     if (!pdfBase64) {
       console.error("[SERVER] Erro: PDF não recebido");
       return res.status(400).json({ error: "PDF não recebido" });

@@ -72,7 +72,7 @@ export default function App() {
     doc.text('Visión del Futuro', margin, y);
     y += 10;
     doc.setFontSize(12);
-    const splitStory = doc.splitTextToSize(report.storytelling, 170);
+    const splitStory = doc.splitTextToSize(report.storytelling || 'Análisis en proceso...', 170);
     doc.text(splitStory, margin, y);
     y += (splitStory.length * 7) + 10;
 
@@ -171,11 +171,26 @@ export default function App() {
     }
   };
 
-  const onSubmit = async (data: AuditFormData) => {
-    console.log('Iniciando envío del formulario...', data);
+  const runTestMode = () => {
+    const dummyData: AuditFormData = {
+      businessName: "Negocio de Prueba",
+      businessType: "restaurante",
+      location: "Valladolid, España",
+      whatsapp: "+34 600 000 000",
+      email: "siqueiracash@gmail.com",
+      instagram: "@prueba",
+      website: "https://prueba.com"
+    };
+    onSubmit(dummyData, true);
+  };
+
+  const onSubmit = async (data: AuditFormData, isMock: boolean = false) => {
+    console.log('Iniciando envío del formulario...', data, isMock ? '(MOCK)' : '');
     setView('loading');
     try {
-      const result = await generateAuditReport(data);
+      const result = await generateAuditReport(data, isMock);
+      if (!result) throw new Error("No se pudo generar el informe");
+      
       setReport(result);
       setView('report');
       
@@ -183,12 +198,12 @@ export default function App() {
       sendAuditEmail(data, result);
     } catch (error: any) {
       console.error('Error detallado en la generación del informe:', error);
-      let errorMessage = '¡Ups! Algo no salió como se esperaba. Por favor, verifique su conexión o inténtelo de nuevo en unos instantes.';
+      let errorMessage = '¡Ups! Algo no salió como se esperaba. Por favor, verifique su conexão o inténtelo de nuevo en unos instantes.';
       
       if (error.message === 'API_KEY_MISSING') {
-        errorMessage = 'La clave de acceso no fue encontrada. Por favor, póngase en contacto con el soporte técnico.';
+        errorMessage = 'La clave de acesso no fue encontrada. Por favor, póngase en contacto con el soporte técnico.';
       } else if (error.message?.includes('403') || error.message?.includes('API key not valid')) {
-        errorMessage = 'La clave de acceso es inválida. Por favor, póngase en contacto con el soporte técnico.';
+        errorMessage = 'La clave de acesso es inválida. Por favor, póngase en contacto con el soporte técnico.';
       } else if (error.message?.includes('503') || error.message?.includes('high demand')) {
         errorMessage = '¡Tenemos mucha demanda en este momento! Nuestra inteligencia está un poco sobrecargada. Por favor, espere unos segundos e inténtelo de nuevo.';
       } else if (error.message?.includes('429')) {
@@ -324,6 +339,13 @@ export default function App() {
                     >
                       Quiero mi Auditoría
                       <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    
+                    <button 
+                      onClick={runTestMode}
+                      className="w-full sm:w-auto bg-white text-brand-teal border-2 border-brand-cream px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3"
+                    >
+                      Testar Sistema (Fictício)
                     </button>
                     <div className="flex items-center gap-3 text-slate-500 font-bold text-sm">
                       <div className="flex -space-x-2">

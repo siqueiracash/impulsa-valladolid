@@ -1,7 +1,20 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AuditFormData, AuditReport } from "../types";
 
-export async function generateAuditReport(data: AuditFormData): Promise<AuditReport> {
+export async function generateAuditReport(data: AuditFormData, isMock: boolean = false): Promise<AuditReport> {
+  if (isMock) {
+    console.log("[Gemini] MOCK MODE: Generando reporte ficticio...");
+    return {
+      strengths: ["Excelente ubicación central", "Marca reconocida localmente", "Producto de alta calidad"],
+      problems: ["Baja presencia en Instagram", "Sitio web lento y no optimizado", "Falta de sistema de reservas online"],
+      socialMediaAnalysis: "Su presencia en redes sociales es intermitente. Aunque tiene seguidores, la falta de interacción sugiere que el contenido no está conectando con su audiencia de Valladolid.",
+      technicalAnalysis: "El sitio web tiene un rendimiento de 45/100 en móviles. El tiempo de carga es superior a 4 segundos, lo que provoca una pérdida del 30% de visitantes potenciales.",
+      priorityActions: ["Optimizar la biografía de Instagram", "Implementar Google My Business correctamente", "Crear una landing page de conversión"],
+      serviceProposal: "En Impulsa Valladolid podemos gestionar sus redes y optimizar su web para duplicar sus reservas en 90 días.",
+      storytelling: "Imagine su local un viernes por la tarde. Antes, el silencio era la norma. Ahora, gracias a una estrategia digital sólida, el teléfono no deja de sonar y cada mesa está reservada. Su negocio ha pasado de ser un secreto local a ser el punto de referencia en la ciudad."
+    };
+  }
+
   // Ajustado para buscar VITE_API_KEY conforme sua configuração na Vercel
   // En AI Studio, process.env.GEMINI_API_KEY es la forma estándar
   const apiKey = (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || 
