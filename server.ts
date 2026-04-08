@@ -31,9 +31,9 @@ async function startServer() {
   let resend: Resend | null = null;
   const getResend = () => {
     const key = process.env.RESEND_API_KEY;
-    if (!key) {
-      console.error("[SERVER] Error: RESEND_API_KEY no encontrada en process.env");
-      throw new Error('RESEND_API_KEY environment variable is required');
+    if (!key || key === "" || key.includes("MY_RESEND_API_KEY")) {
+      console.error("[SERVER] Error: RESEND_API_KEY no configurada correctamente.");
+      throw new Error('La clave RESEND_API_KEY no está configurada en los Secretos del proyecto.');
     }
     if (!resend) {
       resend = new Resend(key);
@@ -59,7 +59,7 @@ async function startServer() {
       console.log(`[SERVER] Enviando e-mail para siqueiracash@gmail.com...`);
       
       const { data, error } = await resendClient.emails.send({
-        from: 'Auditoria IA <auditoria@impulsavalladolid.es>',
+        from: 'Auditoria IA <onboarding@resend.dev>',
         to: ['siqueiracash@gmail.com'],
         subject: `Nueva Auditoría: ${businessName}`,
         html: `
@@ -78,8 +78,16 @@ async function startServer() {
       });
 
       if (error) {
-        console.error('[SERVER] Erro Resend:', error);
-        return res.status(400).json({ error: error.message });
+        console.error('[SERVER] Erro Resend:', JSON.stringify(error));
+        // Se for erro de domínio não verificado, dar uma dica melhor
+        let customMessage = (error as any).message;
+        if ((error as any).name === 'validation_error' && customMessage.includes('domain')) {
+          customMessage = "Domínio não verificado no Resend. Use 'onboarding@resend.dev' ou verifique seu domínio.";
+        }
+        return res.status(400).json({ 
+          error: customMessage || 'Erro desconhecido no Resend',
+          raw: error
+        });
       }
       
       console.log("[SERVER] E-mail enviado com sucesso!");

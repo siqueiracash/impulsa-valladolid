@@ -228,12 +228,24 @@ export default function App() {
       if (!response.ok) {
         const text = await response.text();
         console.error(`[DEBUG] Erro do servidor (${response.status}):`, text);
+        let errorMsg = `Erro ${response.status}`;
         try {
           const errData = JSON.parse(text);
-          setEmailError(errData.error || `Erro ${response.status}`);
+          if (typeof errData === 'object' && errData !== null) {
+            errorMsg = errData.error || errData.message || JSON.stringify(errData);
+          } else {
+            errorMsg = String(errData);
+          }
         } catch (e) {
-          setEmailError(`Erro ${response.status}: Verifique os logs do servidor.`);
+          errorMsg = text || `Erro ${response.status}`;
         }
+        
+        // Limpeza final para evitar [object Object]
+        if (errorMsg === '[object Object]') {
+          errorMsg = "Erro técnico detalhado nos logs do servidor.";
+        }
+        
+        setEmailError(errorMsg);
         setEmailStatus('error');
       } else {
         console.log('[DEBUG] Sucesso no envio!');
