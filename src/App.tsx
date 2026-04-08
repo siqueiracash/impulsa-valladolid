@@ -145,8 +145,15 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        setEmailError(errData.error || 'Error desconocido');
+        const text = await response.text();
+        try {
+          const errData = JSON.parse(text);
+          setEmailError(errData.error || 'Error desconocido');
+        } catch (e) {
+          // Si no es JSON, mostrar el error crudo o un mensaje genérico
+          console.error('Respuesta no JSON del servidor:', text);
+          setEmailError(`Error del servidor (${response.status}): ${text.substring(0, 50)}...`);
+        }
         setEmailStatus('error');
       } else {
         console.log('¡Correo electrónico enviado con éxito!');

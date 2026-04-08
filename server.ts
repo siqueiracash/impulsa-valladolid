@@ -8,6 +8,13 @@ const PORT = 3000;
 
 async function startServer() {
   console.log("[SERVER] Iniciando servidor Express + Vite...");
+  
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("[SERVER] AVISO: RESEND_API_KEY não encontrada. O envio de e-mail falhará.");
+  } else {
+    console.log("[SERVER] RESEND_API_KEY configurada.");
+  }
+
   const app = express();
   
   // Middleware de log para depuración
