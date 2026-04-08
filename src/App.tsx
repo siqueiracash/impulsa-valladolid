@@ -133,7 +133,7 @@ export default function App() {
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
       console.log('Enviando auditoría al servidor...');
-      const response = await fetch('/api/send-audit', {
+      const response = await fetch('/submit-report-now', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

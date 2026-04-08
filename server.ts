@@ -42,8 +42,8 @@ async function startServer() {
   };
 
   // API Routes
-  app.post("/api/send-audit", async (req, res) => {
-    console.log(`[API] >>> PETICIÓN POST RECIBIDA EN /api/send-audit <<<`);
+  app.post("/submit-report-now", async (req, res) => {
+    console.log(`[SERVER] >>> PETIÇÃO POST RECEBIDA EM /submit-report-now <<<`);
     const { email, businessName, pdfBase64, formData } = req.body;
     
     if (!pdfBase64) {
