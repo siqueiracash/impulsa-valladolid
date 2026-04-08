@@ -28,6 +28,52 @@ const formSchema = z.object({
   path: ["instagram"], // Mostramos el error en instagram por defecto
 });
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-lg w-full border-4 border-brand-red/20 text-center">
+            <div className="w-20 h-20 bg-brand-red/10 rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <AlertCircle className="w-12 h-12 text-brand-red" />
+            </div>
+            <h2 className="text-3xl font-black text-brand-teal mb-4 uppercase tracking-tight">Algo salió mal</h2>
+            <p className="text-slate-600 font-medium mb-8 leading-relaxed">
+              Lo sentimos, ha ocurrido un error inesperado en la aplicación. 
+              <br />
+              <span className="text-xs font-mono text-brand-red mt-4 block p-4 bg-slate-50 rounded-xl border border-slate-100 overflow-auto text-left">
+                {this.state.error?.message}
+              </span>
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full bg-brand-teal text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-xl"
+            >
+              Recargar Aplicación
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
@@ -45,9 +91,11 @@ export default function App() {
   });
 
   const generatePDF = (data: AuditFormData, report: AuditReport) => {
-    const doc = new jsPDF();
-    const margin = 20;
-    let y = 20;
+    try {
+      console.log("[DEBUG] Iniciando generatePDF");
+      const doc = new jsPDF();
+      const margin = 20;
+      let y = 20;
 
     doc.setFontSize(22);
     doc.setTextColor(239, 68, 68); // Brand Red
@@ -122,6 +170,10 @@ export default function App() {
     });
 
     return doc;
+    } catch (pdfErr: any) {
+      console.error("[DEBUG] Erro no generatePDF:", pdfErr);
+      throw pdfErr;
+    }
   };
 
   const sendAuditEmail = async (data: AuditFormData, report: AuditReport) => {
@@ -176,16 +228,33 @@ export default function App() {
   };
 
   const runTestMode = () => {
-    const dummyData: AuditFormData = {
-      businessName: "Negocio de Prueba",
-      businessType: "restaurante",
-      location: "Valladolid, España",
-      whatsapp: "+34 600 000 000",
-      email: "siqueiracash@gmail.com",
-      instagram: "@prueba",
-      website: "https://prueba.com"
-    };
-    processAudit(dummyData, true);
+    try {
+      console.log("[DEBUG] runTestMode iniciado");
+      const dummyData: AuditFormData = {
+        businessName: "Negocio de Prueba",
+        businessType: "restaurante",
+        location: "Valladolid, España",
+        whatsapp: "+34 600 000 000",
+        email: "siqueiracash@gmail.com",
+        instagram: "@prueba",
+        website: "https://prueba.com"
+      };
+      
+      console.log("[DEBUG] Definindo valores do formulário");
+      setValue('businessName', dummyData.businessName);
+      setValue('businessType', dummyData.businessType);
+      setValue('location', dummyData.location);
+      setValue('whatsapp', dummyData.whatsapp);
+      setValue('email', dummyData.email);
+      setValue('instagram', dummyData.instagram);
+      setValue('website', dummyData.website);
+      
+      console.log("[DEBUG] Chamando processAudit");
+      processAudit(dummyData, true);
+    } catch (err: any) {
+      console.error("[DEBUG] Erro no runTestMode:", err);
+      setErrorModal({ show: true, message: `Erro ao iniciar teste: ${err.message}` });
+    }
   };
 
   const processAudit = async (data: AuditFormData, isMock: boolean = false) => {
@@ -250,7 +319,8 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <ErrorBoundary>
+      <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-brand-cream">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
@@ -955,7 +1025,7 @@ export default function App() {
             </motion.div>
             <h2 className="text-4xl font-black text-brand-teal mb-4 uppercase tracking-widest">Analizando su negocio...</h2>
             <p className="text-slate-600 max-w-md font-medium">
-              Nuestra inteligencia artificial está auditando su presencia digital y preparando un informe personalizado para <span className="font-black text-brand-red">{watch('businessName')}</span>.
+              Nuestra inteligencia artificial está auditando su presencia digital y preparando un informe personalizado para <span className="font-black text-brand-red">{(watch('businessName') || 'su negocio')}</span>.
             </p>
             <div className="mt-12 space-y-3 w-full max-w-xs">
               <div className="h-2 bg-brand-cream rounded-full overflow-hidden p-0.5">
@@ -1340,5 +1410,6 @@ export default function App() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }
