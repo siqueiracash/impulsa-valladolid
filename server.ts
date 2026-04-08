@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from 'cors';
+import { Resend } from 'resend';
 
 const PORT = 3000;
 
@@ -18,6 +19,73 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cors());
+
+  // Initialize Resend (Lazy)
+  let resend: Resend | null = null;
+  const getResend = () => {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) {
+      console.error("[SERVER] Error: RESEND_API_KEY no encontrada en process.env");
+      throw new Error('RESEND_API_KEY environment variable is required');
+    }
+    if (!resend) {
+      resend = new Resend(key);
+    }
+    return resend;
+  };
+
+  // API Routes
+  app.post("/api/send-audit", async (req, res) => {
+    console.log(`[API] >>> PETICIÓN POST RECIBIDA EN /api/send-audit <<<`);
+    const { email, businessName, pdfBase64, formData } = req.body;
+    
+    if (!pdfBase64) {
+      console.error("[API] Error: No se recibió el PDF");
+      return res.status(400).json({ error: "No se recibió el archivo PDF" });
+    }
+
+    console.log(`[API] Procesando auditoría para: ${businessName}`);
+    
+    try {
+      const resendClient = getResend();
+      
+      // Enviar correo al administrador (tú)
+      const { data, error } = await resendClient.emails.send({
+        from: 'Auditoria IA <auditoria@impulsavalladolid.es>',
+        to: ['siqueiracash@gmail.com'],
+        subject: `Nueva Auditoría: ${businessName}`,
+        html: `
+          <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+            <h1 style="color: #ef4444;">Nueva Auditoría de Marketing Digital</h1>
+            <p>Se ha generado un nuevo informe para un cliente potencial.</p>
+            <div style="background: #f3f4f6; padding: 20px; rounded: 10px;">
+              <p><strong>Establecimiento:</strong> ${businessName}</p>
+              <p><strong>Tipo de Negocio:</strong> ${formData?.businessType || 'N/A'}</p>
+              <p><strong>Ubicación:</strong> ${formData?.location || 'N/A'}</p>
+              <p><strong>WhatsApp:</strong> ${formData?.whatsapp || 'N/A'}</p>
+              <p><strong>Email del Cliente:</strong> ${email}</p>
+            </div>
+            <p>El informe técnico detallado se encuentra adjunto en formato PDF.</p>
+          </div>
+        `,
+        attachments: [{
+          filename: `Auditoria_${businessName.replace(/\s+/g, '_')}.pdf`,
+          content: pdfBase64,
+        }],
+      });
+
+      if (error) {
+        console.error('[API] Error de Resend:', error);
+        return res.status(400).json({ error: error.message });
+      }
+      
+      console.log("[API] Correo enviado con éxito");
+      res.json({ success: true, data });
+    } catch (err: any) {
+      console.error('[API] Error interno capturado:', err);
+      res.status(500).json({ error: err.message || 'Error interno del servidor' });
+    }
+  });
 
   app.get("/api/test", (req, res) => {
     res.json({ message: "API funcionando correctamente" });

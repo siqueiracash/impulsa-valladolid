@@ -32,6 +32,8 @@ export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
+  const [emailStatus, setEmailStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [emailError, setEmailError] = React.useState<string | null>(null);
   const [step, setStep] = React.useState(1);
   const totalSteps = 3;
 
@@ -122,6 +124,41 @@ export default function App() {
     return doc;
   };
 
+  const sendAuditEmail = async (data: AuditFormData, report: AuditReport) => {
+    try {
+      setEmailStatus('sending');
+      setEmailError(null);
+      console.log('Generando PDF para envío por correo electrónico...');
+      const doc = generatePDF(data, report);
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      
+      console.log('Enviando auditoría al servidor...');
+      const response = await fetch('/api/send-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email,
+          businessName: data.businessName,
+          pdfBase64: pdfBase64,
+          formData: data
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        setEmailError(errData.error || 'Error desconocido');
+        setEmailStatus('error');
+      } else {
+        console.log('¡Correo electrónico enviado con éxito!');
+        setEmailStatus('success');
+      }
+    } catch (emailErr: any) {
+      console.error('Error en la rutina de correo electrónico:', emailErr);
+      setEmailError(emailErr.message || 'Error de conexión');
+      setEmailStatus('error');
+    }
+  };
+
   const onSubmit = async (data: AuditFormData) => {
     console.log('Iniciando envío del formulario...', data);
     setView('loading');
@@ -129,6 +166,9 @@ export default function App() {
       const result = await generateAuditReport(data);
       setReport(result);
       setView('report');
+      
+      // Enviar correo electrónico automáticamente
+      sendAuditEmail(data, result);
     } catch (error: any) {
       console.error('Error detallado en la generación del informe:', error);
       let errorMessage = '¡Ups! Algo no salió como se esperaba. Por favor, verifique su conexión o inténtelo de nuevo en unos instantes.';
@@ -902,6 +942,37 @@ export default function App() {
                   </div>
                   <h2 className="text-5xl font-black text-brand-teal leading-none">Diagnóstico <br /><span className="text-brand-red">Estratégico</span></h2>
                   <p className="mt-2 text-brand-teal font-black uppercase tracking-widest text-sm opacity-60">Para: {watch('businessName')}</p>
+                  
+                  {emailStatus === 'sending' && (
+                    <div className="mt-4 flex items-center gap-2 text-brand-orange animate-pulse">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Enviando informe a siqueiracash@gmail.com...</span>
+                    </div>
+                  )}
+                  
+                  {emailStatus === 'success' && (
+                    <div className="mt-4 flex items-center gap-2 text-emerald-500">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">¡Informe enviado con éxito!</span>
+                    </div>
+                  )}
+
+                  {emailStatus === 'error' && (
+                    <div className="mt-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-2 text-red-500">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Error de envío: {emailError}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => sendAuditEmail(watch(), report!)}
+                        className="text-[9px] font-bold uppercase tracking-widest text-brand-teal underline text-left"
+                      >
+                        Intentar reenviar informe
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <button 
                   onClick={() => {
