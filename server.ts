@@ -26,16 +26,17 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   
-  // Configuração explícita de CORS para permitir o domínio customizado
-  app.use(cors({
-    origin: '*', // Permitir de qualquer lugar para garantir que o domínio customizado funcione
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true
-  }));
-
-  // Responder a requisições OPTIONS (Preflight)
-  app.options('*', cors());
+  // Configuração de CORS ultra-permissiva para domínios customizados
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
 
   // Initialize Resend (Lazy)
   let resend: Resend | null = null;
