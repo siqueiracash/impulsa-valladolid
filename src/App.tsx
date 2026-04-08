@@ -171,6 +171,10 @@ export default function App() {
     }
   };
 
+  const onSubmit = async (data: AuditFormData) => {
+    await processAudit(data, false);
+  };
+
   const runTestMode = () => {
     const dummyData: AuditFormData = {
       businessName: "Negocio de Prueba",
@@ -181,10 +185,10 @@ export default function App() {
       instagram: "@prueba",
       website: "https://prueba.com"
     };
-    onSubmit(dummyData, true);
+    processAudit(dummyData, true);
   };
 
-  const onSubmit = async (data: AuditFormData, isMock: boolean = false) => {
+  const processAudit = async (data: AuditFormData, isMock: boolean = false) => {
     console.log('Iniciando envío del formulario...', data, isMock ? '(MOCK)' : '');
     setView('loading');
     try {

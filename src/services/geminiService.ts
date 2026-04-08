@@ -64,7 +64,7 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
       // En el último intento, probamos sin herramientas por si el límite es del buscador
       const tools = i === maxRetries - 1 ? [] : [{ googleSearch: {} }];
       
-      const response = await ai.models.generateContent({
+      const result = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
@@ -87,11 +87,11 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
       });
 
       console.log("[Gemini] Respuesta recibida con éxito.");
-      const text = typeof response.text === 'function' ? response.text() : (response.text || "{}");
-      const report = JSON.parse(text) as AuditReport;
+      const text = result.text;
+      const report = JSON.parse(text as string) as AuditReport;
       
       // Extraer fuentes de la búsqueda de Google
-      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      const groundingChunks = result.candidates?.[0]?.groundingMetadata?.groundingChunks;
       if (groundingChunks) {
         const sources: { title: string; uri: string }[] = [];
         for (const chunk of groundingChunks) {
