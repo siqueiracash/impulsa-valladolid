@@ -207,12 +207,18 @@ export default function App() {
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      // Usar caminho relativo para que funcione tanto em dev quanto em produção (Shared App / Domínio Customizado)
-      const apiUrl = '/api/send-audit';
-      console.log(`[DEBUG] Enviando para rota relativa: ${apiUrl}`);
+      // Detectar se estamos no domínio customizado
+      const isCustomDomain = window.location.hostname.includes('impulsavalladolid.es');
+      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
+      
+      // Se estiver no domínio customizado, usamos a URL absoluta para contornar o 404 do servidor estático
+      const apiUrl = isCustomDomain ? `${cloudRunUrl}/api/send-audit` : '/api/send-audit';
+      
+      console.log(`[DEBUG] Enviando para: ${apiUrl} (Domínio Customizado: ${isCustomDomain})`);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
+        mode: 'cors',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
