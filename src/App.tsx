@@ -80,7 +80,7 @@ export default function App() {
     doc.text('Puntos Fuertes:', margin, y);
     y += 10;
     doc.setFontSize(11);
-    report.strengths.forEach((s, index) => {
+    (report.strengths || []).forEach((s, index) => {
       if (y > 270) { doc.addPage(); y = 20; }
       const splitS = doc.splitTextToSize(`• ${s}`, 170);
       doc.text(splitS, margin, y);
@@ -92,7 +92,7 @@ export default function App() {
     doc.text('Qué mejorar:', margin, y);
     y += 10;
     doc.setFontSize(11);
-    report.problems.forEach((p, index) => {
+    (report.problems || []).forEach((p, index) => {
       if (y > 270) { doc.addPage(); y = 20; }
       const splitP = doc.splitTextToSize(`• ${p}`, 170);
       doc.text(splitP, margin, y);
@@ -114,7 +114,7 @@ export default function App() {
     doc.text('Plan de Acción Inmediato:', margin, y);
     y += 10;
     doc.setFontSize(11);
-    report.priorityActions.forEach((a, index) => {
+    (report.priorityActions || []).forEach((a, index) => {
       if (y > 270) { doc.addPage(); y = 20; }
       const splitA = doc.splitTextToSize(`${index + 1}. ${a}`, 170);
       doc.text(splitA, margin, y);
@@ -1034,7 +1034,7 @@ export default function App() {
                     </div>
                     <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">Puntos Fuertes</h3>
                     <ul className="space-y-6">
-                      {report.strengths.map((s, i) => (
+                      {(report.strengths || []).map((s, i) => (
                         <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
                           <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2.5 shrink-0" />
                           {s}
@@ -1055,7 +1055,7 @@ export default function App() {
                     </div>
                     <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">Qué mejorar</h3>
                     <ul className="space-y-6">
-                      {report.problems.map((p, i) => (
+                      {(report.problems || []).map((p, i) => (
                         <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
                           <div className="w-2 h-2 rounded-full bg-amber-500 mt-2.5 shrink-0" />
                           {p}
@@ -1113,7 +1113,7 @@ export default function App() {
                 >
                   <h3 className="text-2xl font-black text-brand-teal mb-12 uppercase tracking-widest text-center">Plan de Acción Inmediato</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {report.priorityActions.map((a, i) => (
+                    {(report.priorityActions || []).map((a, i) => (
                       <div key={i} className="flex items-center gap-6 p-6 rounded-3xl bg-slate-50 border border-slate-100 group hover:border-brand-red transition-all">
                         <div className="w-12 h-12 rounded-2xl bg-brand-red text-white flex items-center justify-center text-xl font-black shrink-0 shadow-lg shadow-brand-red/20 group-hover:rotate-6 transition-transform">
                           {i + 1}

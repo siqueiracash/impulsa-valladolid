@@ -74,7 +74,8 @@ export async function generateAuditReport(data: AuditFormData): Promise<AuditRep
       });
 
       console.log("[Gemini] Respuesta recibida con éxito.");
-      const report = JSON.parse(response.text || "{}") as AuditReport;
+      const text = typeof response.text === 'function' ? response.text() : (response.text || "{}");
+      const report = JSON.parse(text) as AuditReport;
       
       // Extraer fuentes de la búsqueda de Google
       const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
