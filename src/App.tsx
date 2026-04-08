@@ -232,7 +232,8 @@ export default function App() {
         try {
           const errData = JSON.parse(text);
           if (typeof errData === 'object' && errData !== null) {
-            errorMsg = errData.error || errData.message || JSON.stringify(errData);
+            const rawError = errData.error || errData.message || errData;
+            errorMsg = typeof rawError === 'string' ? rawError : JSON.stringify(rawError);
           } else {
             errorMsg = String(errData);
           }
@@ -241,8 +242,8 @@ export default function App() {
         }
         
         // Limpeza final para evitar [object Object]
-        if (errorMsg === '[object Object]') {
-          errorMsg = "Erro técnico detalhado nos logs do servidor.";
+        if (typeof errorMsg !== 'string' || errorMsg.toLowerCase() === '[object object]') {
+          errorMsg = "Erro técnico no servidor. Verifique se a chave do Resend está correta.";
         }
         
         setEmailError(errorMsg);

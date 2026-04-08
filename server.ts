@@ -79,14 +79,16 @@ async function startServer() {
 
       if (error) {
         console.error('[SERVER] Erro Resend:', JSON.stringify(error));
-        // Se for erro de domínio não verificado, dar uma dica melhor
-        let customMessage = (error as any).message;
-        if ((error as any).name === 'validation_error' && customMessage.includes('domain')) {
-          customMessage = "Domínio não verificado no Resend. Use 'onboarding@resend.dev' ou verifique seu domínio.";
+        let errorMessage = (error as any).message || 'Erro desconhecido no Resend';
+        
+        // Dica amigável para erros comuns
+        if (errorMessage.includes('domain') || (error as any).name === 'validation_error') {
+          errorMessage = "Erro de Domínio/Permissão: Verifique se está enviando para o e-mail da conta ou se o domínio está verificado.";
         }
+
         return res.status(400).json({ 
-          error: customMessage || 'Erro desconhecido no Resend',
-          raw: error
+          error: String(errorMessage),
+          details: error
         });
       }
       
@@ -96,6 +98,16 @@ async function startServer() {
       console.error('[SERVER] Erro Interno:', err);
       res.status(500).json({ error: err.message || 'Erro interno do servidor' });
     }
+  });
+
+  app.get("/api/debug-env", (req, res) => {
+    const key = process.env.RESEND_API_KEY;
+    res.json({ 
+      hasKey: !!key,
+      keyLength: key ? key.length : 0,
+      keyPrefix: key ? key.substring(0, 5) + "..." : "none",
+      nodeEnv: process.env.NODE_ENV
+    });
   });
 
   app.get("/api/health", (req, res) => {
