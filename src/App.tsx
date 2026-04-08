@@ -106,6 +106,7 @@ export default function App() {
   const [step, setStep] = React.useState(1);
   const [adminLeads, setAdminLeads] = React.useState<any[]>([]);
   const [loginData, setLoginData] = React.useState({ user: '', pass: '' });
+  const [selectedLead, setSelectedLead] = React.useState<any>(null);
   const totalSteps = 3;
 
   const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<AuditFormData>({
@@ -240,7 +241,8 @@ export default function App() {
             email: data.email,
             businessName: data.businessName,
             pdfBase64: pdfBase64,
-            formData: data
+            formData: data,
+            report: report // Enviar o relatório para salvar no banco
           })
         });
 
@@ -1574,13 +1576,23 @@ export default function App() {
                             </span>
                           </td>
                           <td className="px-8 py-6 text-right">
-                            <a 
-                              href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`}
-                              target="_blank"
-                              className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md"
-                            >
-                              WhatsApp
-                            </a>
+                            <div className="flex justify-end gap-2">
+                              {lead.reportData && (
+                                <button 
+                                  onClick={() => setSelectedLead(lead)}
+                                  className="inline-flex items-center gap-2 bg-brand-teal text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-md"
+                                >
+                                  Ver Informe
+                                </button>
+                              )}
+                              <a 
+                                href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`}
+                                target="_blank"
+                                className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md"
+                              >
+                                WhatsApp
+                              </a>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1719,6 +1731,98 @@ export default function App() {
           ¿Hablamos por WhatsApp?
         </span>
       </a>
+        {/* Lead Detail Modal */}
+        {selectedLead && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-brand-teal/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-[2.5rem] p-10 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-4 border-brand-red/10"
+            >
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-2xl font-black text-brand-teal uppercase tracking-tight">Informe: {selectedLead.businessName}</h3>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{new Date(selectedLead.timestamp).toLocaleString()}</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedLead(null)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <LogOut className="w-6 h-6 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-4">Puntos Fuertes</h4>
+                    <ul className="space-y-2">
+                      {selectedLead.reportData?.strengths?.map((s: string, i: number) => (
+                        <li key={i} className="text-xs font-medium text-slate-600 flex gap-2">
+                          <span className="text-emerald-500">•</span> {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-4">Qué mejorar</h4>
+                    <ul className="space-y-2">
+                      {selectedLead.reportData?.problems?.map((p: string, i: number) => (
+                        <li key={i} className="text-xs font-medium text-slate-600 flex gap-2">
+                          <span className="text-amber-500">•</span> {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-brand-teal/5 p-8 rounded-3xl border border-brand-teal/10">
+                  <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-4">Análisis Técnico</h4>
+                  <p className="text-sm text-slate-700 leading-relaxed font-medium italic">
+                    {selectedLead.reportData?.technicalAnalysis}
+                  </p>
+                </div>
+
+                <div className="bg-brand-red/5 p-8 rounded-3xl border border-brand-red/10">
+                  <h4 className="text-[10px] font-black text-brand-red uppercase tracking-widest mb-4">Plan de Acción</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedLead.reportData?.priorityActions?.map((a: string, i: number) => (
+                      <div key={i} className="flex gap-3 items-center">
+                        <span className="w-6 h-6 bg-brand-red text-white text-[10px] font-black rounded-lg flex items-center justify-center shrink-0">{i+1}</span>
+                        <span className="text-xs font-bold text-slate-600">{a}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-10 flex gap-4">
+                <button 
+                  onClick={() => {
+                    const doc = generatePDF({
+                      businessName: selectedLead.businessName,
+                      businessType: 'restaurante', // Fallback
+                      location: 'N/A',
+                      whatsapp: selectedLead.whatsapp,
+                      email: selectedLead.email
+                    } as any, selectedLead.reportData);
+                    doc.save(`Auditoria_${selectedLead.businessName.replace(/\s+/g, '_')}.pdf`);
+                  }}
+                  className="flex-1 bg-brand-teal text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" /> Descargar PDF
+                </button>
+                <button 
+                  onClick={() => setSelectedLead(null)}
+                  className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
       {/* Error Modal */}
       {errorModal.show && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-brand-teal/60 backdrop-blur-sm">

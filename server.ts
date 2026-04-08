@@ -3,11 +3,22 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from 'cors';
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
 
 const PORT = 3000;
 
+// Configuração opcional do Supabase para persistência real
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
 async function startServer() {
-  console.log("[SERVER] Iniciando servidor com CORS ULTRA-PERMISSIVO...");
+  console.log("[SERVER] Iniciando servidor...");
+  if (supabase) {
+    console.log("[SERVER] Supabase detectado e configurado para persistência.");
+  } else {
+    console.log("[SERVER] Supabase não configurado. Usando apenas memória (volátil).");
+  }
   
   const app = express();
   
@@ -57,7 +68,31 @@ async function startServer() {
   });
 
   // Rota secreta para ver os leads (JSON)
-  app.get("/api/admin/leads-data", (req, res) => {
+  app.get("/api/admin/leads-data", async (req, res) => {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .order('timestamp', { ascending: false });
+        
+        if (!error && data) {
+          // Normalizar para camelCase para o frontend
+          const normalized = data.map(l => ({
+            timestamp: l.timestamp,
+            businessName: l.business_name || l.businessName,
+            email: l.email,
+            whatsapp: l.whatsapp,
+            emailSent: l.email_sent !== undefined ? l.email_sent : l.emailSent,
+            reportData: l.report_data || l.reportData
+          }));
+          return res.json(normalized);
+        }
+        console.error("[SUPABASE ERROR]", error);
+      } catch (err) {
+        console.error("[SUPABASE FETCH ERROR]", err);
+      }
+    }
     res.json(leads);
   });
 
@@ -110,9 +145,24 @@ async function startServer() {
       email,
       businessName,
       whatsapp: formData?.whatsapp || 'N/A',
-      emailSent: false
+      emailSent: false,
+      reportData: data.report || null // Salvar o JSON do relatório se disponível
     };
     leads.push(leadEntry);
+
+    // Salvar no Supabase se disponível
+    if (supabase) {
+      supabase.from('leads').insert([{
+        business_name: businessName,
+        email: email,
+        whatsapp: leadEntry.whatsapp,
+        email_sent: false,
+        report_data: leadEntry.reportData
+      }]).then(({ error }) => {
+        if (error) console.error("[SUPABASE INSERT ERROR]", error);
+        else console.log("[SUPABASE] Lead salvo com sucesso.");
+      });
+    }
 
     try {
       const resendKey = process.env.RESEND_API_KEY;
