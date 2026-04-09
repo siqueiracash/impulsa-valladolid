@@ -70,7 +70,7 @@ async function startServer() {
   // Rota secreta para ver os leads (JSON)
   app.get("/api/admin/leads-data", async (req, res) => {
     console.log("[API] Buscando leads...");
-    let allLeads = [...leads]; // Começa com os da memória
+    let allLeads = [...leads]; 
 
     if (supabase) {
       try {
@@ -81,24 +81,34 @@ async function startServer() {
         
         if (error) {
           console.error("[SUPABASE FETCH ERROR]", error);
-        } else if (data && data.length > 0) {
-          // Normalizar dados do Supabase
+          // Em vez de dar erro 500, vamos retornar o que temos na memória mas avisar o console
+          return res.json(allLeads);
+        } 
+        
+        if (data) {
           const supabaseLeads = data.map(l => ({
             timestamp: l.timestamp,
             businessName: l.business_name || l.businessName || 'N/A',
+            businessType: l.business_type || l.businessType || 'N/A',
+            location: l.location || 'N/A',
             email: l.email || 'N/A',
             whatsapp: l.whatsapp || 'N/A',
+            website: l.website || '',
+            instagram: l.instagram || '',
+            facebook: l.facebook || '',
+            linkedin: l.linkedin || '',
+            tiktok: l.tiktok || '',
+            otherPlatforms: l.other_platforms || l.otherPlatforms || '',
             emailSent: l.email_sent !== undefined ? l.email_sent : (l.emailSent || false),
             reportData: l.report_data || l.reportData || null
           }));
           
-          // Combinar e remover duplicatas por e-mail e timestamp aproximado se necessário
-          // Por agora, vamos priorizar os do Supabase se existirem
           allLeads = supabaseLeads;
-          console.log(`[API] ${allLeads.length} leads recuperados do Supabase.`);
+          console.log(`[API] ${allLeads.length} leads recuperados com sucesso.`);
         }
       } catch (err) {
         console.error("[SERVER FETCH ERROR]", err);
+        return res.json(allLeads);
       }
     }
     
@@ -161,22 +171,28 @@ async function startServer() {
 
     // Salvar no Supabase se disponível
     if (supabase) {
-      console.log("[SUPABASE] Tentando salvar lead...");
+      console.log("[SUPABASE] Tentando salvar lead completo...");
       const supabaseData: any = {
         business_name: businessName,
+        business_type: formData?.businessType || 'otro',
+        location: formData?.location || 'N/A',
         email: email,
         whatsapp: leadEntry.whatsapp,
+        website: formData?.website || '',
+        instagram: formData?.instagram || '',
+        facebook: formData?.facebook || '',
+        linkedin: formData?.linkedin || '',
+        tiktok: formData?.tiktok || '',
+        other_platforms: formData?.otherPlatforms || '',
+        email_sent: leadEntry.emailSent,
+        report_data: leadEntry.reportData
       };
-
-      // Adicionar campos extras apenas se existirem para evitar erros de schema
-      if (leadEntry.reportData) supabaseData.report_data = leadEntry.reportData;
-      supabaseData.email_sent = leadEntry.emailSent;
 
       supabase.from('leads').insert([supabaseData]).then(({ error }) => {
         if (error) {
-          console.error("[SUPABASE INSERT ERROR] Verifique se as colunas email_sent e report_data existem!", error);
+          console.error("[SUPABASE INSERT ERROR] DETALHES:", JSON.stringify(error, null, 2));
         } else {
-          console.log("[SUPABASE] Lead salvo com sucesso.");
+          console.log("[SUPABASE] Lead completo salvo com sucesso.");
         }
       });
     }

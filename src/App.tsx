@@ -105,6 +105,8 @@ export default function App() {
   const [emailError, setEmailError] = React.useState<string | null>(null);
   const [step, setStep] = React.useState(1);
   const [adminLeads, setAdminLeads] = React.useState<any[]>([]);
+  const [isAdminLoading, setIsAdminLoading] = React.useState(false);
+  const [adminError, setAdminError] = React.useState<string | null>(null);
   const [loginData, setLoginData] = React.useState({ user: '', pass: '' });
   const [selectedLead, setSelectedLead] = React.useState<any>(null);
   const totalSteps = 3;
@@ -339,24 +341,31 @@ export default function App() {
   };
 
   const fetchLeads = async () => {
+    setIsAdminLoading(true);
+    setAdminError(null);
     try {
       const response = await fetch('/api/admin/leads-data');
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         setAdminLeads(data);
+      } else {
+        setAdminError(data.error || 'Erro ao carregar leads');
       }
     } catch (err) {
       console.error("Erro ao buscar leads:", err);
+      setAdminError('Falha na conexão com o servidor');
+    } finally {
+      setIsAdminLoading(false);
     }
   };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (loginData.user === 'admin' && loginData.pass === 'abcd1234') {
-      fetchLeads();
       setView('admin');
+      fetchLeads();
     } else {
-      alert('Login ou senha incorretos');
+      setErrorModal({ show: true, message: 'Credenciales de administrador incorrectas.' });
     }
   };
 
@@ -1479,9 +1488,11 @@ export default function App() {
                 <div className="flex gap-4">
                   <button 
                     onClick={fetchLeads}
-                    className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2"
+                    disabled={isAdminLoading}
+                    className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2 disabled:opacity-50"
                   >
-                    <Sparkles className="w-4 h-4" /> Actualizar
+                    {isAdminLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {isAdminLoading ? 'Actualizando...' : 'Actualizar'}
                   </button>
                   <button 
                     onClick={() => setView('hero')}
@@ -1491,6 +1502,16 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {adminError && (
+                <div className="mb-8 p-6 bg-red-50 border-2 border-red-100 rounded-3xl flex items-center gap-4 text-red-700">
+                  <AlertCircle className="w-6 h-6 shrink-0" />
+                  <div>
+                    <p className="font-black uppercase tracking-widest text-xs">Error de Sincronización</p>
+                    <p className="text-sm font-medium">{adminError}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                 <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-brand-cream">
@@ -1753,6 +1774,46 @@ export default function App() {
               </div>
 
               <div className="space-y-8">
+                {/* Lead Information Section */}
+                <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
+                  <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-6">Información del Lead</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ubicación</p>
+                      <p className="text-sm font-bold text-slate-700">{selectedLead.location || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp</p>
+                      <p className="text-sm font-bold text-slate-700">{selectedLead.whatsapp}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">E-mail</p>
+                      <p className="text-sm font-bold text-slate-700">{selectedLead.email}</p>
+                    </div>
+                    {selectedLead.website && (
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sitio Web</p>
+                        <a href={selectedLead.website} target="_blank" className="text-sm font-bold text-brand-teal hover:underline">{selectedLead.website}</a>
+                      </div>
+                    )}
+                    <div className="md:col-span-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Redes Sociales</p>
+                      <div className="flex flex-wrap gap-4 mt-2">
+                        {selectedLead.instagram && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">IG: {selectedLead.instagram}</span>}
+                        {selectedLead.facebook && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">FB: {selectedLead.facebook}</span>}
+                        {selectedLead.linkedin && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">LI: {selectedLead.linkedin}</span>}
+                        {selectedLead.tiktok && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">TK: {selectedLead.tiktok}</span>}
+                      </div>
+                    </div>
+                    {selectedLead.otherPlatforms && (
+                      <div className="md:col-span-3">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Otras Notas</p>
+                        <p className="text-sm font-medium text-slate-600 bg-white p-4 rounded-xl border border-slate-200">{selectedLead.otherPlatforms}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                     <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-4">Puntos Fuertes</h4>
@@ -1801,10 +1862,16 @@ export default function App() {
                   onClick={() => {
                     const doc = generatePDF({
                       businessName: selectedLead.businessName,
-                      businessType: 'restaurante', // Fallback
-                      location: 'N/A',
+                      businessType: selectedLead.businessType || 'otro',
+                      location: selectedLead.location || 'N/A',
                       whatsapp: selectedLead.whatsapp,
-                      email: selectedLead.email
+                      email: selectedLead.email,
+                      website: selectedLead.website,
+                      instagram: selectedLead.instagram,
+                      facebook: selectedLead.facebook,
+                      linkedin: selectedLead.linkedin,
+                      tiktok: selectedLead.tiktok,
+                      otherPlatforms: selectedLead.otherPlatforms
                     } as any, selectedLead.reportData);
                     doc.save(`Auditoria_${selectedLead.businessName.replace(/\s+/g, '_')}.pdf`);
                   }}
