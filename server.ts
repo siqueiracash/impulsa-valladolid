@@ -69,6 +69,9 @@ async function startServer() {
 
   // Rota secreta para ver os leads (JSON)
   app.get("/api/admin/leads-data", async (req, res) => {
+    console.log("[API] Buscando leads...");
+    let allLeads = [...leads]; // Começa com os da memória
+
     if (supabase) {
       try {
         const { data, error } = await supabase
@@ -76,24 +79,30 @@ async function startServer() {
           .select('*')
           .order('timestamp', { ascending: false });
         
-        if (!error && data) {
-          // Normalizar para camelCase para o frontend
-          const normalized = data.map(l => ({
+        if (error) {
+          console.error("[SUPABASE FETCH ERROR]", error);
+        } else if (data && data.length > 0) {
+          // Normalizar dados do Supabase
+          const supabaseLeads = data.map(l => ({
             timestamp: l.timestamp,
-            businessName: l.business_name || l.businessName,
-            email: l.email,
-            whatsapp: l.whatsapp,
-            emailSent: l.email_sent !== undefined ? l.email_sent : l.emailSent,
-            reportData: l.report_data || l.reportData
+            businessName: l.business_name || l.businessName || 'N/A',
+            email: l.email || 'N/A',
+            whatsapp: l.whatsapp || 'N/A',
+            emailSent: l.email_sent !== undefined ? l.email_sent : (l.emailSent || false),
+            reportData: l.report_data || l.reportData || null
           }));
-          return res.json(normalized);
+          
+          // Combinar e remover duplicatas por e-mail e timestamp aproximado se necessário
+          // Por agora, vamos priorizar os do Supabase se existirem
+          allLeads = supabaseLeads;
+          console.log(`[API] ${allLeads.length} leads recuperados do Supabase.`);
         }
-        console.error("[SUPABASE ERROR]", error);
       } catch (err) {
-        console.error("[SUPABASE FETCH ERROR]", err);
+        console.error("[SERVER FETCH ERROR]", err);
       }
     }
-    res.json(leads);
+    
+    res.json(allLeads);
   });
 
   // Rota secreta para ver os leads (HTML)
@@ -152,15 +161,23 @@ async function startServer() {
 
     // Salvar no Supabase se disponível
     if (supabase) {
-      supabase.from('leads').insert([{
+      console.log("[SUPABASE] Tentando salvar lead...");
+      const supabaseData: any = {
         business_name: businessName,
         email: email,
         whatsapp: leadEntry.whatsapp,
-        email_sent: false,
-        report_data: leadEntry.reportData
-      }]).then(({ error }) => {
-        if (error) console.error("[SUPABASE INSERT ERROR]", error);
-        else console.log("[SUPABASE] Lead salvo com sucesso.");
+      };
+
+      // Adicionar campos extras apenas se existirem para evitar erros de schema
+      if (leadEntry.reportData) supabaseData.report_data = leadEntry.reportData;
+      supabaseData.email_sent = leadEntry.emailSent;
+
+      supabase.from('leads').insert([supabaseData]).then(({ error }) => {
+        if (error) {
+          console.error("[SUPABASE INSERT ERROR] Verifique se as colunas email_sent e report_data existem!", error);
+        } else {
+          console.log("[SUPABASE] Lead salvo com sucesso.");
+        }
       });
     }
 
