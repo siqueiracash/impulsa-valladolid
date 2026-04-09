@@ -70,10 +70,12 @@ async function startServer() {
   // Rota secreta para ver os leads (JSON)
   app.get("/api/admin/leads-data", async (req, res) => {
     console.log("[API] Buscando leads...");
-    let allLeads = [...leads]; 
+    
+    try {
+      let allLeads = [...leads]; 
 
-    if (supabase) {
-      try {
+      if (supabase) {
+        console.log("[SUPABASE] Buscando leads no banco...");
         const { data, error } = await supabase
           .from('leads')
           .select('*')
@@ -81,11 +83,9 @@ async function startServer() {
         
         if (error) {
           console.error("[SUPABASE FETCH ERROR]", error);
-          // Em vez de dar erro 500, vamos retornar o que temos na memória mas avisar o console
-          return res.json(allLeads);
-        } 
-        
-        if (data) {
+          // Fallback para memória se o Supabase falhar
+        } else if (data) {
+          console.log(`[SUPABASE] ${data.length} leads encontrados.`);
           const supabaseLeads = data.map(l => ({
             timestamp: l.timestamp,
             businessName: l.business_name || l.businessName || 'N/A',
@@ -104,15 +104,15 @@ async function startServer() {
           }));
           
           allLeads = supabaseLeads;
-          console.log(`[API] ${allLeads.length} leads recuperados com sucesso.`);
         }
-      } catch (err) {
-        console.error("[SERVER FETCH ERROR]", err);
-        return res.json(allLeads);
       }
+      
+      console.log(`[API] Retornando ${allLeads.length} leads.`);
+      res.json(allLeads);
+    } catch (err) {
+      console.error("[SERVER FETCH ERROR]", err);
+      res.status(500).json({ error: "Erro interno ao buscar leads" });
     }
-    
-    res.json(allLeads);
   });
 
   // Rota secreta para ver os leads (HTML)
@@ -165,9 +165,10 @@ async function startServer() {
       businessName,
       whatsapp: formData?.whatsapp || 'N/A',
       emailSent: false,
-      reportData: data.report || null // Salvar o JSON do relatório se disponível
+      reportData: data.report || null
     };
     leads.push(leadEntry);
+    console.log(`[API] Lead adicionado à memória. Total: ${leads.length}`);
 
     // Salvar no Supabase se disponível
     if (supabase) {
@@ -184,7 +185,7 @@ async function startServer() {
         linkedin: formData?.linkedin || '',
         tiktok: formData?.tiktok || '',
         other_platforms: formData?.otherPlatforms || '',
-        email_sent: leadEntry.emailSent,
+        email_sent: false,
         report_data: leadEntry.reportData
       };
 
@@ -194,6 +195,8 @@ async function startServer() {
         } else {
           console.log("[SUPABASE] Lead completo salvo com sucesso.");
         }
+      }).catch(err => {
+        console.error("[SUPABASE CRITICAL ERROR]", err);
       });
     }
 

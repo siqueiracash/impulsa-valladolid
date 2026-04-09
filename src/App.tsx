@@ -220,78 +220,47 @@ export default function App() {
     try {
       setEmailStatus('sending');
       setEmailError(null);
-      console.log('Generando PDF para envío por correo electrónico...');
+      console.log('[DEBUG] Generando PDF para envío...');
+      
       const doc = generatePDF(data, report);
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
-      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
-      const isCustomDomain = !window.location.hostname.includes('run.app');
-      const apiUrl = isCustomDomain ? `${cloudRunUrl}/api/send-audit` : '/api/send-audit';
+      // USAR SEMPRE CAMINHOS RELATIVOS NO AI STUDIO PARA MÁXIMA COMPATIBILIDADE
+      const apiUrl = '/api/send-audit';
       
       console.log(`[DEBUG] Enviando para: ${apiUrl}`);
       
-      // Tentar via Fetch primeiro
-      try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            email: data.email,
-            businessName: data.businessName,
-            pdfBase64: pdfBase64,
-            formData: data,
-            report: report // Enviar o relatório para salvar no banco
-          })
-        });
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: data.email,
+          businessName: data.businessName,
+          pdfBase64: pdfBase64,
+          formData: data,
+          report: report
+        })
+      });
 
-        if (response.ok) {
-          console.log('[DEBUG] Sucesso no envio via Fetch!');
-          setEmailStatus('success');
-          return;
-        }
-      } catch (fetchErr) {
-        console.warn("[DEBUG] Fetch falhou, tentando fallback de formulário...", fetchErr);
-      }
-
-      // FALLBACK: Submissão de formulário HTML (Bypassa CORS)
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = apiUrl;
-      form.target = 'hidden_iframe';
-      
-      const fields = {
-        email: data.email,
-        businessName: data.businessName,
-        pdfBase64: pdfBase64,
-        'formData[whatsapp]': data.whatsapp,
-        'formData[email]': data.email
-      };
-
-      for (const [key, value] of Object.entries(fields)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value as string;
-        form.appendChild(input);
-      }
-
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-      
-      // Como não temos callback do iframe, assumimos sucesso após um tempo ou damos feedback neutro
-      setTimeout(() => {
+      if (response.ok) {
+        console.log('[DEBUG] Sucesso no envio via API!');
         setEmailStatus('success');
-      }, 2000);
-
+      } else {
+        const errData = await response.json();
+        throw new Error(errData.error || `Erro ${response.status}`);
+      }
     } catch (emailErr: any) {
       console.error('Error en la rutina de correo electrónico:', emailErr);
       setEmailError(emailErr.message || 'Erro de conexão');
       setEmailStatus('error');
+      
+      // Tentar mostrar o erro para o usuário se for crítico
+      if (emailErr.message?.includes('429') || emailErr.message?.includes('limit')) {
+        setErrorModal({ show: true, message: "Límite de correos alcanzado o servidor sobrecargado. El lead fue guardado, mas el correo puede tardar." });
+      }
     }
   };
 
@@ -300,29 +269,22 @@ export default function App() {
       setEmailStatus('sending');
       setEmailError("Testando conexão...");
       
-      const cloudRunUrl = 'https://ais-dev-26wszy73iwvbneo75wgpom-599194162261.us-east1.run.app';
-      const isCustomDomain = !window.location.hostname.includes('run.app');
-      const apiUrl = isCustomDomain ? `${cloudRunUrl}/api/ping` : '/api/ping';
-      
+      const apiUrl = '/api/ping';
       console.log(`[DEBUG] Testando conexão com: ${apiUrl}`);
       
-      const response = await fetch(apiUrl, { 
-        method: 'GET',
-        mode: 'cors',
-        cache: 'no-cache'
-      });
-      
+      const response = await fetch(apiUrl);
       const data = await response.json();
+      
       if (response.ok) {
-        alert(`Conexão OK!\nServidor: ${data.message}\nResend Key: ${data.hasResendKey ? 'Configurada' : 'NÃO CONFIGURADA'}`);
+        alert(`Conexão OK!\nServidor: ${data.message}\nResend: ${data.hasResendKey ? 'Configurado' : 'NÃO CONFIGURADO'}`);
         setEmailError(null);
         setEmailStatus('idle');
       } else {
-        throw new Error(`Status ${response.status}: ${JSON.stringify(data)}`);
+        throw new Error(`Status ${response.status}`);
       }
     } catch (err: any) {
       console.error("[DEBUG] Erro no teste de conexão:", err);
-      alert(`Erro na conexão: ${err.message}\n\nIsso geralmente é um erro de CORS. O navegador bloqueia a comunicação entre o seu domínio e o servidor.`);
+      alert(`Erro na conexão: ${err.message}. Verifique se o servidor está rodando.`);
       setEmailError(`Falha no teste: ${err.message}`);
       setEmailStatus('error');
     }
@@ -414,7 +376,7 @@ export default function App() {
       setView('report');
       
       // Enviar correo electrónico automáticamente
-      sendAuditEmail(data, result);
+      await sendAuditEmail(data, result);
     } catch (error: any) {
       console.error('Error detallado en la generación del informe:', error);
       let errorMessage = '¡Ups! Algo no salió como se esperaba. Por favor, verifique su conexão o inténtelo de nuevo en unos instantes.';
