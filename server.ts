@@ -48,7 +48,7 @@ async function startServer() {
   }));
 
   app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
   // Armazenamento temporário em memória (limpa ao reiniciar o servidor)
   const leads: any[] = [];
@@ -146,38 +146,53 @@ async function startServer() {
     `);
   });
 
+  app.get("/api/ping", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      message: "Servidor Impulsa Valladolid está online",
+      supabase: supabase ? "Configurado" : "Não configurado",
+      resend: (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "") ? "Configurado" : "Não configurado",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   app.post("/api/send-audit", async (req, res) => {
-    console.log("[API] /api/send-audit recebido");
+    const contentLength = req.headers['content-length'];
+    console.log(`[API] /api/send-audit recebido. Content-Length: ${contentLength} bytes`);
     
-    // Suporte para JSON ou Form-Encoded (fallback para evitar CORS)
     const data = req.body;
+    if (!data || Object.keys(data).length === 0) {
+      console.error("[API] Erro: Body vazio ou não parseado. Verifique o Content-Type.");
+      return res.status(400).json({ error: "Dados não recebidos no servidor. Verifique se o envio é JSON válido." });
+    }
+
     const { email, businessName, pdfBase64, formData } = data;
 
     if (!pdfBase64) {
-      console.error("[API] Erro: PDF ausente");
-      return res.status(400).json({ error: "Dados do PDF não recebidos" });
+      console.error("[API] Erro: PDF ausente no payload");
+      return res.status(400).json({ error: "Dados do PDF não recebidos. O arquivo pode ser muito grande ou o envio falhou." });
     }
 
     // Salvar no banco em memória imediatamente
     const leadEntry = {
       timestamp: new Date().toISOString(),
-      email,
-      businessName,
+      email: email || 'N/A',
+      businessName: businessName || 'N/A',
       whatsapp: formData?.whatsapp || 'N/A',
       emailSent: false,
       reportData: data.report || null
     };
     leads.push(leadEntry);
-    console.log(`[API] Lead adicionado à memória. Total: ${leads.length}`);
+    console.log(`[API] Lead [${leadEntry.businessName}] adicionado à memória. Total: ${leads.length}`);
 
     // Salvar no Supabase se disponível
     if (supabase) {
-      console.log("[SUPABASE] Tentando salvar lead completo...");
+      console.log("[SUPABASE] Tentando persistir lead...");
       const supabaseData: any = {
-        business_name: businessName,
+        business_name: leadEntry.businessName,
         business_type: formData?.businessType || 'otro',
         location: formData?.location || 'N/A',
-        email: email,
+        email: leadEntry.email,
         whatsapp: leadEntry.whatsapp,
         website: formData?.website || '',
         instagram: formData?.instagram || '',
@@ -191,9 +206,10 @@ async function startServer() {
 
       supabase.from('leads').insert([supabaseData]).then(({ error }) => {
         if (error) {
-          console.error("[SUPABASE INSERT ERROR] DETALHES:", JSON.stringify(error, null, 2));
+          console.error("[SUPABASE ERROR] Falha ao inserir lead:", error.message);
+          console.error("DICA: Verifique se as colunas 'email_sent' e 'report_data' existem e se o RLS está desativado.");
         } else {
-          console.log("[SUPABASE] Lead completo salvo com sucesso.");
+          console.log("[SUPABASE] Lead persistido com sucesso.");
         }
       }).catch(err => {
         console.error("[SUPABASE CRITICAL ERROR]", err);
@@ -203,49 +219,53 @@ async function startServer() {
     try {
       const resendKey = process.env.RESEND_API_KEY;
       if (!resendKey || resendKey === "" || resendKey.includes("MY_RESEND_API_KEY")) {
-        console.error("[API] Erro: RESEND_API_KEY não configurada");
-        return res.status(500).json({ error: "RESEND_API_KEY não configurada" });
+        console.error("[API] Erro: RESEND_API_KEY ausente ou inválida");
+        return res.status(500).json({ error: "Configuração de e-mail (Resend) ausente no servidor." });
       }
 
       const resend = new Resend(resendKey);
       
-      const { data: resendData, error } = await resend.emails.send({
+      // Sanitizar nome do arquivo (apenas caracteres seguros)
+      const safeName = (businessName || "Auditoria").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+      
+      console.log(`[RESEND] Enviando e-mail para siqueiracash@gmail.com...`);
+
+      const { data: resendData, error: resendError } = await resend.emails.send({
         from: 'onboarding@resend.dev',
         to: 'siqueiracash@gmail.com',
         subject: `Nueva Auditoría: ${businessName}`,
         html: `
-          <div style="font-family: sans-serif; padding: 20px;">
-            <h2>Nueva Auditoría Generada</h2>
+          <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
+            <h2 style="color: #ef4444; border-bottom: 2px solid #ef4444; padding-bottom: 10px;">Nueva Auditoría Generada</h2>
             <p><strong>Negocio:</strong> ${businessName}</p>
             <p><strong>WhatsApp:</strong> ${formData?.whatsapp || 'N/A'}</p>
             <p><strong>Email:</strong> ${email}</p>
-            <hr>
-            <p>Este lead também foi salvo no painel temporário: /api/admin/leads</p>
+            <p><strong>Ubicación:</strong> ${formData?.location || 'N/A'}</p>
+            <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+              <p style="margin: 0; font-size: 14px;">El informe completo está adjunto en formato PDF.</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 11px; color: #999;">Sistema de Auditorías - Impulsa Valladolid</p>
           </div>
         `,
         attachments: [{
-          filename: `Auditoria_${businessName.replace(/\s+/g, '_')}.pdf`,
+          filename: `Auditoria_${safeName}.pdf`,
           content: pdfBase64,
         }],
       });
 
-      if (error) {
-        console.error("[RESEND ERROR]", error);
-        return res.status(400).json({ error: error.message });
+      if (resendError) {
+        console.error("[RESEND ERROR]", resendError);
+        const errorMsg = typeof resendError === 'string' ? resendError : (resendError.message || JSON.stringify(resendError));
+        return res.status(400).json({ error: `Erro no serviço de e-mail: ${errorMsg}` });
       }
 
       leadEntry.emailSent = true;
-      console.log("[API] E-mail enviado com sucesso!");
-      
-      // Se for um POST de formulário (não fetch), redirecionar ou enviar HTML simples
-      if (req.headers['content-type']?.includes('application/x-www-form-urlencoded')) {
-        return res.send("<h1>Sucesso! Seu relatório foi enviado.</h1><script>setTimeout(() => window.close(), 2000)</script>");
-      }
-      
+      console.log("[API] Ciclo de auditoria finalizado com sucesso.");
       res.json({ success: true });
     } catch (err: any) {
-      console.error("[SERVER ERROR]", err);
-      res.status(500).json({ error: err.message });
+      console.error("[SERVER FATAL ERROR]", err);
+      res.status(500).json({ error: `Erro interno: ${err.message || "Falha desconhecida"}` });
     }
   });
 

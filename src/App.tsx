@@ -254,7 +254,8 @@ export default function App() {
       }
     } catch (emailErr: any) {
       console.error('Error en la rutina de correo electrónico:', emailErr);
-      setEmailError(emailErr.message || 'Erro de conexão');
+      const msg = emailErr instanceof Error ? emailErr.message : (typeof emailErr === 'string' ? emailErr : JSON.stringify(emailErr));
+      setEmailError(msg || 'Erro de conexão');
       setEmailStatus('error');
       
       // Tentar mostrar o erro para o usuário se for crítico
@@ -1186,7 +1187,7 @@ export default function App() {
                       <div className="flex items-center gap-2 text-red-500">
                         <AlertCircle className="w-4 h-4" />
                         <span className="text-[10px] font-black uppercase tracking-widest">
-                          Error de envío: {String(emailError)}
+                          Error de envío: {typeof emailError === 'string' ? emailError : JSON.stringify(emailError)}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-x-6 gap-y-2">
