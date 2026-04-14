@@ -312,13 +312,29 @@ export default function App() {
       setSaveStatus('sending');
       setSaveError("Testando conexão...");
       
+      // Verificar se está no link compartilhado (que não tem backend)
+      const isShared = window.location.hostname.includes('-pre-');
+      if (isShared) {
+        alert("AVISO: Você está usando o 'Shared App URL'.\n\nEste link é apenas para visualização estática e NÃO suporta o banco de dados.\n\nPor favor, use o botão 'RUN' ou o link de 'Preview' do AI Studio para testar a sincronização.");
+        setSaveStatus('idle');
+        setSaveError(null);
+        return;
+      }
+
       // Teste 1: API
       const apiUrl = `/api/ping?t=${Date.now()}`;
       let apiMsg = "API: Falha";
       try {
         const resp = await fetch(apiUrl);
-        const data = await resp.json();
-        apiMsg = `API: ${resp.ok ? 'OK' : 'Erro ' + resp.status} (${data.supabase || '?'})`;
+        const contentType = resp.headers.get("content-type");
+        if (resp.ok && contentType && contentType.includes("application/json")) {
+          const data = await resp.json();
+          apiMsg = `API: OK (${data.supabase || '?'})`;
+        } else {
+          const text = await resp.text();
+          apiMsg = `API: Erro ${resp.status} (Resposta não é JSON)`;
+          console.error("[DEBUG] Erro API:", text);
+        }
       } catch (e: any) {
         apiMsg = `API: Erro (${e.message})`;
       }
@@ -1548,6 +1564,12 @@ export default function App() {
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Modo: {import.meta.env.MODE}</span>
                 </div>
+                {window.location.hostname.includes('-pre-') && (
+                  <div className="flex items-center gap-2 px-2 py-1 bg-red-100 rounded-lg border border-red-200">
+                    <AlertCircle className="w-3 h-3 text-red-600" />
+                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest animate-pulse">Link Compartilhado (Sem Backend)</span>
+                  </div>
+                )}
                 {config && (
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-indigo-500" />
