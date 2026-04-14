@@ -8,7 +8,7 @@ import { cn } from './lib/utils';
 import { AuditFormData, AuditReport, BusinessType } from './types';
 import { generateAuditReport } from './services/geminiService';
 import { jsPDF } from 'jspdf';
-import { supabase as supabaseClient, saveLeadDirectly } from './lib/supabase';
+import { getSupabase, initSupabase, saveLeadDirectly } from './lib/supabase';
 
 const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
@@ -110,7 +110,36 @@ export default function App() {
   const [adminError, setAdminError] = React.useState<string | null>(null);
   const [loginData, setLoginData] = React.useState({ user: '', pass: '' });
   const [selectedLead, setSelectedLead] = React.useState<any>(null);
+  const [config, setConfig] = React.useState<{ supabaseUrl: string | null; supabaseKey: string | null; mode: string } | null>(null);
   const totalSteps = 3;
+
+  // Carregar configuração do servidor (evita problemas de variáveis de ambiente no build)
+  React.useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        console.log("[DEBUG] Buscando configuração dinâmica...");
+        const response = await fetch(`/api/config?t=${Date.now()}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log("[DEBUG] Config recebida:", { 
+            url: data.supabaseUrl ? "Presente" : "AUSENTE", 
+            key: data.supabaseKey ? "Presente" : "AUSENTE" 
+          });
+          setConfig(data);
+          if (data.supabaseUrl && data.supabaseKey) {
+            initSupabase(data.supabaseUrl, data.supabaseKey);
+          }
+        } else {
+          console.error("[DEBUG] Falha ao buscar config:", response.status);
+          const text = await response.text();
+          console.error("[DEBUG] Resposta do servidor:", text);
+        }
+      } catch (err) {
+        console.error("[DEBUG] Erro ao carregar config:", err);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<AuditFormData>({
     resolver: zodResolver(formSchema),
@@ -296,16 +325,17 @@ export default function App() {
 
       // Teste 2: Supabase Direto
       let supabaseMsg = "Supabase: Não configurado";
-      if (supabaseClient) {
+      const client = getSupabase();
+      if (client) {
         try {
-          const { error } = await supabaseClient.from('leads').select('id').limit(1);
+          const { error } = await client.from('leads').select('id').limit(1);
           supabaseMsg = error ? `Supabase: Erro (${error.message})` : "Supabase: Conectado!";
         } catch (e: any) {
           supabaseMsg = `Supabase: Erro (${e.message})`;
         }
       }
 
-      alert(`Status da Conexão:\n\n${apiMsg}\n${supabaseMsg}\n\nAmbiente: ${import.meta.env.MODE}`);
+      alert(`Status da Conexão:\n\n${apiMsg}\n${supabaseMsg}\n\nAmbiente: ${import.meta.env.MODE}\nConfig: ${config ? 'Carregada' : 'Pendente'}`);
       setSaveStatus('idle');
       setSaveError(null);
     } catch (err: any) {
@@ -1507,17 +1537,37 @@ export default function App() {
               {/* System Status */}
               <div className="mb-8 p-4 bg-white rounded-2xl border border-slate-200 flex flex-wrap gap-6 items-center">
                 <div className="flex items-center gap-2">
-                  <div className={cn("w-2 h-2 rounded-full", !!import.meta.env.VITE_SUPABASE_URL ? "bg-emerald-500" : "bg-amber-500")} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase URL: {!!import.meta.env.VITE_SUPABASE_URL ? "Configurado" : "Ausente"}</span>
+                  <div className={cn("w-2 h-2 rounded-full", (config?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL) ? "bg-emerald-500" : "bg-amber-500")} />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase URL: {(config?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL) ? "Configurado" : "Ausente"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={cn("w-2 h-2 rounded-full", !!import.meta.env.VITE_SUPABASE_ANON_KEY ? "bg-emerald-500" : "bg-amber-500")} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase Key: {!!import.meta.env.VITE_SUPABASE_ANON_KEY ? "Configurado" : "Ausente"}</span>
+                  <div className={cn("w-2 h-2 rounded-full", (config?.supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY) ? "bg-emerald-500" : "bg-amber-500")} />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase Key: {(config?.supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY) ? "Configurado" : "Ausente"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Modo: {import.meta.env.MODE}</span>
                 </div>
+                {config && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Config: Dinâmica</span>
+                  </div>
+                )}
+                <button 
+                  onClick={async () => {
+                    try {
+                      const resp = await fetch('/api/debug-env');
+                      const data = await resp.json();
+                      alert(`Debug Env:\n\nKeys: ${data.envKeys.join(', ') || 'Nenhuma'}\nNode: ${data.nodeEnv}\nCWD: ${data.cwd}`);
+                    } catch (e: any) {
+                      alert(`Erro no debug: ${e.message}`);
+                    }
+                  }}
+                  className="ml-auto text-[10px] font-black text-brand-teal uppercase tracking-widest hover:underline"
+                >
+                  Ver Debug Env
+                </button>
               </div>
 
               {adminError && (

@@ -3,17 +3,24 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 
 const PORT = 3000;
 
 // Configuração do Supabase
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOI;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 async function startServer() {
-  console.log("[SERVER] >>> INICIANDO SERVIDOR IMPULSA VALLADOLID V3 <<<");
+  console.log("[SERVER] >>> INICIANDO SERVIDOR IMPULSA VALLADOLID V4 <<<");
   console.log(`[SERVER] Horário: ${new Date().toISOString()}`);
+  console.log(`[SERVER] Supabase URL: ${supabaseUrl ? "Detectada" : "AUSENTE"}`);
+  console.log(`[SERVER] Supabase Key: ${supabaseKey ? "Detectada" : "AUSENTE"}`);
+  
+  if (!process.env.VITE_SUPABASE_ANON_KEY && process.env.VITE_SUPABASE_ANOI) {
+    console.log("[SERVER] AVISO: Detectada chave VITE_SUPABASE_ANOI (possível erro de digitação no Secret)");
+  }
   
   const app = express();
   
@@ -35,6 +42,27 @@ async function startServer() {
   // 2. API ROUTES (Registradas ANTES de qualquer outra coisa)
   // ---------------------------------------------------------
   
+  // Endpoint para fornecer configuração ao cliente
+  app.get("/api/config", (req, res) => {
+    console.log("[DEBUG] /api/config solicitado. URL presente:", !!supabaseUrl);
+    res.json({
+      supabaseUrl: supabaseUrl || null,
+      supabaseKey: supabaseKey || null,
+      mode: process.env.NODE_ENV || "development"
+    });
+  });
+
+  // Endpoint de debug para variáveis de ambiente (apenas chaves)
+  app.get("/api/debug-env", (req, res) => {
+    const keys = Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('VITE'));
+    res.json({
+      envKeys: keys,
+      nodeEnv: process.env.NODE_ENV,
+      cwd: process.cwd(),
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Rota de teste simples
   app.get("/api/hello", (req, res) => {
     res.json({ message: "Hello from Express!" });
