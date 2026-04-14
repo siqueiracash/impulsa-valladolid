@@ -304,7 +304,11 @@ export default function App() {
       const data = await response.json();
       
       if (response.ok) {
-        alert(`Conexão OK!\nServidor: ${data.message}\nSupabase: ${data.supabase}`);
+        let debugInfo = "";
+        if (data.supabaseDebug) {
+          debugInfo = `\n\nDetalhes Técnicos:\n${JSON.stringify(data.supabaseDebug, null, 2)}`;
+        }
+        alert(`Conexão OK!\nServidor: ${data.message}\nSupabase: ${data.supabase}${debugInfo}`);
         setSaveError(null);
         setSaveStatus('idle');
       } else {
@@ -1477,6 +1481,12 @@ export default function App() {
                 </div>
                 <div className="flex gap-4">
                   <button 
+                    onClick={testConnection}
+                    className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2"
+                  >
+                    <Database className="w-4 h-4" /> Testar Conexão
+                  </button>
+                  <button 
                     onClick={fetchLeads}
                     disabled={isAdminLoading}
                     className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2 disabled:opacity-50"
@@ -1718,13 +1728,21 @@ export default function App() {
           <p className="text-brand-cream/30 text-[10px] font-black uppercase tracking-[0.3em]">
             © {new Date().getFullYear()} Impulsa Valladolid. Hecho con pasión en España.
           </p>
-          <a 
-            href="/api/admin/leads" 
-            target="_blank" 
-            className="text-brand-cream/10 hover:text-brand-cream/30 transition-colors text-[8px] uppercase tracking-widest"
-          >
-            Acceso Admin
-          </a>
+          <div className="flex gap-6">
+            <a 
+              href="/api/admin/leads" 
+              target="_blank" 
+              className="text-brand-cream/10 hover:text-brand-cream/30 transition-colors text-[8px] uppercase tracking-widest"
+            >
+              Acceso Admin
+            </a>
+            <button 
+              onClick={testConnection}
+              className="text-brand-cream/10 hover:text-brand-cream/30 transition-colors text-[8px] uppercase tracking-widest"
+            >
+              Testar Conexão
+            </button>
+          </div>
         </div>
       </footer>
       {/* Floating WhatsApp Button */}
