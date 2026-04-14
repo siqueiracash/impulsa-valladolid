@@ -222,7 +222,8 @@ export default function App() {
       setSaveError(null);
       console.log('[DEBUG] Guardando datos en el servidor...', { businessName: data.businessName });
       
-      const apiUrl = '/api/save-audit';
+      const apiUrl = `/api/save-audit?t=${Date.now()}`;
+      console.log(`[DEBUG] Enviando dados para: ${window.location.origin}${apiUrl}`);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -304,8 +305,8 @@ export default function App() {
       setSaveStatus('sending');
       setSaveError("Testando conexão...");
       
-      const apiUrl = '/api/ping';
-      console.log(`[DEBUG] Testando conexão com: ${apiUrl}`);
+      const apiUrl = `/api/ping?t=${Date.now()}`;
+      console.log(`[DEBUG] Testando conexão com: ${window.location.origin}${apiUrl}`);
       
       const response = await fetch(apiUrl);
       let data: any;
@@ -331,7 +332,8 @@ export default function App() {
       }
     } catch (err: any) {
       console.error("[DEBUG] Erro no teste de conexão:", err);
-      alert(`Erro na conexão: ${err.message}. Verifique se o servidor está rodando.`);
+      const debugMsg = `Erro na conexão: ${err.message}.\nURL: ${window.location.origin}${apiUrl}\nAmbiente: ${import.meta.env.MODE}`;
+      alert(debugMsg);
       setSaveError(`Falha no teste: ${err.message}`);
       setSaveStatus('error');
     }
@@ -353,7 +355,8 @@ export default function App() {
     setIsAdminLoading(true);
     setAdminError(null);
     try {
-      const response = await fetch('/api/admin/leads-data');
+      const apiUrl = `/api/admin/leads-data?t=${Date.now()}`;
+      const response = await fetch(apiUrl);
       const responseText = await response.text();
       let data: any;
       try {
@@ -1523,6 +1526,22 @@ export default function App() {
                   >
                     <LogOut className="w-4 h-4" /> Salir
                   </button>
+                </div>
+              </div>
+
+              {/* System Status */}
+              <div className="mb-8 p-4 bg-white rounded-2xl border border-slate-200 flex flex-wrap gap-6 items-center">
+                <div className="flex items-center gap-2">
+                  <div className={cn("w-2 h-2 rounded-full", !!import.meta.env.VITE_SUPABASE_URL ? "bg-emerald-500" : "bg-amber-500")} />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase URL: {!!import.meta.env.VITE_SUPABASE_URL ? "Configurado" : "Ausente"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={cn("w-2 h-2 rounded-full", !!import.meta.env.VITE_SUPABASE_ANON_KEY ? "bg-emerald-500" : "bg-amber-500")} />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase Key: {!!import.meta.env.VITE_SUPABASE_ANON_KEY ? "Configurado" : "Ausente"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Modo: {import.meta.env.MODE}</span>
                 </div>
               </div>
 

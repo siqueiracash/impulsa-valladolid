@@ -12,27 +12,36 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_A
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 async function startServer() {
-  console.log("[SERVER] Iniciando servidor...");
+  console.log("[SERVER] >>> INICIANDO SERVIDOR IMPULSA VALLADOLID V3 <<<");
+  console.log(`[SERVER] Horário: ${new Date().toISOString()}`);
   
   const app = express();
   
-  // 1. Logging & CORS
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-  });
-
+  // 1. Middlewares básicos
   app.use(cors());
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+  // Logging de todas as requisições para debug
+  app.use((req, res, next) => {
+    console.log(`[DEBUG] ${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+
   // Armazenamento temporário
   const leads: any[] = [];
 
-  // 2. API ROUTES (Registradas ANTES do Vite)
+  // ---------------------------------------------------------
+  // 2. API ROUTES (Registradas ANTES de qualquer outra coisa)
+  // ---------------------------------------------------------
   
+  // Rota de teste simples
+  app.get("/api/hello", (req, res) => {
+    res.json({ message: "Hello from Express!" });
+  });
+
   app.get("/api/ping", async (req, res) => {
-    console.log("[API] Ping recebido");
+    console.log("[API] Ping solicitado");
     let supabaseStatus = "Não configurado";
     let supabaseDebug = null;
 
@@ -47,7 +56,7 @@ async function startServer() {
         }
       } catch (err: any) {
         supabaseStatus = `Erro Crítico: ${err.message}`;
-        supabaseDebug = err;
+        supabaseDebug = { message: err.message, stack: err.stack };
       }
     }
 
@@ -56,6 +65,11 @@ async function startServer() {
       message: "Servidor Impulsa Valladolid está online e operante",
       supabase: supabaseStatus,
       supabaseDebug: supabaseDebug,
+      env: {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+        nodeEnv: process.env.NODE_ENV
+      },
       timestamp: new Date().toISOString()
     });
   });
@@ -97,11 +111,11 @@ async function startServer() {
 
         if (error) {
           console.error("[SUPABASE ERROR]", error.message);
-          return res.status(500).json({ error: "Erro no Supabase", details: error.message });
+          // Não retornamos erro 500 aqui para não travar o usuário, 
+          // já que salvamos em memória como fallback
         }
       } catch (err: any) {
         console.error("[SUPABASE CRITICAL]", err.message);
-        return res.status(500).json({ error: "Erro crítico no Supabase", details: err.message });
       }
     }
 
@@ -109,10 +123,12 @@ async function startServer() {
   });
 
   app.get("/api/admin/leads-data", async (req, res) => {
+    console.log("[API] Buscando leads...");
     try {
       if (supabase) {
         const { data, error } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
         if (!error && data) {
+          console.log(`[API] Retornando ${data.length} leads do Supabase`);
           return res.json(data.map(l => ({
             timestamp: l.timestamp,
             businessName: l.business_name || l.businessName,
@@ -129,24 +145,35 @@ async function startServer() {
             reportData: l.report_data || l.reportData
           })));
         }
+        if (error) console.error("[SUPABASE FETCH ERROR]", error.message);
       }
+      console.log(`[API] Retornando ${leads.length} leads da memória`);
       res.json(leads);
     } catch (err) {
+      console.error("[API ERROR]", err);
       res.status(500).json({ error: "Erro ao buscar leads" });
     }
   });
 
-  // 3. VITE / STATIC FILES
+  // ---------------------------------------------------------
+  // 3. VITE / STATIC FILES (Registrados DEPOIS das APIs)
+  // ---------------------------------------------------------
+  
   if (process.env.NODE_ENV !== "production") {
+    console.log("[SERVER] Configurando Vite em modo desenvolvimento...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    console.log("[SERVER] Configurando arquivos estáticos em modo produção...");
     const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    
+    // Fallback para SPA em produção
+    app.get('*', (req, res, next) => {
+      // Se for uma rota de API que chegou aqui, é porque não existe
       if (req.url.startsWith('/api/')) {
         return res.status(404).json({ error: "API Route not found" });
       }
@@ -154,9 +181,12 @@ async function startServer() {
     });
   }
 
+  // 4. Iniciar o servidor
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[SERVER] Rodando em http://0.0.0.0:${PORT}`);
+    console.log(`[SERVER] >>> SUCESSO <<< Rodando em http://0.0.0.0:${PORT}`);
   });
 }
 
-startServer().catch(console.error);
+startServer().catch(err => {
+  console.error("[FATAL ERROR] Falha ao iniciar o servidor:", err);
+});
