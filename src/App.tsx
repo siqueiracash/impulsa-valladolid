@@ -101,8 +101,8 @@ export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report' | 'login' | 'admin'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
-  const [emailStatus, setEmailStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-  const [emailError, setEmailError] = React.useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [saveError, setSaveError] = React.useState<string | null>(null);
   const [step, setStep] = React.useState(1);
   const [adminLeads, setAdminLeads] = React.useState<any[]>([]);
   const [isAdminLoading, setIsAdminLoading] = React.useState(false);
@@ -218,14 +218,11 @@ export default function App() {
 
   const saveAuditData = async (data: AuditFormData, report: AuditReport) => {
     try {
-      setEmailStatus('sending');
-      setEmailError(null);
-      console.log('[DEBUG] Guardando datos en el servidor...');
+      setSaveStatus('sending');
+      setSaveError(null);
+      console.log('[DEBUG] Guardando datos en el servidor...', { businessName: data.businessName });
       
-      // USAR SEMPRE CAMINHOS RELATIVOS NO AI STUDIO PARA MÁXIMA COMPATIBILIDADE
       const apiUrl = '/api/save-audit';
-      
-      console.log(`[DEBUG] Enviando para: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -241,27 +238,45 @@ export default function App() {
         })
       });
 
+      const responseData = await response.json().catch(() => ({ error: "Resposta do servidor não é um JSON válido" }));
+
       if (response.ok) {
         console.log('[DEBUG] Sucesso ao salvar dados!');
-        setEmailStatus('success');
+        setSaveStatus('success');
       } else {
-        const errData = await response.json();
-        throw new Error(errData.error || `Erro ${response.status}`);
+        console.error('[DEBUG] Erro do servidor:', responseData);
+        throw new Error(responseData.error || responseData.details || `Erro ${response.status}`);
       }
     } catch (saveErr: any) {
       console.error('Error al guardar los datos:', saveErr);
-      const msg = saveErr instanceof Error ? saveErr.message : (typeof saveErr === 'string' ? saveErr : JSON.stringify(saveErr));
-      setEmailError(msg || 'Erro de conexão');
-      setEmailStatus('error');
       
-      setErrorModal({ show: true, message: "No se pudo guardar la auditoría en la base de datos. Por favor, descargue el PDF para no perder la información." });
+      let msg = 'Erro de conexão';
+      if (saveErr instanceof Error) {
+        msg = saveErr.message;
+      } else if (typeof saveErr === 'string') {
+        msg = saveErr;
+      } else {
+        try {
+          msg = JSON.stringify(saveErr);
+        } catch (e) {
+          msg = String(saveErr);
+        }
+      }
+      
+      setSaveError(msg);
+      setSaveStatus('error');
+      
+      setErrorModal({ 
+        show: true, 
+        message: `No se pudo guardar la auditoría: ${msg}. Por favor, descargue el PDF para no perder la información.` 
+      });
     }
   };
 
   const testConnection = async () => {
     try {
-      setEmailStatus('sending');
-      setEmailError("Testando conexão...");
+      setSaveStatus('sending');
+      setSaveError("Testando conexão...");
       
       const apiUrl = '/api/ping';
       console.log(`[DEBUG] Testando conexão com: ${apiUrl}`);
@@ -271,16 +286,16 @@ export default function App() {
       
       if (response.ok) {
         alert(`Conexão OK!\nServidor: ${data.message}\nSupabase: ${data.supabase}`);
-        setEmailError(null);
-        setEmailStatus('idle');
+        setSaveError(null);
+        setSaveStatus('idle');
       } else {
         throw new Error(`Status ${response.status}`);
       }
     } catch (err: any) {
       console.error("[DEBUG] Erro no teste de conexão:", err);
       alert(`Erro na conexão: ${err.message}. Verifique se o servidor está rodando.`);
-      setEmailError(`Falha no teste: ${err.message}`);
-      setEmailStatus('error');
+      setSaveError(`Falha no teste: ${err.message}`);
+      setSaveStatus('error');
     }
   };
 
@@ -1161,26 +1176,26 @@ export default function App() {
                   <h2 className="text-5xl font-black text-brand-teal leading-none">Diagnóstico <br /><span className="text-brand-red">Estratégico</span></h2>
                   <p className="mt-2 text-brand-teal font-black uppercase tracking-widest text-sm opacity-60">Para: {watch('businessName')}</p>
                   
-                  {emailStatus === 'sending' && (
+                  {saveStatus === 'sending' && (
                     <div className="mt-4 flex items-center gap-2 text-brand-orange animate-pulse">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span className="text-[10px] font-black uppercase tracking-widest">Guardando auditoría en la base de datos...</span>
                     </div>
                   )}
                   
-                  {emailStatus === 'success' && (
+                  {saveStatus === 'success' && (
                     <div className="mt-4 flex items-center gap-2 text-emerald-500">
                       <CheckCircle2 className="w-4 h-4" />
                       <span className="text-[10px] font-black uppercase tracking-widest">¡Auditoría guardada con éxito!</span>
                     </div>
                   )}
 
-                  {emailStatus === 'error' && (
+                  {saveStatus === 'error' && (
                     <div className="mt-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-red-500">
                         <AlertCircle className="w-4 h-4" />
                         <span className="text-[10px] font-black uppercase tracking-widest">
-                          Error al guardar: {typeof emailError === 'string' ? emailError : JSON.stringify(emailError)}
+                          Error al guardar: {saveError}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-x-6 gap-y-2">

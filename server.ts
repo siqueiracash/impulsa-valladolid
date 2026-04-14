@@ -14,9 +14,22 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 async function startServer() {
   console.log("[SERVER] Iniciando servidor...");
   if (supabase) {
-    console.log("[SERVER] Supabase detectado e configurado para persistência.");
+    console.log("[SERVER] Supabase detectado.");
+    const maskedKey = supabaseKey ? `${supabaseKey.substring(0, 5)}...${supabaseKey.substring(supabaseKey.length - 5)}` : "null";
+    console.log(`[SERVER] URL: ${supabaseUrl}, Key: ${maskedKey}`);
+    
+    // Teste de conexão inicial
+    supabase.from('leads').select('count', { count: 'exact', head: true })
+      .then(({ count, error }) => {
+        if (error) {
+          console.error("[SUPABASE] Erro ao conectar na tabela 'leads':", error.message);
+          console.error("DICA: Certifique-se de que a tabela 'leads' existe e o RLS está desativado.");
+        } else {
+          console.log(`[SUPABASE] Conexão com a tabela 'leads' OK. Total de registros: ${count}`);
+        }
+      });
   } else {
-    console.log("[SERVER] Supabase não configurado. Usando apenas memória (volátil).");
+    console.log("[SERVER] Supabase não configurado. Verifique as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
   }
   
   const app = express();
