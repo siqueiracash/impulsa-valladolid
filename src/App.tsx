@@ -8,6 +8,7 @@ import { cn } from './lib/utils';
 import { AuditFormData, AuditReport, BusinessType } from './types';
 import { generateAuditReport } from './services/geminiService';
 import { jsPDF } from 'jspdf';
+import { supabase as supabaseClient, saveLeadDirectly } from './lib/supabase';
 
 const formSchema = z.object({
   businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
@@ -220,82 +221,59 @@ export default function App() {
     try {
       setSaveStatus('sending');
       setSaveError(null);
-      console.log('[DEBUG] Guardando datos en el servidor...', { businessName: data.businessName });
       
+      // 1. Tentar via API (Backend)
       const apiUrl = `/api/save-audit?t=${Date.now()}`;
-      console.log(`[DEBUG] Enviando dados para: ${window.location.origin}${apiUrl}`);
+      let apiSuccess = false;
       
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: data.email,
-          businessName: data.businessName,
-          formData: data,
-          report: report
-        })
-      });
-
-      const responseText = await response.text();
-      let responseData: any;
       try {
-        responseData = JSON.parse(responseText);
-      } catch (e) {
-        console.error("[DEBUG] Resposta do servidor não é JSON:", responseText);
-        throw new Error(`Resposta inválida do servidor: ${responseText.substring(0, 100)}...`);
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            businessName: data.businessName,
+            formData: data,
+            report: report
+          })
+        });
+
+        if (response.ok) {
+          apiSuccess = true;
+        }
+      } catch (apiErr) {
+        console.warn('[DEBUG] Erro na API, tentando direto no Supabase...', apiErr);
       }
 
-      if (response.ok) {
-        console.log('[DEBUG] Sucesso ao salvar dados!');
-        setSaveStatus('success');
-      } else {
-        console.error('[DEBUG] Erro do servidor:', responseData);
-        
-        let errorMsg = `Erro ${response.status}`;
-        if (responseData.error) {
-          errorMsg = typeof responseData.error === 'object' 
-            ? (responseData.error.message || JSON.stringify(responseData.error)) 
-            : responseData.error;
-        } else if (responseData.details) {
-          errorMsg = typeof responseData.details === 'object'
-            ? (responseData.details.message || JSON.stringify(responseData.details))
-            : responseData.details;
-        }
-        
-        throw new Error(errorMsg);
+      // 2. Fallback: Tentar direto no Supabase (Cliente)
+      if (!apiSuccess) {
+        await saveLeadDirectly({
+          business_name: data.businessName,
+          business_type: data.businessType || 'otro',
+          location: data.location || 'N/A',
+          email: data.email,
+          whatsapp: data.whatsapp || 'N/A',
+          website: data.website || '',
+          instagram: data.instagram || '',
+          facebook: data.facebook || '',
+          linkedin: data.linkedin || '',
+          tiktok: data.tiktok || '',
+          other_platforms: data.otherPlatforms || '',
+          report_data: report,
+          timestamp: new Date().toISOString()
+        });
       }
-    } catch (saveErr: any) {
-      console.error('Error al guardar los datos (objeto completo):', saveErr);
-      
-      let msg = 'Erro de conexão';
-      if (saveErr instanceof Error) {
-        msg = saveErr.message;
-      } else if (typeof saveErr === 'string') {
-        msg = saveErr;
-      } else if (saveErr && typeof saveErr === 'object') {
-        msg = saveErr.message || saveErr.error || JSON.stringify(saveErr);
-      } else {
-        msg = String(saveErr);
-      }
-      
-      // Se ainda for [object Object], forçar stringify
-      if (msg === '[object Object]') {
-        try {
-          msg = JSON.stringify(saveErr);
-        } catch (e) {
-          msg = 'Erro complexo (ver console)';
-        }
-      }
-      
+
+      setSaveStatus('success');
+      setSaveError(null);
+    } catch (err: any) {
+      console.error("[DEBUG] Erro fatal ao salvar:", err);
+      const msg = err.message || "Erro de sincronização";
       setSaveError(msg);
       setSaveStatus('error');
-      
       setErrorModal({ 
         show: true, 
-        message: `No se pudo guardar la auditoría: ${msg}. Por favor, descargue el PDF para no perder la información.` 
+        message: `No se pudo sincronizar: ${msg}. Por favor, descargue el PDF.` 
       });
     }
   };
@@ -305,36 +283,33 @@ export default function App() {
       setSaveStatus('sending');
       setSaveError("Testando conexão...");
       
+      // Teste 1: API
       const apiUrl = `/api/ping?t=${Date.now()}`;
-      console.log(`[DEBUG] Testando conexão com: ${window.location.origin}${apiUrl}`);
-      
-      const response = await fetch(apiUrl);
-      let data: any;
-      const responseText = await response.text();
-      
+      let apiMsg = "API: Falha";
       try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error("[DEBUG] Resposta não é JSON:", responseText);
-        throw new Error(`Resposta inválida do servidor (não é JSON). Conteúdo: ${responseText.substring(0, 100)}...`);
+        const resp = await fetch(apiUrl);
+        const data = await resp.json();
+        apiMsg = `API: ${resp.ok ? 'OK' : 'Erro ' + resp.status} (${data.supabase || '?'})`;
+      } catch (e: any) {
+        apiMsg = `API: Erro (${e.message})`;
       }
-      
-      if (response.ok) {
-        let debugInfo = "";
-        if (data.supabaseDebug) {
-          debugInfo = `\n\nDetalhes Técnicos:\n${JSON.stringify(data.supabaseDebug, null, 2)}`;
+
+      // Teste 2: Supabase Direto
+      let supabaseMsg = "Supabase: Não configurado";
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('leads').select('id').limit(1);
+          supabaseMsg = error ? `Supabase: Erro (${error.message})` : "Supabase: Conectado!";
+        } catch (e: any) {
+          supabaseMsg = `Supabase: Erro (${e.message})`;
         }
-        alert(`Conexão OK!\nServidor: ${data.message}\nSupabase: ${data.supabase}${debugInfo}`);
-        setSaveError(null);
-        setSaveStatus('idle');
-      } else {
-        throw new Error(`Status ${response.status}`);
       }
+
+      alert(`Status da Conexão:\n\n${apiMsg}\n${supabaseMsg}\n\nAmbiente: ${import.meta.env.MODE}`);
+      setSaveStatus('idle');
+      setSaveError(null);
     } catch (err: any) {
-      console.error("[DEBUG] Erro no teste de conexão:", err);
-      const debugMsg = `Erro na conexão: ${err.message}.\nURL: ${window.location.origin}${apiUrl}\nAmbiente: ${import.meta.env.MODE}`;
-      alert(debugMsg);
-      setSaveError(`Falha no teste: ${err.message}`);
+      setSaveError(err.message);
       setSaveStatus('error');
     }
   };
