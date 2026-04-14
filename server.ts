@@ -62,6 +62,15 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+  // Middleware para capturar erros de JSON malformado
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof SyntaxError && 'status' in err && err.status === 400 && 'body' in err) {
+      console.error("[SERVER] Erro de sintaxe no JSON recebido:", err.message);
+      return res.status(400).json({ error: "JSON malformado no corpo da requisição." });
+    }
+    next();
+  });
+
   // Armazenamento temporário em memória (limpa ao reiniciar o servidor)
   const leads: any[] = [];
 
@@ -158,11 +167,30 @@ async function startServer() {
     `);
   });
 
-  app.get("/api/ping", (req, res) => {
+  app.get("/api/ping", async (req, res) => {
+    let supabaseStatus = "Não configurado";
+    let supabaseTest = null;
+
+    if (supabase) {
+      try {
+        const { count, error } = await supabase.from('leads').select('*', { count: 'exact', head: true });
+        if (error) {
+          supabaseStatus = `Erro: ${error.message}`;
+          supabaseTest = error;
+        } else {
+          supabaseStatus = `Conectado (Total: ${count})`;
+        }
+      } catch (err: any) {
+        supabaseStatus = `Erro Crítico: ${err.message}`;
+        supabaseTest = err;
+      }
+    }
+
     res.json({ 
       status: "ok", 
       message: "Servidor Impulsa Valladolid está online",
-      supabase: supabase ? "Configurado" : "Não configurado",
+      supabase: supabaseStatus,
+      supabaseDebug: supabaseTest,
       timestamp: new Date().toISOString()
     });
   });

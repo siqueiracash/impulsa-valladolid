@@ -245,21 +245,40 @@ export default function App() {
         setSaveStatus('success');
       } else {
         console.error('[DEBUG] Erro do servidor:', responseData);
-        throw new Error(responseData.error || responseData.details || `Erro ${response.status}`);
+        
+        let errorMsg = `Erro ${response.status}`;
+        if (responseData.error) {
+          errorMsg = typeof responseData.error === 'object' 
+            ? (responseData.error.message || JSON.stringify(responseData.error)) 
+            : responseData.error;
+        } else if (responseData.details) {
+          errorMsg = typeof responseData.details === 'object'
+            ? (responseData.details.message || JSON.stringify(responseData.details))
+            : responseData.details;
+        }
+        
+        throw new Error(errorMsg);
       }
     } catch (saveErr: any) {
-      console.error('Error al guardar los datos:', saveErr);
+      console.error('Error al guardar los datos (objeto completo):', saveErr);
       
       let msg = 'Erro de conexão';
       if (saveErr instanceof Error) {
         msg = saveErr.message;
       } else if (typeof saveErr === 'string') {
         msg = saveErr;
+      } else if (saveErr && typeof saveErr === 'object') {
+        msg = saveErr.message || saveErr.error || JSON.stringify(saveErr);
       } else {
+        msg = String(saveErr);
+      }
+      
+      // Se ainda for [object Object], forçar stringify
+      if (msg === '[object Object]') {
         try {
           msg = JSON.stringify(saveErr);
         } catch (e) {
-          msg = String(saveErr);
+          msg = 'Erro complexo (ver console)';
         }
       }
       
