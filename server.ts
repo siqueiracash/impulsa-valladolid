@@ -2,7 +2,6 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from 'cors';
-import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
 const PORT = 3000;
@@ -151,27 +150,21 @@ async function startServer() {
       status: "ok", 
       message: "Servidor Impulsa Valladolid está online",
       supabase: supabase ? "Configurado" : "Não configurado",
-      resend: (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "") ? "Configurado" : "Não configurado",
       timestamp: new Date().toISOString()
     });
   });
 
-  app.post("/api/send-audit", async (req, res) => {
+  app.post("/api/save-audit", async (req, res) => {
     const contentLength = req.headers['content-length'];
-    console.log(`[API] /api/send-audit recebido. Content-Length: ${contentLength} bytes`);
+    console.log(`[API] /api/save-audit recebido. Content-Length: ${contentLength} bytes`);
     
     const data = req.body;
     if (!data || Object.keys(data).length === 0) {
-      console.error("[API] Erro: Body vazio ou não parseado. Verifique o Content-Type.");
-      return res.status(400).json({ error: "Dados não recebidos no servidor. Verifique se o envio é JSON válido." });
+      console.error("[API] Erro: Body vazio ou não parseado.");
+      return res.status(400).json({ error: "Dados não recebidos no servidor." });
     }
 
-    const { email, businessName, pdfBase64, formData } = data;
-
-    if (!pdfBase64) {
-      console.error("[API] Erro: PDF ausente no payload");
-      return res.status(400).json({ error: "Dados do PDF não recebidos. O arquivo pode ser muito grande ou o envio falhou." });
-    }
+    const { email, businessName, pdfBase64, formData, report } = data;
 
     // Salvar no banco em memória imediatamente
     const leadEntry = {
@@ -179,11 +172,10 @@ async function startServer() {
       email: email || 'N/A',
       businessName: businessName || 'N/A',
       whatsapp: formData?.whatsapp || 'N/A',
-      emailSent: false,
-      reportData: data.report || null
+      reportData: report || null
     };
     leads.push(leadEntry);
-    console.log(`[API] Lead [${leadEntry.businessName}] adicionado à memória. Total: ${leads.length}`);
+    console.log(`[API] Lead [${leadEntry.businessName}] adicionado à memória.`);
 
     // Salvar no Supabase se disponível
     if (supabase) {
@@ -200,73 +192,32 @@ async function startServer() {
         linkedin: formData?.linkedin || '',
         tiktok: formData?.tiktok || '',
         other_platforms: formData?.otherPlatforms || '',
-        email_sent: false,
-        report_data: leadEntry.reportData
+        report_data: leadEntry.reportData,
+        timestamp: leadEntry.timestamp
       };
 
-      supabase.from('leads').insert([supabaseData]).then(({ error }) => {
+      try {
+        const { error } = await supabase.from('leads').insert([supabaseData]);
         if (error) {
           console.error("[SUPABASE ERROR] Falha ao inserir lead:", error.message);
-          console.error("DICA: Verifique se as colunas 'email_sent' e 'report_data' existem e se o RLS está desativado.");
-        } else {
-          console.log("[SUPABASE] Lead persistido com sucesso.");
+          return res.status(500).json({ 
+            error: "Erro ao salvar no banco de dados Supabase", 
+            details: error.message 
+          });
         }
-      }).catch(err => {
+        console.log("[SUPABASE] Lead persistido com sucesso.");
+      } catch (err: any) {
         console.error("[SUPABASE CRITICAL ERROR]", err);
-      });
+        return res.status(500).json({ 
+          error: "Erro crítico ao acessar Supabase", 
+          details: err.message 
+        });
+      }
+    } else {
+      console.warn("[SERVER] Supabase não configurado. Lead salvo apenas em memória.");
     }
 
-    try {
-      const resendKey = process.env.RESEND_API_KEY;
-      if (!resendKey || resendKey === "" || resendKey.includes("MY_RESEND_API_KEY")) {
-        console.error("[API] Erro: RESEND_API_KEY ausente ou inválida");
-        return res.status(500).json({ error: "Configuração de e-mail (Resend) ausente no servidor." });
-      }
-
-      const resend = new Resend(resendKey);
-      
-      // Sanitizar nome do arquivo (apenas caracteres seguros)
-      const safeName = (businessName || "Auditoria").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-      
-      console.log(`[RESEND] Enviando e-mail para siqueiracash@gmail.com...`);
-
-      const { data: resendData, error: resendError } = await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: 'siqueiracash@gmail.com',
-        subject: `Nueva Auditoría: ${businessName}`,
-        html: `
-          <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
-            <h2 style="color: #ef4444; border-bottom: 2px solid #ef4444; padding-bottom: 10px;">Nueva Auditoría Generada</h2>
-            <p><strong>Negocio:</strong> ${businessName}</p>
-            <p><strong>WhatsApp:</strong> ${formData?.whatsapp || 'N/A'}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Ubicación:</strong> ${formData?.location || 'N/A'}</p>
-            <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
-              <p style="margin: 0; font-size: 14px;">El informe completo está adjunto en formato PDF.</p>
-            </div>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-            <p style="font-size: 11px; color: #999;">Sistema de Auditorías - Impulsa Valladolid</p>
-          </div>
-        `,
-        attachments: [{
-          filename: `Auditoria_${safeName}.pdf`,
-          content: pdfBase64,
-        }],
-      });
-
-      if (resendError) {
-        console.error("[RESEND ERROR]", resendError);
-        const errorMsg = typeof resendError === 'string' ? resendError : (resendError.message || JSON.stringify(resendError));
-        return res.status(400).json({ error: `Erro no serviço de e-mail: ${errorMsg}` });
-      }
-
-      leadEntry.emailSent = true;
-      console.log("[API] Ciclo de auditoria finalizado com sucesso.");
-      res.json({ success: true });
-    } catch (err: any) {
-      console.error("[SERVER FATAL ERROR]", err);
-      res.status(500).json({ error: `Erro interno: ${err.message || "Falha desconhecida"}` });
-    }
+    res.json({ success: true, message: "Dados salvos com sucesso" });
   });
 
   // ---------------------------------------------------------

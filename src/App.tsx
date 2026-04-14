@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Rocket, MapPin, Phone, Mail, Instagram, Facebook, Globe, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Loader2, Sparkles, Building2, Utensils, Scissors, Coffee, Store, Dumbbell, Linkedin, Lock, LogOut, Users, Calendar, Download } from 'lucide-react';
+import { Rocket, MapPin, Phone, Mail, Instagram, Facebook, Globe, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Loader2, Sparkles, Building2, Utensils, Scissors, Coffee, Store, Dumbbell, Linkedin, Lock, LogOut, Users, Calendar, Download, Database } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -216,17 +216,14 @@ export default function App() {
     window.open(whatsappUrl, '_blank');
   };
 
-  const sendAuditEmail = async (data: AuditFormData, report: AuditReport) => {
+  const saveAuditData = async (data: AuditFormData, report: AuditReport) => {
     try {
       setEmailStatus('sending');
       setEmailError(null);
-      console.log('[DEBUG] Generando PDF para envío...');
-      
-      const doc = generatePDF(data, report);
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      console.log('[DEBUG] Guardando datos en el servidor...');
       
       // USAR SEMPRE CAMINHOS RELATIVOS NO AI STUDIO PARA MÁXIMA COMPATIBILIDADE
-      const apiUrl = '/api/send-audit';
+      const apiUrl = '/api/save-audit';
       
       console.log(`[DEBUG] Enviando para: ${apiUrl}`);
       
@@ -239,29 +236,25 @@ export default function App() {
         body: JSON.stringify({
           email: data.email,
           businessName: data.businessName,
-          pdfBase64: pdfBase64,
           formData: data,
           report: report
         })
       });
 
       if (response.ok) {
-        console.log('[DEBUG] Sucesso no envio via API!');
+        console.log('[DEBUG] Sucesso ao salvar dados!');
         setEmailStatus('success');
       } else {
         const errData = await response.json();
         throw new Error(errData.error || `Erro ${response.status}`);
       }
-    } catch (emailErr: any) {
-      console.error('Error en la rutina de correo electrónico:', emailErr);
-      const msg = emailErr instanceof Error ? emailErr.message : (typeof emailErr === 'string' ? emailErr : JSON.stringify(emailErr));
+    } catch (saveErr: any) {
+      console.error('Error al guardar los datos:', saveErr);
+      const msg = saveErr instanceof Error ? saveErr.message : (typeof saveErr === 'string' ? saveErr : JSON.stringify(saveErr));
       setEmailError(msg || 'Erro de conexão');
       setEmailStatus('error');
       
-      // Tentar mostrar o erro para o usuário se for crítico
-      if (emailErr.message?.includes('429') || emailErr.message?.includes('limit')) {
-        setErrorModal({ show: true, message: "Límite de correos alcanzado o servidor sobrecargado. El lead fue guardado, mas el correo puede tardar." });
-      }
+      setErrorModal({ show: true, message: "No se pudo guardar la auditoría en la base de datos. Por favor, descargue el PDF para no perder la información." });
     }
   };
 
@@ -277,7 +270,7 @@ export default function App() {
       const data = await response.json();
       
       if (response.ok) {
-        alert(`Conexão OK!\nServidor: ${data.message}\nResend: ${data.hasResendKey ? 'Configurado' : 'NÃO CONFIGURADO'}`);
+        alert(`Conexão OK!\nServidor: ${data.message}\nSupabase: ${data.supabase}`);
         setEmailError(null);
         setEmailStatus('idle');
       } else {
@@ -376,8 +369,8 @@ export default function App() {
       setReport(result);
       setView('report');
       
-      // Enviar correo electrónico automáticamente
-      await sendAuditEmail(data, result);
+      // Guardar datos en la base de datos automáticamente
+      await saveAuditData(data, result);
     } catch (error: any) {
       console.error('Error detallado en la generación del informe:', error);
       let errorMessage = '¡Ups! Algo no salió como se esperaba. Por favor, verifique su conexão o inténtelo de nuevo en unos instantes.';
@@ -1171,14 +1164,14 @@ export default function App() {
                   {emailStatus === 'sending' && (
                     <div className="mt-4 flex items-center gap-2 text-brand-orange animate-pulse">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Enviando informe a siqueiracash@gmail.com...</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">Guardando auditoría en la base de datos...</span>
                     </div>
                   )}
                   
                   {emailStatus === 'success' && (
                     <div className="mt-4 flex items-center gap-2 text-emerald-500">
                       <CheckCircle2 className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">¡Informe enviado con éxito!</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">¡Auditoría guardada con éxito!</span>
                     </div>
                   )}
 
@@ -1187,15 +1180,15 @@ export default function App() {
                       <div className="flex items-center gap-2 text-red-500">
                         <AlertCircle className="w-4 h-4" />
                         <span className="text-[10px] font-black uppercase tracking-widest">
-                          Error de envío: {typeof emailError === 'string' ? emailError : JSON.stringify(emailError)}
+                          Error al guardar: {typeof emailError === 'string' ? emailError : JSON.stringify(emailError)}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-x-6 gap-y-2">
                         <button 
-                          onClick={() => sendAuditEmail(watch(), report!)}
+                          onClick={() => saveAuditData(watch(), report!)}
                           className="text-[9px] font-bold uppercase tracking-widest text-brand-teal underline text-left"
                         >
-                          Intentar reenviar informe
+                          Intentar guardar de nuevo
                         </button>
                         <button 
                           onClick={sendToWhatsApp}
@@ -1489,11 +1482,11 @@ export default function App() {
                 <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-brand-cream">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <Database className="w-5 h-5 text-emerald-600" />
                     </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">E-mails Enviados</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Leads en Base de Datos</span>
                   </div>
-                  <p className="text-4xl font-black text-brand-teal">{adminLeads.filter(l => l.emailSent).length}</p>
+                  <p className="text-4xl font-black text-brand-teal">{adminLeads.length}</p>
                 </div>
                 <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-brand-cream">
                   <div className="flex items-center gap-4 mb-4">
@@ -1552,11 +1545,8 @@ export default function App() {
                             </div>
                           </td>
                           <td className="px-8 py-6">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                              lead.emailSent ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                            )}>
-                              {lead.emailSent ? "E-mail OK" : "E-mail Falló"}
+                            <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700">
+                              Sincronizado
                             </span>
                           </td>
                           <td className="px-8 py-6 text-right">
