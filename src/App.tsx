@@ -238,7 +238,14 @@ export default function App() {
         })
       });
 
-      const responseData = await response.json().catch(() => ({ error: "Resposta do servidor não é um JSON válido" }));
+      const responseText = await response.text();
+      let responseData: any;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        console.error("[DEBUG] Resposta do servidor não é JSON:", responseText);
+        throw new Error(`Resposta inválida do servidor: ${responseText.substring(0, 100)}...`);
+      }
 
       if (response.ok) {
         console.log('[DEBUG] Sucesso ao salvar dados!');
@@ -301,7 +308,15 @@ export default function App() {
       console.log(`[DEBUG] Testando conexão com: ${apiUrl}`);
       
       const response = await fetch(apiUrl);
-      const data = await response.json();
+      let data: any;
+      const responseText = await response.text();
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("[DEBUG] Resposta não é JSON:", responseText);
+        throw new Error(`Resposta inválida do servidor (não é JSON). Conteúdo: ${responseText.substring(0, 100)}...`);
+      }
       
       if (response.ok) {
         let debugInfo = "";
@@ -339,15 +354,23 @@ export default function App() {
     setAdminError(null);
     try {
       const response = await fetch('/api/admin/leads-data');
-      const data = await response.json();
+      const responseText = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("[DEBUG] Resposta não é JSON:", responseText);
+        throw new Error(`Resposta inválida: ${responseText.substring(0, 50)}...`);
+      }
+      
       if (response.ok) {
         setAdminLeads(data);
       } else {
-        setAdminError(data.error || 'Erro ao carregar leads');
+        setAdminError(data.error || `Erro ${response.status}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao buscar leads:", err);
-      setAdminError('Falha na conexão com o servidor');
+      setAdminError(`Falha na conexão: ${err.message}`);
     } finally {
       setIsAdminLoading(false);
     }
