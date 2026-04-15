@@ -382,25 +382,63 @@ export default function App() {
     setIsAdminLoading(true);
     setAdminError(null);
     try {
-      const apiUrl = `/api/admin/leads-data?t=${Date.now()}`;
-      const response = await fetch(apiUrl);
-      const responseText = await response.text();
-      let data: any;
+      // 1. Tentar via API (Backend)
+      let data: any[] = [];
+      let success = false;
+
       try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error("[DEBUG] Resposta não é JSON:", responseText);
-        throw new Error(`Resposta inválida: ${responseText.substring(0, 50)}...`);
+        const apiUrl = `/api/admin/leads-data?t=${Date.now()}`;
+        const response = await fetch(apiUrl);
+        if (response.ok) {
+          const responseText = await response.text();
+          try {
+            data = JSON.parse(responseText);
+            success = true;
+          } catch (e) {
+            console.warn("[DEBUG] API não retornou JSON, tentando Supabase direto...");
+          }
+        }
+      } catch (apiErr) {
+        console.warn("[DEBUG] Erro na API de leads, tentando Supabase direto...", apiErr);
+      }
+
+      // 2. Fallback: Buscar direto do Supabase (Cliente)
+      if (!success) {
+        const supabase = getSupabase();
+        if (supabase) {
+          const { data: sbData, error } = await supabase
+            .from('leads')
+            .select('*')
+            .order('timestamp', { ascending: false });
+          
+          if (error) throw error;
+          if (sbData) {
+            data = sbData.map(l => ({
+              timestamp: l.timestamp,
+              businessName: l.business_name || l.businessName,
+              businessType: l.business_type || l.businessType,
+              location: l.location,
+              email: l.email,
+              whatsapp: l.whatsapp,
+              website: l.website,
+              instagram: l.instagram,
+              facebook: l.facebook,
+              linkedin: l.linkedin,
+              tiktok: l.tiktok,
+              otherPlatforms: l.other_platforms || l.otherPlatforms,
+              reportData: l.report_data || l.reportData
+            }));
+            success = true;
+          }
+        } else {
+          throw new Error("Não foi possível conectar ao banco de dados (API e Supabase indisponíveis)");
+        }
       }
       
-      if (response.ok) {
-        setAdminLeads(data);
-      } else {
-        setAdminError(data.error || `Erro ${response.status}`);
-      }
+      setAdminLeads(data);
     } catch (err: any) {
       console.error("Erro ao buscar leads:", err);
-      setAdminError(`Falha na conexão: ${err.message}`);
+      setAdminError(`Falha na sincronização: ${err.message}`);
     } finally {
       setIsAdminLoading(false);
     }
