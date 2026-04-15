@@ -13,29 +13,6 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOI;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-async function startServer() {
-  console.log("[SERVER] >>> INICIANDO SERVIDOR IMPULSA VALLADOLID V4 <<<");
-  console.log(`[SERVER] Horário: ${new Date().toISOString()}`);
-  console.log(`[SERVER] Supabase URL: ${supabaseUrl ? "Detectada" : "AUSENTE"}`);
-  console.log(`[SERVER] Supabase Key: ${supabaseKey ? "Detectada" : "AUSENTE"}`);
-  
-  if (!process.env.VITE_SUPABASE_ANON_KEY && process.env.VITE_SUPABASE_ANOI) {
-    console.log("[SERVER] AVISO: Detectada chave VITE_SUPABASE_ANOI (possível erro de digitação no Secret)");
-  }
-  
-  const app = express();
-  
-  // 1. Middlewares básicos
-  app.use(cors());
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-  // Logging de todas as requisições para debug
-  app.use((req, res, next) => {
-    console.log(`[DEBUG] ${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-  });
-
 const leads: any[] = [];
 
 export async function createServer() {
