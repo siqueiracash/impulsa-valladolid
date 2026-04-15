@@ -92,10 +92,15 @@ export async function createServer() {
   });
 
   app.get("/api/admin/leads-data", async (req, res) => {
+    console.log("[DEBUG] /api/admin/leads-data solicitado");
     try {
       if (supabase) {
+        console.log("[DEBUG] Supabase presente, buscando leads...");
         const { data, error } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
-        if (!error && data) {
+        if (error) {
+          console.error("[DEBUG] Erro ao buscar no Supabase:", error.message);
+        } else if (data) {
+          console.log(`[DEBUG] Sucesso! Encontrados ${data.length} leads.`);
           return res.json(data.map(l => ({
             timestamp: l.timestamp,
             businessName: l.business_name || l.businessName,
@@ -112,10 +117,14 @@ export async function createServer() {
             reportData: l.report_data || l.reportData
           })));
         }
+      } else {
+        console.warn("[DEBUG] Supabase NÃO inicializado no servidor.");
       }
+      console.log(`[DEBUG] Retornando ${leads.length} leads da memória local.`);
       res.json(leads);
-    } catch (err) {
-      res.status(500).json({ error: "Erro ao buscar leads" });
+    } catch (err: any) {
+      console.error("[DEBUG] Erro crítico na API leads-data:", err.message);
+      res.status(500).json({ error: "Erro ao buscar leads", details: err.message });
     }
   });
 
