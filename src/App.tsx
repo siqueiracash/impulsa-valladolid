@@ -119,20 +119,26 @@ export default function App() {
       try {
         console.log("[DEBUG] Buscando configuração dinâmica...");
         const response = await fetch(`/api/config?t=${Date.now()}`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log("[DEBUG] Config recebida:", { 
-            url: data.supabaseUrl ? "Presente" : "AUSENTE", 
-            key: data.supabaseKey ? "Presente" : "AUSENTE" 
-          });
-          setConfig(data);
-          if (data.supabaseUrl && data.supabaseKey) {
-            initSupabase(data.supabaseUrl, data.supabaseKey);
+        
+        // Se receber 404 ou HTML, o backend não está respondendo corretamente
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType || !contentType.includes("application/json")) {
+          console.error("[DEBUG] Backend não encontrado ou resposta inválida. Usando fallback de ambiente.");
+          // Fallback para variáveis de ambiente se disponíveis
+          if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+            initSupabase(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
           }
-        } else {
-          console.error("[DEBUG] Falha ao buscar config:", response.status);
-          const text = await response.text();
-          console.error("[DEBUG] Resposta do servidor:", text);
+          return;
+        }
+
+        const data = await response.json();
+        console.log("[DEBUG] Config recebida:", { 
+          url: data.supabaseUrl ? "Presente" : "AUSENTE", 
+          key: data.supabaseKey ? "Presente" : "AUSENTE" 
+        });
+        setConfig(data);
+        if (data.supabaseUrl && data.supabaseKey) {
+          initSupabase(data.supabaseUrl, data.supabaseKey);
         }
       } catch (err) {
         console.error("[DEBUG] Erro ao carregar config:", err);
@@ -351,7 +357,7 @@ export default function App() {
         }
       }
 
-      alert(`Status da Conexão:\n\n${apiMsg}\n${supabaseMsg}\n\nAmbiente: ${import.meta.env.MODE}\nConfig: ${config ? 'Carregada' : 'Pendente'}`);
+      alert(`Status da Conexão:\n\n${apiMsg}\n${supabaseMsg}\n\nAmbiente: ${import.meta.env.MODE}\nConfig: ${config ? 'Carregada' : 'Pendente'}\n\nNOTA PARA VERCEL:\nSe você estiver no domínio próprio e a API der 404, certifique-se de ter adicionado VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Dashboard do Vercel.`);
       setSaveStatus('idle');
       setSaveError(null);
     } catch (err: any) {
