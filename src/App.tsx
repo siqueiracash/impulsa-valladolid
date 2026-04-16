@@ -168,7 +168,7 @@ export default function App() {
 
     doc.setFontSize(14);
     doc.setTextColor(31, 41, 55);
-    doc.text(`Negócio: ${data.businessName}`, margin, y);
+    doc.text(`Negocio: ${data.businessName}`, margin, y);
     y += 10;
     doc.text(`Tipo: ${data.businessType}`, margin, y);
     y += 10;
@@ -524,22 +524,22 @@ export default function App() {
       <div className="min-h-screen flex flex-col">
         <iframe name="hidden_iframe" id="hidden_iframe" style={{ display: 'none' }}></iframe>
         {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-brand-cream">
-        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('hero')}>
-            <div className="w-12 h-12 bg-brand-red rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-red/20 rotate-3">
-              <Rocket className="w-7 h-7 -rotate-3" />
+      <header className="sticky top-0 left-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-brand-cream/30 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 md:h-24 flex items-center justify-between">
+          <div 
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => setView('hero')}
+          >
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-brand-red rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-brand-red/20 group-hover:rotate-6 transition-transform">
+              <Rocket className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-display font-extrabold text-2xl tracking-tighter text-brand-red leading-none">
-                Impulsa <span className="text-brand-orange">Valladolid</span>
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal opacity-70">
-                Impulsa tu negocio local
-              </span>
+            <div>
+              <span className="text-lg md:text-2xl font-black text-brand-teal tracking-tighter leading-none block">Impulsa</span>
+              <span className="text-[10px] md:text-xs font-black text-brand-red uppercase tracking-widest block opacity-80">Valladolid</span>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-8">
+
+          <nav className="hidden md:flex items-center gap-10">
             <a 
               href="#como-funciona" 
               onClick={(e) => {
@@ -551,9 +551,10 @@ export default function App() {
                   }, 100);
                 }
               }}
-              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors"
+              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors relative group"
             >
               Nuestros Servicios
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-red transition-all group-hover:w-full" />
             </a>
             <a 
               href="#casos-de-exito" 
@@ -566,73 +567,81 @@ export default function App() {
                   }, 100);
                 }
               }}
-              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors"
+              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors relative group"
             >
               Casos de Éxito
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-red transition-all group-hover:w-full" />
             </a>
             <button 
               onClick={() => setView('login')}
-              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors flex items-center gap-2"
+              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-slate-50"
             >
               <Lock className="w-4 h-4" />
               Login
             </button>
             <button 
               onClick={() => setView('form')}
-              className="bg-brand-red text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-orange transition-all shadow-lg shadow-brand-red/20"
+              className="bg-brand-red text-white px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-brand-orange transition-all shadow-xl shadow-brand-red/20 active:scale-95"
             >
               Auditoría Gratuita
             </button>
           </nav>
+
+          <button 
+            onClick={() => setView('form')}
+            className="md:hidden bg-brand-red text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 shadow-lg shadow-brand-red/20"
+          >
+            Auditoría
+          </button>
         </div>
       </header>
 
       <main className="flex-grow">
         {view === 'hero' && (
-          <section className="relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-40">
+          <section className="relative overflow-hidden pt-28 pb-20 md:pt-40 md:pb-48">
             {/* Background Elements */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-              <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-orange/10 rounded-full blur-[120px]" />
-              <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-red/10 rounded-full blur-[120px]" />
+              <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" />
+              <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-brand-red/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
             </div>
             
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                 <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="text-left"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className="text-center lg:text-left"
                 >
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-cream text-brand-red text-xs font-black uppercase tracking-widest mb-8 border border-brand-orange/20">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-cream/50 text-brand-red text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-8 border border-brand-orange/10">
                     <Sparkles className="w-4 h-4" />
                     Valladolid & Madrid Digital
                   </div>
-                  <h1 className="text-6xl md:text-8xl font-black text-brand-teal mb-8 leading-[0.95] tracking-tighter">
+                  <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
                     Multiplique sus <br />
                     <span className="text-brand-red">Clientes Locales</span>
                   </h1>
-                  <p className="text-xl text-slate-600 mb-12 leading-relaxed max-w-xl font-medium">
-                    Transformamos su restaurante, bar o comercio en una máquina de ventas en Google y Redes Sociales. Auditoría gratuita para emprendedores de Valladolid.
+                  <p className="text-lg md:text-2xl text-slate-600 mb-12 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
+                    Transformamos su restaurante, bar o comercio en una máquina de ventas en Google y Redes Sociales. 
                   </p>
-                  <div className="flex flex-col sm:flex-row items-center gap-5">
+                  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 md:gap-6">
                     <button 
                       onClick={() => setView('form')}
-                      className="w-full sm:w-auto bg-brand-red text-white px-10 py-5 rounded-2xl text-lg font-extrabold hover:bg-brand-orange transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-3 group"
+                      className="w-full sm:w-auto bg-brand-red text-white px-10 md:px-12 py-5 md:py-6 rounded-[2rem] text-lg md:text-xl font-black hover:bg-brand-orange transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-3 group active:scale-95"
                     >
                       Quiero mi Auditoría
-                      <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
                     </button>
                     
-                    <div className="flex items-center gap-3 text-slate-500 font-bold text-sm">
-                      <div className="flex -space-x-2">
-                        {[1,2,3].map(i => (
-                          <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-brand-cream flex items-center justify-center overflow-hidden">
-                            <img src={`https://picsum.photos/seed/person${i}/100/100`} alt="User" referrerPolicy="no-referrer" />
+                    <div className="flex flex-col items-center lg:items-start gap-2">
+                      <div className="flex -space-x-3">
+                        {[1,2,3,4].map(i => (
+                          <div key={i} className="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white bg-brand-cream flex items-center justify-center overflow-hidden shadow-sm">
+                            <img src={`https://picsum.photos/seed/person${i}/120/120`} alt="User" referrerPolicy="no-referrer" />
                           </div>
                         ))}
                       </div>
-                      +50 negocios impulsados
+                      <span className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">+50 negocios impulsados</span>
                     </div>
                   </div>
                 </motion.div>
@@ -925,7 +934,7 @@ export default function App() {
                   >
                     <div className="space-y-4">
                       <label className="text-sm font-black text-brand-teal uppercase tracking-widest">¿Cuál es su nicho?</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
                         {businessTypes.map((t) => {
                           const Icon = t.icon;
                           const isSelected = watch('businessType') === t.value;
@@ -935,14 +944,19 @@ export default function App() {
                               type="button"
                               onClick={() => setValue('businessType', t.value)}
                               className={cn(
-                                "flex flex-col items-center justify-center p-5 rounded-3xl border-2 transition-all gap-3 group",
+                                "flex flex-col items-center justify-center p-6 md:p-8 rounded-[2rem] border-2 transition-all gap-4 group active:scale-95",
                                 isSelected 
-                                  ? "border-brand-red bg-brand-red text-white shadow-xl shadow-brand-red/20" 
-                                  : "border-slate-100 bg-slate-50 text-slate-400 hover:border-brand-orange/30 hover:bg-white"
+                                  ? "border-brand-red bg-white text-brand-red shadow-2xl shadow-brand-red/10 animate-in zoom-in-95" 
+                                  : "border-slate-50 bg-slate-50/50 text-slate-400 hover:border-brand-orange/20 hover:bg-white hover:text-brand-orange"
                               )}
                             >
-                              <Icon className={cn("w-8 h-8 transition-transform group-hover:scale-110", isSelected ? "text-white" : "text-brand-teal/40")} />
-                              <span className="text-[10px] font-black uppercase tracking-tighter">{t.label}</span>
+                              <div className={cn(
+                                "w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all",
+                                isSelected ? "bg-brand-red text-white" : "bg-white text-slate-400 group-hover:bg-brand-orange group-hover:text-white"
+                              )}>
+                                <Icon className="w-8 h-8 md:w-10 md:h-10" />
+                              </div>
+                              <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">{t.label}</span>
                             </button>
                           );
                         })}
@@ -1218,27 +1232,64 @@ export default function App() {
         )}
 
         {view === 'loading' && (
-          <section className="min-h-[60vh] flex flex-col items-center justify-center p-4 text-center">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="mb-8"
-            >
-              <Loader2 className="w-16 h-16 text-brand-red" />
-            </motion.div>
-            <h2 className="text-4xl font-black text-brand-teal mb-4 uppercase tracking-widest">Analizando su negocio...</h2>
-            <p className="text-slate-600 max-w-md font-medium">
-              Nuestra inteligencia artificial está auditando su presencia digital y preparando un informe personalizado para <span className="font-black text-brand-red">{(watch('businessName') || 'su negocio')}</span>.
+          <section className="min-h-screen flex flex-col items-center justify-center p-8 bg-brand-cream/10 relative overflow-hidden">
+             {/* Abstract Background for Loading */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full -z-10">
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 90, 0],
+                  opacity: [0.3, 0.5, 0.3]
+                }}
+                transition={{ duration: 10, repeat: Infinity }}
+                className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-brand-red/5 rounded-full blur-[120px]" 
+              />
+              <motion.div 
+                animate={{ 
+                  scale: [1.2, 1, 1.2],
+                  rotate: [0, -90, 0],
+                  opacity: [0.3, 0.5, 0.3]
+                }}
+                transition={{ duration: 10, repeat: Infinity, delay: 5 }}
+                className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-brand-orange/5 rounded-full blur-[120px]" 
+              />
+            </div>
+
+            <div className="relative">
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.05, 1],
+                  rotate: 360 
+                }}
+                transition={{ 
+                  scale: { duration: 2, repeat: Infinity },
+                  rotate: { duration: 8, repeat: Infinity, ease: "linear" }
+                }}
+                className="w-32 h-32 md:w-48 md:h-48 border-[6px] border-brand-cream border-t-brand-red rounded-full flex items-center justify-center mb-16 shadow-2xl relative"
+              >
+                <div className="w-full h-full absolute top-0 left-0 animate-pulse bg-brand-red/5 rounded-full" />
+                <Rocket className="w-12 h-12 md:w-16 md:h-16 text-brand-red -rotate-45" />
+              </motion.div>
+            </div>
+            
+            <h2 className="text-4xl md:text-6xl font-black text-brand-teal mb-6 uppercase tracking-tighter text-balance text-center">IA <br /><span className="text-brand-red">Auditando...</span></h2>
+            <p className="text-slate-400 max-w-md font-bold text-lg md:text-xl text-center leading-relaxed">
+              Analizando visibilidad de <span className="text-brand-red">{(watch('businessName') || 'su negocio')}</span> en Google y Redes Sociales...
             </p>
-            <div className="mt-12 space-y-3 w-full max-w-xs">
-              <div className="h-2 bg-brand-cream rounded-full overflow-hidden p-0.5">
+            
+            <div className="mt-20 w-full max-w-md space-y-6">
+              <div className="h-4 bg-white rounded-full overflow-hidden p-1 border border-brand-cream/50 shadow-inner">
                 <motion.div 
-                  className="h-full bg-brand-red rounded-full"
-                  animate={{ x: ["-100%", "100%"] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="h-full bg-brand-red rounded-full shadow-lg shadow-brand-red/20"
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 15, ease: "linear" }}
                 />
               </div>
-              <p className="text-[10px] text-brand-teal font-black uppercase tracking-widest opacity-40">Procesando datos estratégicos</p>
+              <div className="flex justify-between items-center px-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal animate-pulse">Sincronizando con Google</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-red">IA Activa</span>
+              </div>
             </div>
           </section>
         )}
@@ -1248,89 +1299,79 @@ export default function App() {
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-brand-red text-white text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                    Auditoría Exclusiva
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-red/10 text-brand-red text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-6 border border-brand-red/10">
+                    <Rocket className="w-4 h-4" />
+                    Auditoría Estratégica Exclusiva
                   </div>
-                  <h2 className="text-5xl font-black text-brand-teal leading-none">Diagnóstico <br /><span className="text-brand-red">Estratégico</span></h2>
-                  <p className="mt-2 text-brand-teal font-black uppercase tracking-widest text-sm opacity-60">Para: {watch('businessName')}</p>
+                  <h2 className="text-6xl md:text-8xl font-black text-brand-teal leading-none tracking-tighter">Diagnóstico <br /><span className="text-brand-red">Impulsa</span></h2>
+                  <p className="mt-4 text-slate-400 font-black uppercase tracking-[0.1em] text-xs md:text-sm">Negocio: <span className="text-brand-teal">{watch('businessName')}</span></p>
                   
                   {saveStatus === 'sending' && (
-                    <div className="mt-4 flex items-center gap-2 text-brand-orange animate-pulse">
+                    <div className="mt-6 flex items-center gap-3 text-brand-orange animate-pulse px-4 py-2 bg-brand-orange/5 rounded-full w-fit">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Guardando auditoría en la base de datos...</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.1em]">Sincronizando...</span>
                     </div>
                   )}
                   
                   {saveStatus === 'success' && (
-                    <div className="mt-4 flex items-center gap-2 text-emerald-500">
+                    <div className="mt-6 flex items-center gap-3 text-emerald-500 px-4 py-2 bg-emerald-50 rounded-full w-fit">
                       <CheckCircle2 className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">¡Auditoría guardada con éxito!</span>
-                    </div>
-                  )}
-
-                  {saveStatus === 'error' && (
-                    <div className="mt-4 flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-red-500">
-                        <AlertCircle className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">
-                          Error al guardar: {saveError}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-x-6 gap-y-2">
-                        <button 
-                          onClick={() => saveAuditData(watch(), report!)}
-                          className="text-[9px] font-bold uppercase tracking-widest text-brand-teal underline text-left"
-                        >
-                          Intentar guardar de nuevo
-                        </button>
-                        <button 
-                          onClick={sendToWhatsApp}
-                          className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 underline text-left"
-                        >
-                          Enviar por WhatsApp (Garantizado)
-                        </button>
-                        <button 
-                          onClick={downloadPDF}
-                          className="text-[9px] font-bold uppercase tracking-widest text-brand-orange underline text-left"
-                        >
-                          Descargar PDF Directamente
-                        </button>
-                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.1em]">Analizado & Guardado</span>
                     </div>
                   )}
                 </div>
-                <button 
-                  onClick={() => {
-                    const data = watch();
-                    if (report) {
-                      const doc = generatePDF(data, report);
-                      doc.save(`Auditoría_${data.businessName.replace(/\s+/g, '_')}.pdf`);
-                    }
-                  }}
-                  className="bg-white text-brand-teal border-2 border-brand-cream px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand-teal/5"
-                >
-                  Descargar Informe PDF
-                </button>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    onClick={() => {
+                      const data = watch();
+                      if (report) {
+                        const doc = generatePDF(data, report);
+                        doc.save(`Auditoría_${data.businessName.replace(/\s+/g, '_')}.pdf`);
+                      }
+                    }}
+                    className="group bg-white text-brand-teal border-2 border-brand-cream px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95"
+                  >
+                    <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
+                    PDF Completo
+                  </button>
+                  <button 
+                    onClick={sendToWhatsApp}
+                    className="bg-emerald-500 text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 active:scale-95"
+                  >
+                    <Phone className="w-5 h-5" />
+                    Agendar Consultoria
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-10">
                 {/* Storytelling Section */}
                 <motion.div 
                   initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-brand-red text-white p-10 md:p-16 rounded-[3rem] shadow-2xl shadow-brand-red/20 relative overflow-hidden"
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="bg-brand-red text-white p-12 md:p-24 rounded-[3rem] shadow-2xl shadow-brand-red/20 relative overflow-hidden group"
                 >
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[100px]" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-8">
-                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
-                        <Sparkles className="w-6 h-6 text-white" />
+                  <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-brand-orange/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[120px] group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-[80px]" />
+                  
+                  <div className="relative z-10 text-center md:text-left">
+                    <div className="flex flex-col md:flex-row items-center gap-6 mb-12">
+                      <div className="w-20 h-20 bg-white/10 rounded-[2rem] flex items-center justify-center backdrop-blur-2xl border border-white/20 shadow-2xl">
+                        <Sparkles className="w-10 h-10 text-white" />
                       </div>
-                      <h3 className="text-2xl font-black uppercase tracking-widest">La Visión del Futuro</h3>
+                      <div>
+                        <h3 className="text-3xl font-black uppercase tracking-[0.2em] mb-1">El Futuro</h3>
+                        <p className="text-white/60 font-bold uppercase tracking-widest text-sm">Visión Estratégica</p>
+                      </div>
                     </div>
-                    <p className="text-2xl md:text-4xl font-medium leading-[1.3] italic text-brand-cream">
-                      "{String(report.storytelling)}"
-                    </p>
+                    <blockquote className="text-3xl md:text-5xl lg:text-6xl font-medium leading-[1.2] tracking-tight text-white/95 text-balance">
+                      <span className="text-white font-black italic block mb-4 opacity-30 text-8xl md:text-9xl leading-none font-serif">“</span>
+                      <span className="relative -top-12 md:-top-16">
+                        {String(report.storytelling)}
+                      </span>
+                    </blockquote>
                   </div>
                 </motion.div>
 
@@ -1440,19 +1481,36 @@ export default function App() {
                 {/* Service Proposal */}
                 <motion.div 
                   initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
                   transition={{ delay: 0.6 }}
-                  className="bg-brand-cream p-10 md:p-16 rounded-[4rem] text-center relative overflow-hidden"
+                  className="bg-brand-cream p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden group border-4 border-white shadow-3xl"
                 >
-                  <div className="absolute top-0 left-0 w-full h-full bg-brand-orange/5 -z-10" />
-                  <h3 className="text-3xl md:text-5xl font-black text-brand-red mb-8 leading-tight">¿Impulsamos su <br />negocio juntos?</h3>
-                  <p className="text-brand-teal text-xl mb-12 max-w-2xl mx-auto font-bold leading-relaxed opacity-80">
-                    {String(report.serviceProposal)}
+                  <div className="absolute top-0 left-0 w-full h-full bg-brand-red/5 -z-10 group-hover:scale-110 transition-transform duration-[3s]" />
+                  <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-brand-red/10 rounded-full blur-[80px]" />
+                  
+                  <h3 className="text-4xl md:text-7xl font-black text-brand-red mb-10 leading-tight tracking-tighter text-balance">¿Impulsamos su <br />negocio juntos?</h3>
+                  <p className="text-brand-teal text-xl md:text-3xl mb-16 max-w-2xl mx-auto font-medium leading-relaxed italic opacity-90">
+                    "{String(report.serviceProposal)}"
                   </p>
-                  <button className="bg-brand-red text-white px-12 py-6 rounded-3xl text-2xl font-black uppercase tracking-widest hover:bg-brand-teal transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-4 mx-auto group">
-                    Contactar por WhatsApp
-                    <Phone className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                  </button>
+                  
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                    <button 
+                      onClick={sendToWhatsApp}
+                      className="w-full sm:w-auto bg-brand-red text-white px-12 md:px-16 py-6 md:py-8 rounded-[2.5rem] text-xl md:text-2xl font-black uppercase tracking-[0.2em] hover:bg-brand-teal transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-4 group active:scale-95"
+                    >
+                      Agendar Consultoría
+                      <ArrowRight className="w-8 h-8 group-hover:translate-x-3 transition-transform" />
+                    </button>
+                    
+                    <button 
+                      onClick={downloadPDF}
+                      className="w-full sm:w-auto bg-white text-brand-teal px-10 py-6 rounded-[2.5rem] text-sm font-black uppercase tracking-widest hover:bg-brand-cream transition-all border-2 border-brand-cream flex items-center justify-center gap-3 active:scale-95"
+                    >
+                      <Download className="w-5 h-5" />
+                      Descargar Audit
+                    </button>
+                  </div>
                 </motion.div>
 
                 {/* Sources Section */}
