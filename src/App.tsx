@@ -458,36 +458,6 @@ export default function App() {
     await processAudit(data, false);
   };
 
-  const runTestMode = () => {
-    try {
-      console.log("[DEBUG] runTestMode iniciado");
-      const dummyData: AuditFormData = {
-        businessName: "Negocio de Prueba",
-        businessType: "restaurante",
-        location: "Valladolid, España",
-        whatsapp: "+34 600 000 000",
-        email: "siqueiracash@gmail.com",
-        instagram: "@prueba",
-        website: "https://prueba.com"
-      };
-      
-      console.log("[DEBUG] Definindo valores do formulário");
-      setValue('businessName', dummyData.businessName);
-      setValue('businessType', dummyData.businessType);
-      setValue('location', dummyData.location);
-      setValue('whatsapp', dummyData.whatsapp);
-      setValue('email', dummyData.email);
-      setValue('instagram', dummyData.instagram);
-      setValue('website', dummyData.website);
-      
-      console.log("[DEBUG] Chamando processAudit");
-      processAudit(dummyData, true);
-    } catch (err: any) {
-      console.error("[DEBUG] Erro no runTestMode:", err);
-      setErrorModal({ show: true, message: `Erro ao iniciar teste: ${err.message}` });
-    }
-  };
-
   const processAudit = async (data: AuditFormData, isMock: boolean = false) => {
     console.log('Iniciando envío del formulario...', data, isMock ? '(MOCK)' : '');
     setView('loading');
@@ -654,12 +624,6 @@ export default function App() {
                       <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </button>
                     
-                    <button 
-                      onClick={runTestMode}
-                      className="w-full sm:w-auto bg-white text-brand-teal border-2 border-brand-cream px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3"
-                    >
-                      Testar Sistema (Fictício)
-                    </button>
                     <div className="flex items-center gap-3 text-slate-500 font-bold text-sm">
                       <div className="flex -space-x-2">
                         {[1,2,3].map(i => (
