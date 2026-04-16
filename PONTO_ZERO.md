@@ -1,6 +1,12 @@
-# CHECKPOINT: PONTO ZERO (15/04/2026)
+# CHECKPOINT: PONTO ZERO (Atualizado 16/04/2026)
 
-Este documento registra o estado estável do projeto "Impulsa Valladolid" após a correção da integração Vercel + Supabase.
+Este documento registra o estado estável do projeto "Impulsa Valladolid" após as correções críticas de compatibilidade com o Vercel.
+
+## 🛠️ Mudanças Recentes para Sincronização:
+1. **Node.js**: Fixado em 20.x (LTS) no `package.json`.
+2. **Vite Dynamic Import**: Refatorado no `server.ts` para não quebrar no Vercel.
+3. **ESM Support**: Substituído `__dirname` por `process.cwd()` no `vite.config.ts`.
+4. **Supabase**: Reativado e operacional.
 
 ## 🏗️ Arquitetura Atual
 - **Frontend**: React + Vite + Tailwind CSS.
