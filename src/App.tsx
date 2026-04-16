@@ -479,7 +479,7 @@ export default function App() {
       } else if (error.message?.includes('403') || error.message?.includes('API key not valid')) {
         errorMessage = 'La clave de acesso es inválida. Por favor, póngase en contacto con el soporte técnico.';
       } else if (error.message?.includes('503') || error.message?.includes('high demand')) {
-        errorMessage = '¡Tenemos mucha demanda en este momento! Nuestra inteligencia está un poco sobrecargada. Por favor, espere unos segundos e inténtelo de nuevo.';
+        errorMessage = '¡Tenemos mucha demanda en este momento! Nuestro equipo está trabajando al máximo. Por favor, espere unos segundos e inténtelo de nuevo.';
       } else if (error.message?.includes('429')) {
         errorMessage = '¡Demasiadas solicitudes seguidas! Por favor, espere un minuto antes de intentar una nueva auditoría.';
       } else if (error.message?.includes('Safety') || error.message?.includes('blocked')) {
@@ -1272,7 +1272,7 @@ export default function App() {
               </motion.div>
             </div>
             
-            <h2 className="text-4xl md:text-6xl font-black text-brand-teal mb-6 uppercase tracking-tighter text-balance text-center">IA <br /><span className="text-brand-red">Auditando...</span></h2>
+            <h2 className="text-4xl md:text-6xl font-black text-brand-teal mb-6 uppercase tracking-tighter text-balance text-center">Equipo <br /><span className="text-brand-red">Auditando...</span></h2>
             <p className="text-slate-400 max-w-md font-bold text-lg md:text-xl text-center leading-relaxed">
               Analizando visibilidad de <span className="text-brand-red">{(watch('businessName') || 'su negocio')}</span> en Google y Redes Sociales...
             </p>
@@ -1288,7 +1288,7 @@ export default function App() {
               </div>
               <div className="flex justify-between items-center px-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal animate-pulse">Sincronizando con Google</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-red">IA Activa</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-red">Análisis Estratégico Activo</span>
               </div>
             </div>
           </section>
