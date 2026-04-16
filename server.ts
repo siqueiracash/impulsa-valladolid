@@ -138,8 +138,9 @@ export async function createServer() {
       });
     }
   } else {
-    // Importação dinâmica para evitar que o Vite seja incluído no bundle de produção
-    const { createServer: createViteServer } = await import('vite');
+    // Importação dinâmica com string para enganar o bundler de produção (evita erro no Vercel)
+    const vitePkg = 'vite';
+    const { createServer: createViteServer } = await import(vitePkg);
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
