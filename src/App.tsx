@@ -156,84 +156,218 @@ export default function App() {
 
   const generatePDF = (data: AuditFormData, report: AuditReport) => {
     try {
-      console.log("[DEBUG] Iniciando generatePDF");
+      console.log("[DEBUG] Iniciando generatePDF Moderno");
       const doc = new jsPDF();
       const margin = 20;
-      let y = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      const colors = {
+        red: [239, 68, 68] as [number, number, number],
+        teal: [30, 41, 59] as [number, number, number],
+        cream: [253, 251, 247] as [number, number, number],
+        text: [51, 65, 85] as [number, number, number],
+        muted: [148, 163, 184] as [number, number, number]
+      };
 
-    doc.setFontSize(22);
-    doc.setTextColor(239, 68, 68); // Brand Red
-    doc.text('Auditoría de Marketing Digital', margin, y);
-    y += 15;
+      const addHeader = (title: string) => {
+        // Fondo crema para el header
+        doc.setFillColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+        doc.rect(0, 0, pageWidth, 40, 'F');
+        
+        // Círculo decorativo (Rocket placeholder)
+        doc.setFillColor(colors.red[0], colors.red[1], colors.red[2]);
+        doc.ellipse(25, 20, 10, 10, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('IMPULSA', 40, 18);
+        doc.setFontSize(10);
+        doc.text('VALLADOLID', 40, 24);
+        
+        doc.setFontSize(12);
+        doc.text(title, pageWidth - margin, 21, { align: 'right' });
+      };
 
-    doc.setFontSize(14);
-    doc.setTextColor(31, 41, 55);
-    doc.text(`Negocio: ${data.businessName}`, margin, y);
-    y += 10;
-    doc.text(`Tipo: ${data.businessType}`, margin, y);
-    y += 10;
-    doc.text(`Localización: ${data.location}`, margin, y);
-    y += 10;
-    if (data.website) {
-      doc.text(`Sitio Web: ${data.website}`, margin, y);
+      const addFooter = (pageNum: number) => {
+        doc.setFontSize(8);
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
+        doc.text(`Impulsa Valladolid - Auditoría Estratégica Digital - Página ${pageNum}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      };
+
+      let currentPage = 1;
+      
+      // --- PÁGINA 1: PORTADA ---
+      addHeader('INFORME ESTRATÉGICO');
+      
+      let y = 70;
+      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+      doc.setFontSize(36);
+      doc.text('Marketing', margin, y);
+      y += 12;
+      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+      doc.text('Estratégico', margin, y);
+      
+      y += 30;
+      doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
+      doc.setLineWidth(1);
+      doc.line(margin, y, 60, y);
+      
+      y += 20;
+      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PREPARADO PARA:', margin, y);
       y += 10;
-    }
-    y += 5;
+      doc.setFontSize(24);
+      doc.text(data.businessName.toUpperCase(), margin, y);
+      
+      y += 25;
+      doc.setFontSize(12);
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      doc.text(`TIPO DE NEGOCIO: ${data.businessType.toUpperCase()}`, margin, y);
+      y += 8;
+      doc.text(`LOCALIZACIÓN: ${data.location}`, margin, y);
+      if (data.website) {
+        y += 8;
+        doc.text(`WEB: ${data.website}`, margin, y);
+      }
+      
+      y = pageHeight - 60;
+      doc.setFillColor(colors.cream[0], colors.cream[1], colors.cream[2]);
+      doc.rect(margin, y, pageWidth - (margin * 2), 40, 'F');
+      doc.setDrawColor(colors.teal[0], colors.teal[1], colors.teal[2], 0.1);
+      doc.rect(margin, y, pageWidth - (margin * 2), 40, 'S');
+      
+      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      const introText = "Este informe contiene un análisis detallado de su presencia digital actual y una hoja de ruta personalizada para dominar su mercado local.";
+      const splitIntro = doc.splitTextToSize(introText, pageWidth - (margin * 4));
+      doc.text(splitIntro, margin + 10, y + 15);
+      
+      addFooter(currentPage);
 
-    doc.setFontSize(18);
-    doc.text('Visión del Futuro', margin, y);
-    y += 10;
-    doc.setFontSize(12);
-    const splitStory = doc.splitTextToSize(report.storytelling || 'Análisis en proceso...', 170);
-    doc.text(splitStory, margin, y);
-    y += (splitStory.length * 7) + 10;
+      // --- PÁGINA 2: EL FUTURO ---
+      doc.addPage();
+      currentPage++;
+      addHeader('VISIÓN DE ÉXITO');
+      
+      y = 60;
+      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+      doc.setFontSize(24);
+      doc.text('El Futuro', margin, y);
+      y += 15;
+      
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'italic');
+      const storyText = report.storytelling || 'Analizando visión...';
+      const splitStory = doc.splitTextToSize(storyText, pageWidth - (margin * 2));
+      doc.text(splitStory, margin, y);
+      
+      addFooter(currentPage);
 
-    doc.setFontSize(16);
-    doc.text('Puntos Fuertes:', margin, y);
-    y += 10;
-    doc.setFontSize(11);
-    (report.strengths || []).forEach((s, index) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      const splitS = doc.splitTextToSize(`• ${s}`, 170);
-      doc.text(splitS, margin, y);
-      y += (splitS.length * 6) + 2;
-    });
-    y += 10;
+      // --- PÁGINA 3: ANÁLISIS ---
+      doc.addPage();
+      currentPage++;
+      addHeader('DIAGNÓSTICO TÉCNICO');
+      
+      y = 60;
+      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+      doc.setFontSize(18);
+      doc.text('Puntos Fuertes', margin, y);
+      y += 10;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      (report.strengths || []).forEach(s => {
+        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+        doc.text('+', margin, y);
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        const lines = doc.splitTextToSize(s, pageWidth - margin - 30);
+        doc.text(lines, margin + 5, y);
+        y += (lines.length * 6) + 2;
+      });
+      
+      y += 15;
+      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+      doc.setFontSize(18);
+      doc.text('Áreas de Mejora', margin, y);
+      y += 10;
+      doc.setFontSize(11);
+      (report.problems || []).forEach(p => {
+        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+        doc.text('-', margin, y);
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        const lines = doc.splitTextToSize(p, pageWidth - margin - 30);
+        doc.text(lines, margin + 5, y);
+        y += (lines.length * 6) + 2;
+      });
 
-    doc.setFontSize(16);
-    doc.text('Qué mejorar:', margin, y);
-    y += 10;
-    doc.setFontSize(11);
-    (report.problems || []).forEach((p, index) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      const splitP = doc.splitTextToSize(`• ${p}`, 170);
-      doc.text(splitP, margin, y);
-      y += (splitP.length * 6) + 2;
-    });
-    y += 10;
+      if (report.socialMediaAnalysis) {
+        y += 15;
+        doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+        doc.setFontSize(18);
+        doc.text('Presencia Digital', margin, y);
+        y += 10;
+        doc.setFontSize(11);
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        const smLines = doc.splitTextToSize(report.socialMediaAnalysis, pageWidth - (margin * 2));
+        doc.text(smLines, margin, y);
+        y += (smLines.length * 6) + 10;
+      }
+      
+      addFooter(currentPage);
 
-    doc.setFontSize(16);
-    doc.text('Análisis Técnico:', margin, y);
-    y += 10;
-    doc.setFontSize(11);
-    if (report.technicalAnalysis) {
-      const splitTech = doc.splitTextToSize(report.technicalAnalysis, 170);
-      doc.text(splitTech, margin, y);
-      y += (splitTech.length * 6) + 10;
-    }
+      // --- PÁGINA 4: PLAN DE ACCIÓN ---
+      doc.addPage();
+      currentPage++;
+      addHeader('PLAN DE IMPULSO');
+      
+      y = 60;
+      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+      doc.setFontSize(22);
+      doc.text('Plan de Acción Inmediato', margin, y);
+      y += 15;
+      
+      doc.setFontSize(11);
+      (report.priorityActions || []).forEach((a, index) => {
+        doc.setFillColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+        doc.rect(margin, y - 5, 8, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${index + 1}`, margin + 3, y + 1);
+        
+        doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+        doc.setFont('helvetica', 'bold');
+        const lines = doc.splitTextToSize(a, pageWidth - margin - 40);
+        doc.text(lines, margin + 15, y + 1);
+        y += (lines.length * 6) + 10;
+      });
 
-    doc.setFontSize(16);
-    doc.text('Plan de Acción Inmediato:', margin, y);
-    y += 10;
-    doc.setFontSize(11);
-    (report.priorityActions || []).forEach((a, index) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      const splitA = doc.splitTextToSize(`${index + 1}. ${a}`, 170);
-      doc.text(splitA, margin, y);
-      y += (splitA.length * 6) + 4;
-    });
+      y += 10;
+      doc.setFillColor(colors.red[0], colors.red[1], colors.red[2]);
+      doc.rect(margin, y, pageWidth - (margin * 2), 50, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text('Próximo Paso:', margin + 10, y + 15);
+      doc.setFontSize(11);
+      const propText = report.serviceProposal || "Hablemos de cómo Impulsa Valladolid puede llevar su negocio al siguiente nivel.";
+      const splitProp = doc.splitTextToSize(propText, pageWidth - (margin * 4));
+      doc.text(splitProp, margin + 10, y + 25);
+      
+      y += 65;
+      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+      doc.setFontSize(12);
+      doc.text('¿Listo para empezar?', pageWidth / 2, y, { align: 'center' });
+      y += 8;
+      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+      doc.text('www.impulsavalladolid.com', pageWidth / 2, y, { align: 'center' });
 
-    return doc;
+      addFooter(currentPage);
+
+      return doc;
     } catch (pdfErr: any) {
       console.error("[DEBUG] Erro no generatePDF:", pdfErr);
       throw pdfErr;
@@ -1366,9 +1500,9 @@ export default function App() {
                         <p className="text-white/60 font-bold uppercase tracking-widest text-sm">Visión Estratégica</p>
                       </div>
                     </div>
-                    <blockquote className="text-3xl md:text-5xl lg:text-6xl font-medium leading-[1.2] tracking-tight text-white/95 text-balance">
+                    <blockquote className="text-[1.35rem] md:text-5xl lg:text-6xl font-medium leading-[1.2] tracking-tight text-white/95 text-balance">
                       <span className="text-white font-black italic block mb-4 opacity-30 text-8xl md:text-9xl leading-none font-serif">“</span>
-                      <span className="relative -top-12 md:-top-16">
+                      <span className="relative -top-12 md:-top-16 block">
                         {String(report.storytelling)}
                       </span>
                     </blockquote>

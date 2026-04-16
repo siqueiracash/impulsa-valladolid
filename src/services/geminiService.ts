@@ -39,10 +39,10 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
     - Presencia actual: ${data.website ? 'Web: ' + data.website : 'Sin web'}, ${data.instagram ? 'IG: ' + data.instagram : 'Sin Instagram'}, ${data.facebook ? 'FB: ' + data.facebook : 'Sin Facebook'}, ${data.linkedin ? 'LinkedIn: ' + data.linkedin : 'Sin LinkedIn'}, ${data.tiktok ? 'TikTok: ' + data.tiktok : 'Sin TikTok'}.
     
     REGLAS DE ORO PARA EL TONO (CRÍTICO):
-    1. NO PAREZCAS UNA IA. Evita frases como "Como experto en marketing", "En conclusión", "Es importante destacar".
-    2. ESCRIBE COMO UN SER HUMANO. Usa un tono cercano, profesional pero empático, como si estuvieras tomando un café con el dueño del negocio en la Plaza Mayor de Valladolid.
-    3. STORYTELLING: En el campo "storytelling", no hagas una lista. Cuenta una historia real. Empieza describiendo la situación actual (el silencio en el local, la invisibilidad digital) y narra la transformación hacia un local lleno de vida, risas y notificaciones de reservas. Haz que el dueño se visualice en ese éxito.
-    4. PERSONALIZACIÓN: Usa el nombre del negocio y referencias a su sector de forma natural.
+    1. NO PAREZCAS UNA IA. Prohibido usar: "Como experto", "En conclusión", "Analizando los datos", "Basado en la información".
+    2. ESCRIBE COMO UN SER HUMANO DE CARNE Y HUESO. Usa un tono cercano, breve y al grano. Como un mensaje de audio de WhatsApp de un colega que sabe lo que hace.
+    3. STORYTELLING CONCISO: En el campo "storytelling", no te enrolles. Máximo 2 párrafos cortos (3-4 líneas cada uno). No cuentes una fábula; cuenta una visión real y emocionante de cómo será entrar a su local en 3 meses. Menos es más.
+    4. PERSONALIZACIÓN RADICAL: Haz mención a que conoces el sector en Valladolid. Usa un lenguaje que el dueño de un pequeño negocio entienda (clientes, dinero, mesas llenas, tranquilidad).
     
     ESTRUCTURA DEL JSON (RESPONDE SOLO EL JSON):
     - strengths: 3-4 puntos fuertes reales que el negocio puede potenciar.
