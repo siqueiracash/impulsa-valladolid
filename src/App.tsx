@@ -1484,7 +1484,7 @@ export default function App() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.6 }}
-                  className="bg-brand-cream p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden group border-4 border-white shadow-3xl"
+                  className="bg-brand-cream p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden group border-4 border-white shadow-2xl"
                 >
                   <div className="absolute top-0 left-0 w-full h-full bg-brand-red/5 -z-10 group-hover:scale-110 transition-transform duration-[3s]" />
                   <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-brand-red/10 rounded-full blur-[80px]" />

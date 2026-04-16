@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from 'cors';
 import fs from 'fs';
@@ -10,7 +9,7 @@ const PORT = 3000;
 
 // Configuração do Supabase
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOI;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 const leads: any[] = [];
@@ -129,7 +128,7 @@ export async function createServer() {
   });
 
   // 3. VITE / STATIC FILES
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
     const distPath = path.resolve(process.cwd(), 'dist');
     if (fs.existsSync(distPath)) {
       app.use(express.static(distPath));
@@ -139,6 +138,8 @@ export async function createServer() {
       });
     }
   } else {
+    // Importação dinâmica para evitar que o Vite seja incluído no bundle de produção
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
