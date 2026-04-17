@@ -391,13 +391,9 @@ export default function App() {
 
   const sendToWhatsApp = () => {
     const data = watch();
-    const message = `Hola, acabo de realizar una auditoría en Impulsa Valladolid.%0A%0A` +
-      `*Negocio:* ${data.businessName}%0A` +
-      `*WhatsApp:* ${data.whatsapp}%0A` +
-      `*Email:* ${data.email}%0A%0A` +
-      `Por favor, envíame el informe completo.`;
+    const message = `Hola, vengo de la web. Acabo de realizar la auditoría gratuita para mi negocio: *${data.businessName}* y me gustaría recibir el informe completo y hablar sobre cómo podéis ayudarme a crecer. 🚀`;
     
-    const whatsappUrl = `https://wa.me/34600000000?text=${message}`; // Sustituir por su número real si lo desea
+    const whatsappUrl = `https://wa.me/5511983424080?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -2018,7 +2014,7 @@ export default function App() {
               </li>
               <li className="flex items-center gap-4">
                 <Phone className="w-5 h-5 text-brand-red shrink-0" />
-                +34 325 678 398
+                +55 11 98342-4080
               </li>
               <li className="flex items-center gap-4">
                 <Mail className="w-5 h-5 text-brand-red shrink-0" />
@@ -2051,7 +2047,7 @@ export default function App() {
       </footer>
       {/* Floating WhatsApp Button */}
       <a 
-        href="https://wa.me/34325678398" 
+        href={`https://wa.me/5511983424080?text=${encodeURIComponent("Hola équipe de Impulsa Valladolid, me gustaría impulsar mi negocio. ¿Podemos hablar?")}`}
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-8 right-8 z-[100] bg-[#25D366] text-white p-5 rounded-full shadow-2xl hover:scale-110 transition-all group"
