@@ -1360,19 +1360,19 @@ export default function App() {
               </div>
 
               <div className="mt-20 text-center">
-                <div className="inline-flex items-center gap-8 px-10 py-6 bg-white rounded-3xl border border-brand-cream shadow-lg">
+                <div className="inline-flex flex-col sm:flex-row items-center gap-6 sm:gap-8 px-8 sm:px-10 py-6 bg-white rounded-3xl border border-brand-cream shadow-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
                       <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                     </div>
-                    <span className="font-black text-brand-teal uppercase tracking-widest text-xs">Sin Permanencia</span>
+                    <span className="font-black text-brand-teal uppercase tracking-widest text-[10px] sm:text-xs">Sin Permanencia</span>
                   </div>
-                  <div className="w-px h-8 bg-slate-100" />
+                  <div className="hidden sm:block w-px h-8 bg-slate-100" />
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
                       <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                     </div>
-                    <span className="font-black text-brand-teal uppercase tracking-widest text-xs">Solo Resultados</span>
+                    <span className="font-black text-brand-teal uppercase tracking-widest text-[10px] sm:text-xs">Solo Resultados</span>
                   </div>
                 </div>
               </div>
