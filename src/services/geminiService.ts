@@ -15,7 +15,7 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
     };
   }
 
-  // Ajustado para buscar VITE_API_KEY conforme sua configuração na Vercel
+  // Ajustado para buscar VITE_API_KEY según su configuración en Vercel
   // En AI Studio, process.env.GEMINI_API_KEY es la forma estándar
   const apiKey = (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || 
                  import.meta.env.VITE_GEMINI_API_KEY || 
@@ -51,7 +51,7 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
     - technicalAnalysis: Un análisis técnico del sitio web (si existe) basado en datos de Google PageSpeed/Lighthouse.
     - priorityActions: Pasos prácticos y sencillos para empezar a cambiar hoy.
     - serviceProposal: Cómo Impulsa Valladolid va a tomar las riendas para que el dueño se dedique a lo que sabe hacer.
-    - storytelling: La "historia del éxito" (mínimo 3 párrafos narrativos).
+    - storytelling: La "historia del éxito" (máximo 2 párrafos concisos).
   `;
 
   const maxRetries = 5;

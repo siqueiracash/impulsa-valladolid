@@ -113,18 +113,18 @@ export default function App() {
   const [config, setConfig] = React.useState<{ supabaseUrl: string | null; supabaseKey: string | null; mode: string } | null>(null);
   const totalSteps = 3;
 
-  // Carregar configuração do servidor (evita problemas de variáveis de ambiente no build)
+  // Cargar configuración del servidor (evita problemas de variables de entorno en el build)
   React.useEffect(() => {
     const fetchConfig = async () => {
       try {
-        console.log("[DEBUG] Buscando configuração dinâmica...");
+        console.log("[DEBUG] Buscando configuración dinámica...");
         const response = await fetch(`/api/config?t=${Date.now()}`);
         
-        // Se receber 404 ou HTML, o backend não está respondendo corretamente
+        // Si recibe 404 o HTML, el backend no está respondiendo correctamente
         const contentType = response.headers.get("content-type");
         if (!response.ok || !contentType || !contentType.includes("application/json")) {
-          console.error("[DEBUG] Backend não encontrado ou resposta inválida. Usando fallback de ambiente.");
-          // Fallback para variáveis de ambiente se disponíveis
+          console.error("[DEBUG] Backend no encontrado o respuesta inválida. Usando fallback de entorno.");
+          // Fallback para variables de entorno si están disponibles
           if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
             initSupabase(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
           }
@@ -132,7 +132,7 @@ export default function App() {
         }
 
         const data = await response.json();
-        console.log("[DEBUG] Config recebida:", { 
+        console.log("[DEBUG] Config recibida:", { 
           url: data.supabaseUrl ? "Presente" : "AUSENTE", 
           key: data.supabaseKey ? "Presente" : "AUSENTE" 
         });
@@ -141,7 +141,7 @@ export default function App() {
           initSupabase(data.supabaseUrl, data.supabaseKey);
         }
       } catch (err) {
-        console.error("[DEBUG] Erro ao carregar config:", err);
+        console.error("[DEBUG] Error al cargar configuración:", err);
       }
     };
     fetchConfig();
@@ -175,9 +175,24 @@ export default function App() {
         doc.setFillColor(colors.teal[0], colors.teal[1], colors.teal[2]);
         doc.rect(0, 0, pageWidth, 40, 'F');
         
-        // Círculo decorativo (Rocket placeholder)
+        // Logo: Cuadrado redondeado rojo (como el sitio)
         doc.setFillColor(colors.red[0], colors.red[1], colors.red[2]);
-        doc.ellipse(25, 20, 10, 10, 'F');
+        doc.roundedRect(margin, 10, 20, 20, 4, 4, 'F');
+        
+        // Icono de Cohete (Rocket) en blanco simplificado
+        doc.setFillColor(255, 255, 255);
+        // Cuerpo principal (triángulo alargado)
+        doc.triangle(
+          margin + 10, 15, // Punda
+          margin + 6, 23,   // Base izquierda
+          margin + 14, 23,  // Base derecha
+          'F'
+        );
+        // Base/Motor
+        doc.rect(margin + 8, 23, 4, 3, 'F');
+        // Aletas
+        doc.triangle(margin + 6, 21, margin + 4, 25, margin + 6, 25, 'F');
+        doc.triangle(margin + 14, 21, margin + 16, 25, margin + 14, 25, 'F');
         
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(20);
@@ -382,7 +397,7 @@ export default function App() {
       `*Email:* ${data.email}%0A%0A` +
       `Por favor, envíame el informe completo.`;
     
-    const whatsappUrl = `https://wa.me/34600000000?text=${message}`; // Substituir pelo seu número real se desejar
+    const whatsappUrl = `https://wa.me/34600000000?text=${message}`; // Sustituir por su número real si lo desea
     window.open(whatsappUrl, '_blank');
   };
 
@@ -391,7 +406,7 @@ export default function App() {
       setSaveStatus('sending');
       setSaveError(null);
       
-      // 1. Tentar via API (Backend)
+      // 1. Intentar vía API (Backend)
       const apiUrl = `/api/save-audit?t=${Date.now()}`;
       let apiSuccess = false;
       
@@ -411,10 +426,10 @@ export default function App() {
           apiSuccess = true;
         }
       } catch (apiErr) {
-        console.warn('[DEBUG] Erro na API, tentando direto no Supabase...', apiErr);
+        console.warn('[DEBUG] Error en la API, intentando directo en Supabase...', apiErr);
       }
 
-      // 2. Fallback: Tentar direto no Supabase (Cliente)
+      // 2. Fallback: Intentar directo en Supabase (Cliente)
       if (!apiSuccess) {
         await saveLeadDirectly({
           business_name: data.businessName,
@@ -436,8 +451,8 @@ export default function App() {
       setSaveStatus('success');
       setSaveError(null);
     } catch (err: any) {
-      console.error("[DEBUG] Erro fatal ao salvar:", err);
-      const msg = err.message || "Erro de sincronização";
+      console.error("[DEBUG] Error fatal al guardar:", err);
+      const msg = err.message || "Error de sincronización";
       setSaveError(msg);
       setSaveStatus('error');
       setErrorModal({ 
@@ -450,20 +465,20 @@ export default function App() {
   const testConnection = async () => {
     try {
       setSaveStatus('sending');
-      setSaveError("Testando conexão...");
+      setSaveError("Probando conexión...");
       
-      // Verificar se está no link compartilhado (que não tem backend)
+      // Verificar si está en el link compartido (que no tiene backend)
       const isShared = window.location.hostname.includes('-pre-');
       if (isShared) {
-        alert("AVISO: Você está usando o 'Shared App URL'.\n\nEste link é apenas para visualização estática e NÃO suporta o banco de dados.\n\nPor favor, use o botão 'RUN' ou o link de 'Preview' do AI Studio para testar a sincronização.");
+        alert("AVISO: Estás usando el 'Shared App URL'.\n\nEste enlace es solo para visualización estática y NO soporta la base de datos.\n\nPor favor, usa o botón 'RUN' o el enlace de 'Preview' de AI Studio para probar la sincronización.");
         setSaveStatus('idle');
         setSaveError(null);
         return;
       }
 
-      // Teste 1: API
+      // Prueba 1: API
       const apiUrl = `/api/ping?t=${Date.now()}`;
-      let apiMsg = "API: Falha";
+      let apiMsg = "API: Fallo";
       try {
         const resp = await fetch(apiUrl);
         const contentType = resp.headers.get("content-type");
@@ -472,26 +487,26 @@ export default function App() {
           apiMsg = `API: OK (${data.supabase || '?'})`;
         } else {
           const text = await resp.text();
-          apiMsg = `API: Erro ${resp.status} (Resposta não é JSON)`;
-          console.error("[DEBUG] Erro API:", text);
+          apiMsg = `API: Error ${resp.status} (Respuesta no es JSON)`;
+          console.error("[DEBUG] Error API:", text);
         }
       } catch (e: any) {
-        apiMsg = `API: Erro (${e.message})`;
+        apiMsg = `API: Error (${e.message})`;
       }
 
-      // Teste 2: Supabase Direto
-      let supabaseMsg = "Supabase: Não configurado";
+      // Prueba 2: Supabase Directo
+      let supabaseMsg = "Supabase: No configurado";
       const client = getSupabase();
       if (client) {
         try {
           const { error } = await client.from('leads').select('id').limit(1);
-          supabaseMsg = error ? `Supabase: Erro (${error.message})` : "Supabase: Conectado!";
+          supabaseMsg = error ? `Supabase: Error (${error.message})` : "Supabase: ¡Conectado!";
         } catch (e: any) {
-          supabaseMsg = `Supabase: Erro (${e.message})`;
+          supabaseMsg = `Supabase: Error (${e.message})`;
         }
       }
 
-      alert(`Status da Conexão:\n\n${apiMsg}\n${supabaseMsg}\n\nAmbiente: ${import.meta.env.MODE}\nConfig: ${config ? 'Carregada' : 'Pendente'}\n\nNOTA PARA VERCEL:\nSe você estiver no domínio próprio e a API der 404, certifique-se de ter adicionado VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Dashboard do Vercel.`);
+      alert(`Estado de la Conexión:\n\n${apiMsg}\n${supabaseMsg}\n\nEntorno: ${import.meta.env.MODE}\nConfig: ${config ? 'Cargada' : 'Pendiente'}\n\nNOTA PARA VERCEL:\nSi estás en un dominio propio y la API devuelve 404, asegúrate de haber añadido VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY en el Dashboard de Vercel.`);
       setSaveStatus('idle');
       setSaveError(null);
     } catch (err: any) {
@@ -508,7 +523,7 @@ export default function App() {
         doc.save(`Auditoria_${data.businessName.replace(/\s+/g, '_')}.pdf`);
       }
     } catch (err: any) {
-      alert(`Erro ao baixar PDF: ${err.message}`);
+      alert(`Error al descargar PDF: ${err.message}`);
     }
   };
 
@@ -516,7 +531,7 @@ export default function App() {
     setIsAdminLoading(true);
     setAdminError(null);
     try {
-      // 1. Tentar via API (Backend)
+      // 1. Intentar vía API (Backend)
       let data: any[] = [];
       let success = false;
 
@@ -529,11 +544,11 @@ export default function App() {
             data = JSON.parse(responseText);
             success = true;
           } catch (e) {
-            console.warn("[DEBUG] API não retornou JSON, tentando Supabase direto...");
+            console.warn("[DEBUG] API no devolvió JSON, intentando Supabase directo...");
           }
         }
       } catch (apiErr) {
-        console.warn("[DEBUG] Erro na API de leads, tentando Supabase direto...", apiErr);
+        console.warn("[DEBUG] Error en la API de leads, intentando directo en Supabase...", apiErr);
       }
 
       // 2. Fallback: Buscar direto do Supabase (Cliente)
@@ -565,14 +580,14 @@ export default function App() {
             success = true;
           }
         } else {
-          throw new Error("Não foi possível conectar ao banco de dados (API e Supabase indisponíveis)");
+          throw new Error("No fue posible conectar con la base de datos (API e Supabase no disponibles)");
         }
       }
       
       setAdminLeads(data);
     } catch (err: any) {
-      console.error("Erro ao buscar leads:", err);
-      setAdminError(`Falha na sincronização: ${err.message}`);
+      console.error("Error al buscar leads:", err);
+      setAdminError(`Fallo en la sincronización: ${err.message}`);
     } finally {
       setIsAdminLoading(false);
     }
@@ -1731,7 +1746,7 @@ export default function App() {
                     onClick={testConnection}
                     className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2"
                   >
-                    <Database className="w-4 h-4" /> Testar Conexão
+                    <Database className="w-4 h-4" /> Probar Conexión
                   </button>
                   <button 
                     onClick={fetchLeads}
@@ -1767,7 +1782,7 @@ export default function App() {
                 {window.location.hostname.includes('-pre-') && (
                   <div className="flex items-center gap-2 px-2 py-1 bg-red-100 rounded-lg border border-red-200">
                     <AlertCircle className="w-3 h-3 text-red-600" />
-                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest animate-pulse">Link Compartilhado (Sem Backend)</span>
+                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest animate-pulse">Enlace Compartido (Sin Backend)</span>
                   </div>
                 )}
                 {config && (
@@ -1781,9 +1796,9 @@ export default function App() {
                     try {
                       const resp = await fetch('/api/debug-env');
                       const data = await resp.json();
-                      alert(`Debug Env:\n\nKeys: ${data.envKeys.join(', ') || 'Nenhuma'}\nNode: ${data.nodeEnv}\nCWD: ${data.cwd}`);
+                      alert(`Debug Env:\n\nKeys: ${data.envKeys.join(', ') || 'Ninguna'}\nNode: ${data.nodeEnv}\nCWD: ${data.cwd}`);
                     } catch (e: any) {
-                      alert(`Erro no debug: ${e.message}`);
+                      alert(`Error en el debug: ${e.message}`);
                     }
                   }}
                   className="ml-auto text-[10px] font-black text-brand-teal uppercase tracking-widest hover:underline"
@@ -2029,7 +2044,7 @@ export default function App() {
               onClick={testConnection}
               className="text-brand-cream/10 hover:text-brand-cream/30 transition-colors text-[8px] uppercase tracking-widest"
             >
-              Testar Conexão
+              Probar Conexión
             </button>
           </div>
         </div>
