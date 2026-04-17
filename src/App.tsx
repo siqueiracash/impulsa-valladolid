@@ -527,28 +527,40 @@ export default function App() {
     setIsAdminLoading(true);
     setAdminError(null);
     try {
+      console.log("[DEBUG] Iniciando fetchLeads...");
       // 1. Intentar vía API (Backend)
       let data: any[] = [];
       let success = false;
+      let apiErrorDetail = "";
 
       try {
         const apiUrl = `/api/admin/leads-data?t=${Date.now()}`;
-        const response = await fetch(apiUrl);
+        console.log(`[DEBUG] Llamando a API: ${apiUrl}`);
+        const response = await fetch(apiUrl, { 
+          signal: AbortSignal.timeout(10000) // 10s timeout
+        });
+        
         if (response.ok) {
           const responseText = await response.text();
           try {
             data = JSON.parse(responseText);
             success = true;
+            console.log(`[DEBUG] API retornó ${data.length} leads.`);
           } catch (e) {
+            apiErrorDetail = "La respuesta de la API no es un JSON válido.";
             console.warn("[DEBUG] API no devolvió JSON, intentando Supabase directo...");
           }
+        } else {
+          apiErrorDetail = `La API respondió con error ${response.status}: ${response.statusText}`;
         }
-      } catch (apiErr) {
+      } catch (apiErr: any) {
+        apiErrorDetail = `Error de red en la API: ${apiErr.message}`;
         console.warn("[DEBUG] Error en la API de leads, intentando directo en Supabase...", apiErr);
       }
 
-      // 2. Fallback: Buscar direto do Supabase (Cliente)
+      // 2. Fallback: Buscar directo del Supabase (Cliente)
       if (!success) {
+        console.log("[DEBUG] Fallback: Intentando Supabase directo...");
         const supabase = getSupabase();
         if (supabase) {
           const { data: sbData, error } = await supabase
@@ -556,7 +568,11 @@ export default function App() {
             .select('*')
             .order('timestamp', { ascending: false });
           
-          if (error) throw error;
+          if (error) {
+            console.error("[DEBUG] Error en Supabase fallback:", error.message);
+            throw new Error(`Error en el fallback de base de datos: ${error.message} (API original: ${apiErrorDetail})`);
+          }
+
           if (sbData) {
             data = sbData.map(l => ({
               timestamp: l.timestamp,
@@ -574,9 +590,10 @@ export default function App() {
               reportData: l.report_data || l.reportData
             }));
             success = true;
+            console.log(`[DEBUG] Supabase directo retornó ${data.length} leads.`);
           }
         } else {
-          throw new Error("No fue posible conectar con la base de datos (API e Supabase no disponibles)");
+          throw new Error(`No fue posible conectar con la base de datos. API: ${apiErrorDetail}`);
         }
       }
       
@@ -1749,8 +1766,8 @@ export default function App() {
                     disabled={isAdminLoading}
                     className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2 disabled:opacity-50"
                   >
-                    {isAdminLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    {isAdminLoading ? 'Actualizando...' : 'Actualizar'}
+                    {isAdminLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+                    {isAdminLoading ? 'Actualizando...' : 'Reintentar'}
                   </button>
                   <button 
                     onClick={() => setView('hero')}

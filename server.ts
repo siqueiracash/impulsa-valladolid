@@ -32,6 +32,10 @@ export async function createServer() {
   // 2. API ROUTES
   // ---------------------------------------------------------
   
+  app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working", time: new Date().toISOString() });
+  });
+
   app.get("/api/config", (req, res) => {
     res.json({
       supabaseUrl: supabaseUrl || null,
@@ -91,10 +95,11 @@ export async function createServer() {
   });
 
   app.get("/api/admin/leads-data", async (req, res) => {
-    console.log("[DEBUG] /api/admin/leads-data solicitado");
+    console.log(`[DEBUG] Requisão recebida: ${req.method} ${req.url}`);
     try {
+      res.setHeader('Cache-Control', 'no-store');
       if (supabase) {
-        console.log("[DEBUG] Supabase presente, buscando leads...");
+        console.log("[DEBUG] Supabase disponível, buscando...");
         const { data, error } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
         if (error) {
           console.error("[DEBUG] Erro ao buscar no Supabase:", error.message);
@@ -151,8 +156,8 @@ export async function createServer() {
   return app;
 }
 
-// Iniciar o servidor se for executado diretamente
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// Iniciar el servidor se for executado diretamente
+if (!process.env.VERCEL) {
   createServer().then(app => {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`[SERVER] Rodando em http://0.0.0.0:${PORT}`);
