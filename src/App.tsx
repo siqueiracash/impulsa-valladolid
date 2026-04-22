@@ -151,6 +151,18 @@ export default function App() {
     fetchConfig();
   }, []);
 
+  // Auto-scroll al inicio del formulario al cambiar de vista o de paso
+  React.useEffect(() => {
+    if (view === 'form') {
+      setTimeout(() => {
+        const element = document.getElementById('audit-top');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [view, step]);
+
   const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<AuditFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -382,7 +394,7 @@ export default function App() {
       doc.text('¿Listo para empezar?', pageWidth / 2, y, { align: 'center' });
       y += 8;
       doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-      doc.text('www.impulsavalladolid.com', pageWidth / 2, y, { align: 'center' });
+      doc.text('www.impulsavalladolid.es', pageWidth / 2, y, { align: 'center' });
 
       addFooter(currentPage);
 
@@ -1070,7 +1082,7 @@ export default function App() {
         )}
 
         {view === 'form' && (
-          <section className="py-16 px-4 bg-brand-cream/30">
+          <section id="audit-top" className="py-16 px-4 bg-brand-cream/30">
             <div className="max-w-3xl mx-auto">
               <div className="mb-12 text-center">
                 <h2 className="text-4xl font-black text-brand-teal mb-4">Su Jornada Digital</h2>
