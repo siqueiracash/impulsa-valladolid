@@ -2072,7 +2072,7 @@ export default function App() {
               </li>
               <li className="flex items-center gap-4">
                 <Mail className="w-5 h-5 text-brand-red shrink-0" />
-                hola@impulsavalladolid.com
+                hola@impulsavalladolid.es
               </li>
             </ul>
           </div>
