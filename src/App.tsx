@@ -114,7 +114,6 @@ export default function App() {
     supabaseUrl: string | null; 
     supabaseKey: string | null; 
     mode: string;
-    isServiceRole?: boolean;
   } | null>(null);
   const totalSteps = 3;
 
@@ -608,10 +607,6 @@ export default function App() {
         } else {
           throw new Error(`No fue posible conectar con la base de datos. API: ${apiErrorDetail}`);
         }
-      }
-      
-      if (data.length === 0 && !config?.isServiceRole) {
-        console.log("[DEBUG] Cero leads retornados.");
       }
       
       setAdminLeads(data);
@@ -1809,10 +1804,6 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <div className={cn("w-2 h-2 rounded-full", (config?.supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY) ? "bg-emerald-500" : "bg-amber-500")} />
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase Key: {(config?.supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY) ? "Configurado" : "Ausente"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={cn("w-2 h-2 rounded-full", config?.isServiceRole ? "bg-emerald-500" : "bg-red-500")} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Service Role: {config?.isServiceRole ? "Ativado (Seguro)" : "Ausente (RLS pode bloquear)"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />

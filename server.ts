@@ -57,8 +57,7 @@ export async function createServer() {
     res.json({
       supabaseUrl: supabaseUrl || null,
       supabaseKey: supabaseKey || null,
-      mode: process.env.NODE_ENV || "development",
-      isServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+      mode: process.env.NODE_ENV || "development"
     });
   });
 
