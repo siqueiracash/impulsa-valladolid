@@ -9,10 +9,15 @@ import 'dotenv/config';
 
 const PORT = 3000;
 
-// Configuração do Supabase (Servidor prioriza service_role para bypass de RLS)
+// Configuração do Supabase (Prioriza service_role, mas aceita anon_key como fallback funcional)
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
+// Debug silencioso no log do servidor para verificar presença de chaves
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_KEY) {
+  console.log("[SUPABASE] Chave Service Role não detectada. Dependendo de anon_key.");
+}
 
 const leads: any[] = [];
 

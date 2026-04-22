@@ -611,8 +611,7 @@ export default function App() {
       }
       
       if (data.length === 0 && !config?.isServiceRole) {
-        console.warn("[DEBUG] Se recibieron 0 leads y el Service Role está ausente. Posible bloqueo de RLS.");
-        setAdminError("No se encontraron leads. Si activó RLS en Supabase, asegúrese de configurar la 'service_role' key en los Secrets del AI Studio.");
+        console.log("[DEBUG] Cero leads retornados.");
       }
       
       setAdminLeads(data);
