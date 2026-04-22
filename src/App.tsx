@@ -2098,21 +2098,6 @@ export default function App() {
           <p className="text-brand-cream/30 text-[10px] font-black uppercase tracking-[0.3em]">
             © {new Date().getFullYear()} Impulsa Valladolid. Hecho con pasión en España.
           </p>
-          <div className="flex gap-6">
-            <a 
-              href="/api/admin/leads" 
-              target="_blank" 
-              className="text-brand-cream/10 hover:text-brand-cream/30 transition-colors text-[8px] uppercase tracking-widest"
-            >
-              Acceso Admin
-            </a>
-            <button 
-              onClick={testConnection}
-              className="text-brand-cream/10 hover:text-brand-cream/30 transition-colors text-[8px] uppercase tracking-widest"
-            >
-              Probar Conexión
-            </button>
-          </div>
         </div>
       </footer>
       {/* Floating WhatsApp Button */}
