@@ -101,6 +101,11 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 export default function App() {
   const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report' | 'login' | 'admin'>('hero');
   const [report, setReport] = React.useState<AuditReport | null>(null);
+  
+  // Parámetros de URL para personalización (SEO/Ads)
+  const urlParams = new URLSearchParams(window.location.search);
+  const cityParam = urlParams.get('ciudad') || urlParams.get('city') || 'Valladolid';
+  const dynamicCity = cityParam.charAt(0).toUpperCase() + cityParam.slice(1).toLowerCase();
   const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
   const [saveStatus, setSaveStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [saveError, setSaveError] = React.useState<string | null>(null);
@@ -667,6 +672,17 @@ export default function App() {
       setReport(result);
       setView('report');
       
+      // Disparar evento de conversión para Google/Meta Ads
+      if (typeof (window as any).gtag === 'function') {
+        (window as any).gtag('event', 'generate_lead', {
+          'event_category': 'audit',
+          'event_label': data.businessType
+        });
+      }
+      if (typeof (window as any).fbq === 'function') {
+        (window as any).fbq('track', 'Lead', { content_name: 'Auditoría Digital' });
+      }
+
       // Guardar datos en la base de datos automáticamente
       await saveAuditData(data, result);
     } catch (error: any) {
@@ -814,11 +830,11 @@ export default function App() {
                 >
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-cream/50 text-brand-red text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-8 border border-brand-orange/10">
                     <Sparkles className="w-4 h-4" />
-                    Valladolid & Madrid Digital
+                    {dynamicCity === 'Madrid' ? 'Madrid & Valladolid Digital' : `${dynamicCity} Digital`}
                   </div>
                   <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
                     Multiplique sus <br />
-                    <span className="text-brand-red">Clientes Locales</span>
+                    <span className="text-brand-red">Clientes en {dynamicCity}</span>
                   </h1>
                   <p className="text-lg md:text-2xl text-slate-600 mb-12 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
                     Transformamos su restaurante, bar o comercio en una máquina de ventas en Google y Redes Sociales. 
