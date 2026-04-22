@@ -2080,7 +2080,7 @@ export default function App() {
             <ul className="space-y-6 text-brand-cream/70 font-bold">
               <li className="flex items-start gap-4">
                 <MapPin className="w-5 h-5 text-brand-red shrink-0" />
-                <span>Valladolid, España <br /><span className="text-[10px] opacity-50">Calle Mayor, 12</span></span>
+                <span>Valladolid, España <br /><span className="text-[10px] opacity-50">Spazio Rio - P.º Isabel la Católica, 5, 47001</span></span>
               </li>
               <li className="flex items-center gap-4">
                 <Phone className="w-5 h-5 text-brand-red shrink-0" />
