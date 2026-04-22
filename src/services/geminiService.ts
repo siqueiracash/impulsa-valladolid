@@ -61,11 +61,11 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
     try {
       console.log(`[Gemini] Iniciando generación (Intento ${i+1}/${maxRetries})...`);
       
-      // En el último intento, probamos sin herramientas por si el límite es del buscador
-      const tools = i === maxRetries - 1 ? [] : [{ googleSearch: {} }];
+      // Intentamos sin herramientas primero para reducir latencia y errores de "demanda"
+      const tools = i >= 2 ? [{ googleSearch: {} }] : [];
       
       const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-flash-latest",
         contents: prompt,
         config: {
           tools,
@@ -113,8 +113,8 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
       const isRetryable = error.message?.includes('503') || error.message?.includes('high demand') || error.message?.includes('429');
       
       if (isRetryable && i < maxRetries - 1) {
-        // Wait before retrying (exponential backoff: 3s, 6s, 12s, 24s...)
-        const waitTime = Math.pow(2, i + 1) * 1500;
+        // Wait before retrying (exponential backoff: 5s, 10s, 20s, 40s...)
+        const waitTime = Math.pow(2, i + 1) * 2500;
         console.warn(`[Gemini] Error reintentable. Reintentando en ${waitTime/1000}s...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;

@@ -29,9 +29,9 @@ export async function createServer() {
 
   // Rate Limiting para evitar abusos no formulário
   const auditLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 5, // Limite de 5 submissões por IP a cada 15 minutos
-    message: { error: "Demasiadas solicitudes, por favor intente más tarde." }
+    windowMs: 10 * 60 * 1000, // Reduzido para 10 minutos
+    max: 20, // Aumentado para 20 submissões (mais realista para testes e uso normal)
+    message: { error: "DEMANDA_EXCESSIVA_IP" } // Código interno para o frontend identificar
   });
 
   // Logging de todas as requisições para debug
@@ -52,7 +52,8 @@ export async function createServer() {
     res.json({
       supabaseUrl: supabaseUrl || null,
       supabaseKey: supabaseKey || null,
-      mode: process.env.NODE_ENV || "development"
+      mode: process.env.NODE_ENV || "development",
+      isServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY
     });
   });
 
@@ -123,6 +124,7 @@ export async function createServer() {
         const { data, error } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
         if (error) {
           console.error("[DEBUG] Erro ao buscar no Supabase:", error.message);
+          return res.status(500).json({ error: "Erro no banco de dados", details: error.message });
         } else if (data) {
           console.log(`[DEBUG] Sucesso! Encontrados ${data.length} leads.`);
           return res.json(data.map(l => ({
