@@ -1,33 +1,30 @@
-# CHECKPOINT: PONTO ZERO (Atualizado 16/04/2026)
+# CHECKPOINT: PONTO ZERO (Atualizado 22/04/2026)
 
-Este documento registra o estado estável do projeto "Impulsa Valladolid" após as correções críticas de compatibilidade com o Vercel.
+Este documento registra o estado consolidado e estável do projeto "Impulsa Valladolid" após a conclusão da fase de auditoria IA, dashboard administrativo e integração completa com WhatsApp.
 
-## 🛠️ Mudanças Recentes para Sincronização:
-1. **Node.js**: Fixado em 20.x (LTS) no `package.json`.
-2. **Vite Dynamic Import**: Refatorado no `server.ts` para não quebrar no Vercel.
-3. **ESM Support**: Substituído `__dirname` por `process.cwd()` no `vite.config.ts`.
-4. **Supabase**: Reativado e operacional.
+## 🛠️ Mudanças Críticas Consolidadas:
+1. **WhatsApp Estratégico**: Todos os pontos de contato direcionam para `+55 11 98342-4080` com mensagens personalizadas em espanhol para conversão imediata.
+2. **Dashboard de Resiliência**: Sistema de leads com "Tripla Sincronização" (Backend API -> Supabase Fallback -> Memory). Inclui ferramentas de debug e diagnóstico de conexão em tempo real.
+3. **UX Responsiva**: Seções do site (principalmente a área de planos e garantias) otimizadas para celulares, evitando cortes de texto e sobreposição de elementos.
+4. **Auditoria Gemini**: Prompt de IA ultra-refinado para soar como um consultor humano local de Valladolid, com integração via Google Search Grounding para dados reais.
 
-## 🏗️ Arquitetura Atual
-- **Frontend**: React + Vite + Tailwind CSS.
-- **Backend**: Express (Serverless via Vercel Functions).
-- **Banco de Dados**: Supabase.
-- **Hospedagem**: Vercel.
+## 🏗️ Arquitetura Atual (Vercel Ready)
+- **Frontend**: React 19 + Vite 6 + Tailwind CSS.
+- **Backend/API**: Express 4 rodando em lambdas Vercel (diretório `/api`).
+- **Banco de Dados**: Supabase (PostgreSQL) com lógica de fallback direto no client-side para evitar timeouts de API.
+- **Storage**: PDF generation via jsPDF totalmente integrado.
 
-## 🔑 Configurações Críticas
-As seguintes variáveis de ambiente **DEVEM** estar configuradas tanto no AI Studio (Secrets) quanto no Dashboard do Vercel:
-- `VITE_SUPABASE_URL`: URL do projeto Supabase.
-- `VITE_SUPABASE_ANON_KEY`: Chave anônima do Supabase.
+## 🔑 Configurações Críticas (Secrets)
+As seguintes chaves devem estar presentes para o funcionamento total:
+- `VITE_SUPABASE_URL`: Endpoint do Supabase.
+- `VITE_SUPABASE_ANON_KEY`: Anon Key do Supabase.
+- `GEMINI_API_KEY`: Para o consultor de auditoria IA.
 
-## 🛠️ Lógica de Resiliência (Ponto Zero)
-1. **Inicialização Híbrida (`src/lib/supabase.ts`)**: O cliente Supabase tenta carregar via variáveis de ambiente do Vite primeiro, e oferece uma função `initSupabase` para carregamento dinâmico.
-2. **Vercel Entry Point (`api/index.ts` & `vercel.json`)**: Configuração que permite ao Express rodar como uma Vercel Function, resolvendo erros 404 em domínios próprios.
-3. **Fallback Direto (`src/App.tsx`)**: A função `fetchLeads` tenta buscar via API (`/api/admin/leads-data`). Se falhar (Timeout ou Erro 500 do Vercel), ela faz o bypass automático e busca os dados diretamente do Supabase no lado do cliente.
-4. **Configuração Dinâmica**: O frontend busca `/api/config` no carregamento para garantir que as chaves estejam sincronizadas entre backend e frontend.
+## 📂 Arquivos Essenciais para Restauração
+- `/server.ts`: Motor da API e servir estático.
+- `/api/index.ts`: Adaptador Vercel.
+- `/src/App.tsx`: Interface principal (Audit + Dashboard).
+- `/src/lib/supabase.ts`: Gerenciador de conexão persistente.
+- `/src/services/geminiService.ts`: Core da inteligência da consultoria.
 
-## 📂 Arquivos Essenciais
-- `/server.ts`: Servidor Express refatorado para exportar `createServer`.
-- `/api/index.ts`: Adaptador para Vercel.
-- `/vercel.json`: Regras de rewrite para SPA e API.
-- `/src/lib/supabase.ts`: Gerenciador de instância única do Supabase.
-- `/src/App.tsx`: Lógica de UI e sincronização com fallback.
+**Estado Atual: PRODUÇÃO/STABLE**
