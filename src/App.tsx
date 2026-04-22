@@ -2084,7 +2084,7 @@ export default function App() {
               </li>
               <li className="flex items-center gap-4">
                 <Phone className="w-5 h-5 text-brand-red shrink-0" />
-                +55 11 98342-4080
+                +351 929 051 990
               </li>
               <li className="flex items-center gap-4">
                 <Mail className="w-5 h-5 text-brand-red shrink-0" />
