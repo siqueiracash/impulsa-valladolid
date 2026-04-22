@@ -151,15 +151,17 @@ export default function App() {
     fetchConfig();
   }, []);
 
-  // Auto-scroll al inicio del formulario al cambiar de vista o de paso
+  // Auto-scroll al inicio del formulario o vista al cambiar
   React.useEffect(() => {
     if (view === 'form') {
       setTimeout(() => {
-        const element = document.getElementById('audit-top');
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
+        document.getElementById('audit-top')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    } else {
+      // Para login, loading, report y hero, siempre scrolear al inicio
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     }
   }, [view, step]);
 
@@ -1739,7 +1741,7 @@ export default function App() {
           </section>
         )}
         {view === 'login' && (
-          <section className="min-h-[80vh] flex items-center justify-center p-4">
+          <section id="login-top" className="min-h-[80vh] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
