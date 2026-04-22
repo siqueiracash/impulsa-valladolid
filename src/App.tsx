@@ -2016,7 +2016,7 @@ export default function App() {
               Especialistas en transformar pequeños negocios en referencias digitales en Valladolid y Madrid. Tradición española con tecnología global.
             </p>
             <div className="flex gap-5">
-              {[Instagram, Facebook, Globe].map((Icon, i) => (
+              {[Instagram, Facebook, Linkedin].map((Icon, i) => (
                 <a key={i} href="#" className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-brand-red hover:scale-110 transition-all border border-white/10">
                   <Icon className="w-6 h-6" />
                 </a>
