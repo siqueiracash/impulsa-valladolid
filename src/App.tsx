@@ -187,38 +187,44 @@ export default function App() {
       };
 
       const addHeader = (title: string) => {
-        // Fondo crema para el header
-        doc.setFillColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+        // Fondo blanco impecable para el header
+        doc.setFillColor(255, 255, 255);
         doc.rect(0, 0, pageWidth, 40, 'F');
         
         // Logo: Cuadrado redondeado rojo (como el sitio)
         doc.setFillColor(colors.red[0], colors.red[1], colors.red[2]);
-        doc.roundedRect(margin, 10, 20, 20, 4, 4, 'F');
+        doc.roundedRect(margin, 8, 24, 24, 6, 6, 'F');
         
-        // Icono de Cohete (Rocket) en blanco simplificado
+        // Icono de Cohete (Rocket) inclinado en blanco (fiel al logo real)
         doc.setFillColor(255, 255, 255);
-        // Cuerpo principal (triángulo alargado)
+        // Cuerpo del cohete inclinado para dar dinamismo
         doc.triangle(
-          margin + 10, 15, // Punda
-          margin + 6, 23,   // Base izquierda
-          margin + 14, 23,  // Base derecha
+          margin + 18, 14, // Punta (arriba derecha)
+          margin + 8, 18,  // Base izquierda
+          margin + 12, 26, // Base derecha
           'F'
         );
-        // Base/Motor
-        doc.rect(margin + 8, 23, 4, 3, 'F');
-        // Aletas
-        doc.triangle(margin + 6, 21, margin + 4, 25, margin + 6, 25, 'F');
-        doc.triangle(margin + 14, 21, margin + 16, 25, margin + 14, 25, 'F');
+        // Pequeñas chispas de propulsión
+        doc.circle(margin + 7, 24, 1.2, 'F');
+        doc.circle(margin + 5, 22, 0.8, 'F');
         
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(20);
+        // Texto del Logo - "Impulsa" en Teal oscuro
+        doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
+        doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
-        doc.text('IMPULSA', 40, 18);
-        doc.setFontSize(10);
-        doc.text('VALLADOLID', 40, 24);
+        doc.text('Impulsa', margin + 30, 21);
         
-        doc.setFontSize(12);
-        doc.text(title, pageWidth - margin, 21, { align: 'right' });
+        // Texto del Logo - "VALLADOLID" en Rojo
+        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VALLADOLID', margin + 30, 28);
+        
+        // Título del informe a la derecha en gris suave
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(title.toUpperCase(), pageWidth - margin, 21, { align: 'right' });
       };
 
       const addFooter = (pageNum: number) => {
