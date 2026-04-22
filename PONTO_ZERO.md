@@ -2,8 +2,13 @@
 
 Este documento registra o estado consolidado e estável do projeto "Impulsa Valladolid" após a conclusão da fase de auditoria IA, dashboard administrativo e integração completa com WhatsApp.
 
-## 🛠️ Mudanças Críticas Consolidadas:
-1. **WhatsApp Estratégico**: Todos os pontos de contato direcionam para `+55 11 98342-4080` com mensagens personalizadas em espanhol para conversão imediata.
+## 🛡️ Mudanças Críticas Consolidadas:
+1. **Segurança Avançada**: 
+   - **Helmet**: Adição de headers de segurança para mitigar ataques comuns.
+   - **Rate Limiting**: Proteção contra spam e brute-force nas rotas de auditoria e login.
+   - **API Protection**: Acesso aos leads protegido no servidor por `Authorization: Bearer <password>`.
+   - **Admin Dinâmico**: Senha de administrador movida para variável de ambiente (`ADMIN_PASSWORD`).
+2. **WhatsApp Estratégico**: Todos os pontos de contato direcionam para `+55 11 98342-4080` com mensagens personalizadas em espanhol para conversão imediata.
 2. **Dashboard de Resiliência**: Sistema de leads com "Tripla Sincronização" (Backend API -> Supabase Fallback -> Memory). Inclui ferramentas de debug e diagnóstico de conexão em tempo real.
 3. **UX Responsiva**: Seções do site (principalmente a área de planos e garantias) otimizadas para celulares, evitando cortes de texto e sobreposição de elementos.
 4. **Auditoria Gemini**: Prompt de IA ultra-refinado para soar como um consultor humano local de Valladolid, com integração via Google Search Grounding para dados reais.

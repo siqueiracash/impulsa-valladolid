@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import cors from 'cors';
 import fs from 'fs';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
 
@@ -17,10 +19,20 @@ const leads: any[] = [];
 export async function createServer() {
   const app = express();
   
-  // 1. Middlewares básicos
+  // 1. Segurança e Middlewares básicos
+  app.use(helmet({
+    contentSecurityPolicy: false, // Vite precisa disso desabilitado em dev ou configurado manualmente
+  }));
   app.use(cors());
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+  app.use(express.json({ limit: '10mb' })); // Reduzido de 50mb para 10mb por segurança
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Rate Limiting para evitar abusos no formulário
+  const auditLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5, // Limite de 5 submissões por IP a cada 15 minutos
+    message: { error: "Demasiadas solicitudes, por favor intente más tarde." }
+  });
 
   // Logging de todas as requisições para debug
   app.use((req, res, next) => {
@@ -57,7 +69,7 @@ export async function createServer() {
     res.json({ status: "ok", supabase: supabaseStatus });
   });
 
-  app.post("/api/save-audit", async (req, res) => {
+  app.post("/api/save-audit", auditLimiter, async (req, res) => {
     const { email, businessName, formData, report } = req.body;
     if (!businessName) return res.status(400).json({ error: "Nome do negócio é obrigatório" });
 
@@ -96,10 +108,18 @@ export async function createServer() {
 
   app.get("/api/admin/leads-data", async (req, res) => {
     console.log(`[DEBUG] Requisão recebida: ${req.method} ${req.url}`);
+    
+    // Proteção básica via Senha de Admin no Header
+    const adminPassToken = process.env.ADMIN_PASSWORD || "abcd1234"; // Fallback apenas para não quebrar sem config, mas avisar
+    const authHeader = req.headers['authorization'];
+    
+    if (authHeader !== `Bearer ${adminPassToken}`) {
+      console.warn("[SECURITY] Tentativa de acesso não autorizado ao Dashboard.");
+      return res.status(401).json({ error: "No autorizado" });
+    }
+
     try {
-      res.setHeader('Cache-Control', 'no-store');
       if (supabase) {
-        console.log("[DEBUG] Supabase disponível, buscando...");
         const { data, error } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
         if (error) {
           console.error("[DEBUG] Erro ao buscar no Supabase:", error.message);

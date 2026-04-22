@@ -523,9 +523,11 @@ export default function App() {
     }
   };
 
-  const fetchLeads = async () => {
+  const fetchLeads = async (customToken?: string) => {
     setIsAdminLoading(true);
     setAdminError(null);
+    const token = customToken || loginData.pass;
+    
     try {
       console.log("[DEBUG] Iniciando fetchLeads...");
       // 1. Intentar vía API (Backend)
@@ -537,7 +539,10 @@ export default function App() {
         const apiUrl = `/api/admin/leads-data?t=${Date.now()}`;
         console.log(`[DEBUG] Llamando a API: ${apiUrl}`);
         const response = await fetch(apiUrl, { 
-          signal: AbortSignal.timeout(10000) // 10s timeout
+          signal: AbortSignal.timeout(10000), // 10s timeout
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
         
         if (response.ok) {
@@ -550,10 +555,13 @@ export default function App() {
             apiErrorDetail = "La respuesta de la API no es un JSON válido.";
             console.warn("[DEBUG] API no devolvió JSON, intentando Supabase directo...");
           }
+        } else if (response.status === 401) {
+          throw new Error("Contraseña de administrador incorrecta.");
         } else {
           apiErrorDetail = `La API respondió con error ${response.status}: ${response.statusText}`;
         }
       } catch (apiErr: any) {
+        if (apiErr.message === "Contraseña de administrador incorrecta.") throw apiErr;
         apiErrorDetail = `Error de red en la API: ${apiErr.message}`;
         console.warn("[DEBUG] Error en la API de leads, intentando directo en Supabase...", apiErr);
       }
@@ -606,13 +614,18 @@ export default function App() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginData.user === 'admin' && loginData.pass === 'abcd1234') {
-      setView('admin');
-      fetchLeads();
+    if (loginData.user === 'admin') {
+      try {
+        // Intentamos autenticar llamando a la API
+        await fetchLeads(loginData.pass);
+        setView('admin');
+      } catch (err: any) {
+        setErrorModal({ show: true, message: err.message || 'Error al iniciar sesión' });
+      }
     } else {
-      setErrorModal({ show: true, message: 'Credenciales de administrador incorrectas.' });
+      setErrorModal({ show: true, message: 'Usuario incorrecto.' });
     }
   };
 
@@ -1762,7 +1775,7 @@ export default function App() {
                     <Database className="w-4 h-4" /> Probar Conexión
                   </button>
                   <button 
-                    onClick={fetchLeads}
+                    onClick={() => fetchLeads()}
                     disabled={isAdminLoading}
                     className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2 disabled:opacity-50"
                   >
