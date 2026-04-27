@@ -827,13 +827,13 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="text-center lg:text-left"
+                  className="text-center lg:text-left relative z-20"
                 >
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-cream/50 text-brand-red text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-8 border border-brand-orange/10">
                     <Sparkles className="w-4 h-4" />
                     {dynamicCity === 'Madrid' ? 'Madrid & Valladolid Digital' : `${dynamicCity} Digital`}
                   </div>
-                  <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
+                  <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
                     No deje que su <br />
                     <span className="text-brand-red">concurrencia gane</span>
                   </h1>
