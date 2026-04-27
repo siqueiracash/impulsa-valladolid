@@ -103,6 +103,7 @@ export default function App() {
   const [report, setReport] = React.useState<AuditReport | null>(null);
   
   // Parámetros de URL para personalización (SEO/Ads)
+  // Actualizado para suportar campanhas locais em Valladolid e Madrid
   const urlParams = new URLSearchParams(window.location.search);
   const cityParam = urlParams.get('ciudad') || urlParams.get('city') || 'Valladolid';
   const dynamicCity = cityParam.charAt(0).toUpperCase() + cityParam.slice(1).toLowerCase();
