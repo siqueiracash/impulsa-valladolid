@@ -929,8 +929,8 @@ export default function App() {
                 <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-md">
                   <h3 className="text-2xl font-black mb-6 text-brand-orange">El costo de la invisibilidad:</h3>
                   <div className="space-y-6">
-                    <div className="p-6 bg-brand-red/10 rounded-2xl border border-brand-red/20">
-                      <p className="text-3xl font-black text-brand-red mb-1">94%</p>
+                    <div className="p-6 bg-brand-orange/10 rounded-2xl border border-brand-orange/20">
+                      <p className="text-3xl font-black text-brand-orange mb-1">94%</p>
                       <p className="text-sm font-bold opacity-70">De los clientes consultan Google antes de visitar un negocio local.</p>
                     </div>
                     <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
