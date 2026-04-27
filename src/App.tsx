@@ -423,7 +423,7 @@ export default function App() {
     const data = watch();
     const message = `Hola, vengo de la web. Acabo de realizar la auditoría gratuita para mi negocio: *${data.businessName}* y me gustaría recibir el informe completo y hablar sobre cómo podéis ayudarme a crecer. 🚀`;
     
-    const whatsappUrl = `https://wa.me/5511983424080?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/351929051990?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -2167,7 +2167,7 @@ export default function App() {
       </footer>
       {/* Floating WhatsApp Button */}
       <a 
-        href={`https://wa.me/5511983424080?text=${encodeURIComponent("Hola équipe de Impulsa Valladolid, me gustaría impulsar mi negocio. ¿Podemos hablar?")}`}
+        href={`https://wa.me/351929051990?text=${encodeURIComponent("Hola équipe de Impulsa Valladolid, me gustaría impulsar mi negocio. ¿Podemos hablar?")}`}
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-8 right-8 z-[100] bg-[#25D366] text-white p-5 rounded-full shadow-2xl hover:scale-110 transition-all group"
