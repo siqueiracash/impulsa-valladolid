@@ -833,18 +833,18 @@ export default function App() {
                     {dynamicCity === 'Madrid' ? 'Madrid & Valladolid Digital' : `${dynamicCity} Digital`}
                   </div>
                   <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
-                    Multiplique sus <br />
-                    <span className="text-brand-red">Clientes en {dynamicCity}</span>
+                    No deje que su <br />
+                    <span className="text-brand-red">concurrencia gane</span>
                   </h1>
                   <p className="text-lg md:text-2xl text-slate-600 mb-12 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
-                    Transformamos su restaurante, bar o comercio en una máquina de ventas en Google y Redes Sociales. 
+                    Mientras usted lee esto, sus clientes están eligiendo a su competencia en Google. <strong>Nosotros cambiamos esa realidad.</strong>
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 md:gap-6">
                     <button 
                       onClick={() => setView('form')}
                       className="w-full sm:w-auto bg-brand-red text-white px-10 md:px-12 py-5 md:py-6 rounded-[2rem] text-lg md:text-xl font-black hover:bg-brand-orange transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-3 group active:scale-95"
                     >
-                      Quiero mi Auditoría
+                      Quiero Dominar mi Calle
                       <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
                     </button>
                     
@@ -881,6 +881,70 @@ export default function App() {
                   </div>
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-brand-orange/5 rounded-full -z-10 blur-3xl" />
                 </motion.div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {view === 'hero' && (
+          <section className="py-24 px-4 bg-brand-teal text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-1/3 h-full bg-brand-orange/10 blur-[120px] -z-0" />
+            <div className="max-w-7xl mx-auto relative z-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                <div>
+                  <h2 className="text-4xl md:text-6xl font-black mb-8 leading-tight">
+                    ¿Por qué nosotros y <span className="text-brand-orange">no una IA genérica?</span>
+                  </h2>
+                  <div className="space-y-8">
+                    <div className="flex gap-6 items-start">
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                        <MapPin className="w-6 h-6 text-brand-orange" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-black mb-2 uppercase tracking-tight">Contexto Local Real</h4>
+                        <p className="text-brand-cream/60 leading-relaxed">La IA no sabe que en su calle hay una obra que bloquea el paso, o que el público de su barrio busca cosas específicas. Nosotros conocemos Valladolid y Madrid de verdad.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-6 items-start">
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                        <Rocket className="w-6 h-6 text-brand-orange" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-black mb-2 uppercase tracking-tight">Ejecución, no solo consejos</h4>
+                        <p className="text-brand-cream/60 leading-relaxed">ChatGPT le dirá "haga SEO". Nosotros entramos en su panel, ajustamos sus etiquetas, optimizamos sus fotos y configuramos sus anuncios para que suene el teléfono.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-6 items-start">
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                        <Users className="w-6 h-6 text-brand-orange" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-black mb-2 uppercase tracking-tight">Estrategia Humana</h4>
+                        <p className="text-brand-cream/60 leading-relaxed">Las máquinas analizan datos, nosotros analizamos personas. Entendemos el deseo del cliente que camina por el centro y quiere cenar hoy mismo.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-md">
+                  <h3 className="text-2xl font-black mb-6 text-brand-orange">El costo de la invisibilidad:</h3>
+                  <div className="space-y-6">
+                    <div className="p-6 bg-brand-red/10 rounded-2xl border border-brand-red/20">
+                      <p className="text-3xl font-black text-brand-red mb-1">94%</p>
+                      <p className="text-sm font-bold opacity-70">De los clientes consultan Google antes de visitar un negocio local.</p>
+                    </div>
+                    <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
+                      <p className="text-3xl font-black text-white mb-1">Top 3</p>
+                      <p className="text-sm font-bold opacity-70">Los 3 primeros resultados se quedan con el 75% de las llamadas totales.</p>
+                    </div>
+                    <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-brand-cream/40">Si no es el primero, no existe.</p>
+                    <button 
+                      onClick={() => setView('form')}
+                      className="w-full bg-brand-orange text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-brand-orange/20"
+                    >
+                      Diferenciarse ahora
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
