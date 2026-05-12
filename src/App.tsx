@@ -833,7 +833,7 @@ export default function App() {
                     <Sparkles className="w-4 h-4" />
                     {dynamicCity === 'Madrid' ? 'Madrid & Valladolid Digital' : `${dynamicCity} Digital`}
                   </div>
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
+                  <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-8xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
                     No deje que su <br />
                     <span className="text-brand-red">concurrencia gane</span>
                   </h1>
@@ -1995,8 +1995,12 @@ export default function App() {
                     <tbody className="divide-y divide-brand-cream/30">
                       {adminLeads.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-8 py-20 text-center text-slate-400 font-bold italic">
-                            No hay leads registrados todavía.
+                          <td colSpan={5} className="px-8 py-24 text-center">
+                            <div className="flex flex-col items-center justify-center gap-4 text-slate-300">
+                              <Database className="w-16 h-16 opacity-20" />
+                              <p className="text-lg font-bold italic">No hay leads registrados todavía.</p>
+                              <p className="text-[10px] uppercase tracking-widest font-black opacity-50">Sincronización activa en tiempo real</p>
+                            </div>
                           </td>
                         </tr>
                       ) : adminLeads.slice().reverse().map((lead, idx) => (

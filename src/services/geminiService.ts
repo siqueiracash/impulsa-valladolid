@@ -65,7 +65,7 @@ export async function generateAuditReport(data: AuditFormData, isMock: boolean =
       const tools = i >= 2 ? [{ googleSearch: {} }] : [];
       
       const result = await ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: {
           tools,

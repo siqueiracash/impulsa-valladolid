@@ -115,7 +115,12 @@ export async function createServer() {
     console.log(`[DEBUG] Requisão recebida: ${req.method} ${req.url}`);
     
     // Proteção básica via Senha de Admin no Header
-    const adminPassToken = process.env.ADMIN_PASSWORD || "abcd1234"; // Fallback apenas para não quebrar sem config, mas avisar
+    const adminPassToken = process.env.ADMIN_PASSWORD || "abcd1234"; 
+    
+    if (!process.env.ADMIN_PASSWORD) {
+      console.warn("[SECURITY] Variável ADMIN_PASSWORD não configurada. Usando fallback padrão!");
+    }
+
     const authHeader = req.headers['authorization'];
     
     if (authHeader !== `Bearer ${adminPassToken}`) {
