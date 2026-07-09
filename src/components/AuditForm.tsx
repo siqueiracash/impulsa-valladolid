@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, MapPin, Phone, User, Map, MessageSquare, TrendingUp, Award, ArrowLeft, Instagram, Facebook, Linkedin, Globe } from 'lucide-react';
+import { Sparkles, MapPin, Phone, User, Map, MessageSquare, TrendingUp, Award, ArrowLeft, ArrowRight, Instagram, Facebook, Linkedin, Globe } from 'lucide-react';
 import { dbSync } from '../lib/supabase';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
@@ -295,9 +295,10 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
 
                   <button 
                     type="submit"
-                    className="w-full py-4.5 bg-brand-gold hover:bg-amber-600 text-brand-dark text-xs font-extrabold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-gold/5 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer"
+                    className="w-full py-5 bg-brand-gold hover:bg-amber-500 text-brand-dark text-sm font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.6)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2.5 mt-8 cursor-pointer border border-white/10"
                   >
-                    <span>AVANÇAR</span>
+                    <span>AVANÇAR AL PASO 2</span>
+                    <ArrowRight className="w-5 h-5 text-brand-dark transition-transform group-hover:translate-x-1" />
                   </button>
                 </>
               ) : (
@@ -387,9 +388,9 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
 
                   <button 
                     type="submit"
-                    className="w-full py-4.5 bg-brand-gold hover:bg-amber-600 text-brand-dark text-xs font-extrabold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-gold/5 transition-all flex items-center justify-center gap-2 mt-8 cursor-pointer"
+                    className="w-full py-5 bg-brand-gold hover:bg-amber-500 text-brand-dark text-sm font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.6)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2.5 mt-8 cursor-pointer border border-white/10"
                   >
-                    <Sparkles className="w-4 h-4 text-brand-dark fill-current" />
+                    <Sparkles className="w-5 h-5 text-brand-dark fill-current animate-pulse" />
                     <span>INICIAR AUDITORIA</span>
                   </button>
                 </>
