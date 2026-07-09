@@ -18,5 +18,15 @@ export const dbSync = {
     } catch {
       return [];
     }
+  },
+  deleteLead: (id: string) => {
+    try {
+      const current = dbSync.getLeads();
+      const updated = current.filter((l: any) => l.id !== id);
+      localStorage.setItem('impulsa_leads', JSON.stringify(updated));
+      return updated;
+    } catch {
+      return [];
+    }
   }
 };

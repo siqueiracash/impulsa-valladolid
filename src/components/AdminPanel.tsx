@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Lock, AlertCircle, X, MessageSquare, Instagram, Facebook, Linkedin, Globe } from 'lucide-react';
+import { Database, Lock, AlertCircle, X, MessageSquare, Instagram, Facebook, Linkedin, Globe, Trash2 } from 'lucide-react';
 import { dbSync } from '../lib/supabase';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
@@ -158,6 +158,45 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
     window.open(whatsappUrl, '_blank');
   };
 
+  const handleDeleteLead = async (id: string, name: string) => {
+    const confirmed = window.confirm(`¿Estás seguro de que deseas eliminar la auditoría de "${name}"?`);
+    if (!confirmed) return;
+
+    try {
+      // Delete locally
+      dbSync.deleteLead(id);
+
+      // Try to delete from the server
+      try {
+        const response = await fetch(`/api/leads/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${adminPassword}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+          triggerAlert('success', `Auditoría de "${name}" eliminada.`);
+        } else {
+          console.warn("[DELETE] No se eliminó en el servidor, pero se borró localmente.", data.error);
+          triggerAlert('success', `Eliminado de este navegador. (Servidor: ${data.error || 'No sincronizado'})`);
+        }
+      } catch (err) {
+        console.warn("[DELETE] Error de red, eliminado solo localmente:", err);
+        triggerAlert('success', `Eliminado localmente de este dispositivo.`);
+      }
+
+      // Update state
+      setAdminLeads(prev => prev.filter(l => l.id !== id));
+      if (selectedLead && selectedLead.id === id) {
+        setSelectedLead(null);
+      }
+    } catch (e) {
+      console.error(e);
+      triggerAlert('err', 'Error al intentar eliminar.');
+    }
+  };
+
   return (
     <main className="flex-grow py-12 px-6 max-w-7xl mx-auto w-full text-white bg-brand-dark min-h-screen">
       
@@ -289,9 +328,16 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
                         <td className="px-8 py-5 text-right space-x-2">
                           <button 
                             onClick={() => setSelectedLead(lg)}
-                            className="text-xs font-bold text-brand-dark bg-brand-gold hover:bg-amber-600 px-3 py-1.5 rounded-lg"
+                            className="text-xs font-bold text-brand-dark bg-brand-gold hover:bg-amber-600 px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center"
                           >
                             Ver Informe
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteLead(lg.id, lg.businessName)}
+                            title="Eliminar Auditoría"
+                            className="inline-flex items-center justify-center p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20"
+                          >
+                            <Trash2 className="w-4.5 h-4.5" />
                           </button>
                         </td>
                       </tr>

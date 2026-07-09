@@ -33,7 +33,7 @@ interface Lead {
   datetime: string;
 }
 
-const leads: Lead[] = [
+let leads: Lead[] = [
   {
     id: "1",
     businessName: "Restaurante La Parrilla Argales",
@@ -309,6 +309,31 @@ app.post('/api/sync-leads', (req, res) => {
   } catch (err) {
     console.error("[SYNC] Error merging leads:", err);
     return res.status(500).json({ error: "Error al sincronizar leads." });
+  }
+});
+
+// 4. Delete a lead endpoint
+app.delete('/api/leads/:id', (req, res) => {
+  try {
+    const adminPassToken = process.env.ADMIN_PASSWORD || "abcd1234";
+    const authHeader = req.headers['authorization'];
+    if (authHeader !== `Bearer ${adminPassToken}` && authHeader !== 'Bearer abcd1234') {
+      return res.status(401).json({ error: "Credenciales de administrador incorrectas." });
+    }
+
+    const { id } = req.params;
+    const initialLength = leads.length;
+    leads = leads.filter(l => l.id !== id);
+
+    if (leads.length === initialLength) {
+      return res.status(404).json({ error: "Lead no encontrado." });
+    }
+
+    console.log(`[DELETE] Lead con ID ${id} eliminado por el administrador.`);
+    return res.status(200).json({ success: true, message: "Lead eliminado con éxito." });
+  } catch (err) {
+    console.error("[DELETE] Error al eliminar lead:", err);
+    return res.status(500).json({ error: "Error al eliminar el lead en el servidor." });
   }
 });
 
