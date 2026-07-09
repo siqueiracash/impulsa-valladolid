@@ -231,7 +231,7 @@ export default function App() {
                 </h2>
 
                 <p className="text-stone-300 text-base sm:text-lg leading-relaxed max-w-2xl font-sans font-medium">
-                  Antes de cruzar tu puerta física, tus clientes ya han explorado tu <strong className="text-brand-gold">escaparate digital</strong>. La decisión se toma mucho antes del primer bocado.
+                  Antes de cruzar tu puerta física, tus clientes ya han explorado tu <strong className="text-brand-gold">escaparate digital</strong>. La primera impresión decide la compra antes de su visita.
                 </p>
 
                 <div className="pt-4">
@@ -252,17 +252,17 @@ export default function App() {
             </div>
           </section>
 
-          {/* SLIDE 3: EL HAMBRE ENTRA POR LOS OJOS */}
+          {/* SLIDE 3: TU NEGOCIO ENTRA POR LOS OJOS */}
           <section className="py-24 bg-brand-dark-sec border-y border-brand-gold/10 relative overflow-hidden">
-            {/* Background Tapas Board blurred */}
-            <div className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-10" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=1600&q=80')" }} />
+            {/* Background Barber Board blurred */}
+            <div className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-[0.07]" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1600&q=80')" }} />
 
             <div className="max-w-7xl mx-auto px-6 relative z-10 space-y-16">
               
               <div className="max-w-3xl mx-auto text-center space-y-4">
                 <span className="text-brand-crimson text-xs font-black uppercase tracking-[0.25em] block">Presencia Crítica</span>
                 <h2 className="text-3xl md:text-5xl font-serif font-medium text-white leading-tight">
-                  El hambre entra por los ojos, <br />
+                  Tu negocio entra por los ojos, <br />
                   pero la decisión se toma en la <span className="text-brand-gold italic">pantalla.</span>
                 </h2>
                 <div className="w-16 h-1 bg-brand-crimson mx-auto rounded-full mt-4" />
@@ -278,7 +278,7 @@ export default function App() {
                   </div>
                   <h3 className="text-lg font-bold text-white uppercase tracking-wider">Impacto Visual</h3>
                   <p className="text-stone-400 text-sm leading-relaxed">
-                    Una foto de baja calidad apaga el apetito y aleja al cliente de su restaurante al instante. El cliente digital necesita saborear con la mirada.
+                    Una foto de baja calidad aleja al cliente de tu negocio al instante. Ya sea para saborear un plato, comprar un producto o agendar un servicio, el cliente digital decide visualmente.
                   </p>
                 </div>
 
@@ -289,7 +289,7 @@ export default function App() {
                   </div>
                   <h3 className="text-lg font-bold text-white uppercase tracking-wider">Invisibilidad</h3>
                   <p className="text-stone-400 text-sm leading-relaxed">
-                    Un perfil vacío en Google es un restaurante cerrado a ojos del cliente digital. Si no te encuentran rápido, sencillamente no existes.
+                    Un perfil vacío en Google es un negocio cerrado a ojos del cliente digital. Si no te encuentran rápido, sencillamente no existes.
                   </p>
                 </div>
 
@@ -328,7 +328,7 @@ export default function App() {
                   <span className="text-brand-gold italic">ya haces bien.</span>
                 </h2>
                 <p className="text-stone-400 text-sm max-w-xl mx-auto">
-                  No inventamos historias. Capturamos la esencia de tu cocina y la ponemos donde todos la vean en Google Valladolid.
+                  No inventamos historias. Capturamos la esencia de tu servicio o comercio y la ponemos donde todos la vean en Google Valladolid.
                 </p>
                 <div className="w-16 h-1 bg-brand-gold mx-auto rounded-full mt-4" />
               </div>
@@ -352,9 +352,9 @@ export default function App() {
                   <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
                     <Target className="w-6 h-6" />
                   </div>
-                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Foco en Mesas</h3>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Foco en Clientes Reales</h3>
                   <p className="text-stone-400 text-sm leading-relaxed">
-                    No buscamos "likes" vacíos o métricas de vanidad. Buscamos reservas de mesas reales, clientes físicos y comandas calientes los fines de semana.
+                    No buscamos "likes" vacíos o métricas de vanidad. Buscamos llamadas reales, citas confirmadas, clientes físicos y visitas en tu establecimiento.
                   </p>
                 </div>
 
@@ -365,7 +365,7 @@ export default function App() {
                   </div>
                   <h3 className="text-lg font-bold text-white uppercase tracking-wider">Calidad Real</h3>
                   <p className="text-stone-400 text-sm leading-relaxed">
-                    Amplificamos tu esfuerzo y sudor diario en la cocina para que el mundo digital lo descubra y reserve con anticipación.
+                    Amplificamos tu esfuerzo y sudor diario en tu negocio para que el mundo digital lo descubra y agende con anticipación.
                   </p>
                 </div>
 
@@ -416,9 +416,9 @@ export default function App() {
                   <div className="flex gap-4">
                     <span className="text-2xl font-black text-brand-gold">03</span>
                     <div>
-                      <h4 className="text-base font-bold text-white uppercase tracking-wider">Impacto Visual Gastronómico</h4>
+                      <h4 className="text-base font-bold text-white uppercase tracking-wider">Impacto Visual Profesional</h4>
                       <p className="text-sm text-stone-450 mt-1 leading-relaxed">
-                        Fotos profesionales con ángulo cinematográfico que abren el apetito de los vallisoletanos e impiden que pasen de largo.
+                        Fotos profesionales con ángulo cinematográfico que resaltan lo mejor de tu negocio e impiden que pasen de largo.
                       </p>
                     </div>
                   </div>
@@ -438,16 +438,16 @@ export default function App() {
                 <span className="text-brand-crimson text-xs font-black uppercase tracking-[0.25em] block">Seducción en Redes</span>
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-white leading-tight">
                   Contenido que detiene el scroll <br />
-                  <span className="text-brand-gold italic">y llena mesas de comensales.</span>
+                  <span className="text-brand-gold italic">y llena la agenda de clientes.</span>
                 </h2>
 
                 <div className="space-y-6 pt-2">
                   <div className="flex gap-4">
                     <span className="w-1.5 h-10 bg-brand-crimson rounded-full block flex-shrink-0" />
                     <div>
-                      <h4 className="text-md font-bold text-white">Reels Virales Gastronómicos</h4>
+                      <h4 className="text-md font-bold text-white">Reels Virales de Alto Impacto</h4>
                       <p className="text-xs text-stone-400 leading-relaxed mt-1">
-                        Vídeos cortos que muestran la magia del detrás de escena en los fogones e invitan a los clientes locales a descubrir su salón en Valladolid.
+                        Vídeos cortos que muestran la magia del detrás de escena de tu trabajo e invitan a los clientes locales a visitarte en Valladolid.
                       </p>
                     </div>
                   </div>
@@ -457,7 +457,7 @@ export default function App() {
                     <div>
                       <h4 className="text-md font-bold text-white">Deseo Visual en Pantalla</h4>
                       <p className="text-xs text-stone-400 leading-relaxed mt-1">
-                        Fotografía gastronómica de alto impacto diseñada con iluminación cálida para hacer salivar a tu audiencia de forma inmediata.
+                        Fotografía profesional de alto impacto diseñada para resaltar tus mejores cortes, productos o servicios de forma inmediata.
                       </p>
                     </div>
                   </div>
@@ -467,7 +467,7 @@ export default function App() {
                     <div>
                       <h4 className="text-md font-bold text-white">Invitación Directa (Llamadas a la Acción)</h4>
                       <p className="text-xs text-stone-400 leading-relaxed mt-1">
-                        No son simples publicaciones estéticas en el feed. Son llamadas a la acción estratégicas y optimizadas para rellenar el formulario de reserva real.
+                        No son simples publicaciones estéticas en el feed. Son llamadas a la acción estratégicas y optimizadas para llamar o agendar una cita o reserva real.
                       </p>
                     </div>
                   </div>
@@ -495,7 +495,7 @@ export default function App() {
             {/* Glowing huge number */}
             <div className="max-w-xl mx-auto py-10 bg-brand-gold/5 rounded-[3rem] border border-brand-gold/15 shadow-xl shadow-brand-gold/2 relative">
               <span className="block text-8xl md:text-9xl font-serif font-black text-brand-gold animate-pulse">45</span>
-              <span className="block text-sm font-black uppercase tracking-[0.25em] text-brand-crimson mt-2">Reservas Diarias</span>
+              <span className="block text-sm font-black uppercase tracking-[0.25em] text-brand-crimson mt-2">Clientes y Citas Diarias</span>
             </div>
 
             {/* Sub metric tags */}

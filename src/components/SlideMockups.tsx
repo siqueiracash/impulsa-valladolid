@@ -17,29 +17,29 @@ export function GoogleMapsMobileMockup() {
             <span className="w-2.5 h-2.5 rounded-full bg-brand-crimson" />
             <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Valladolid Local Search</span>
           </div>
-          <div className="bg-stone-900 text-stone-500 rounded-lg px-2 py-1 text-[9px] font-bold">Bodega Tapas</div>
+          <div className="bg-stone-900 text-stone-500 rounded-lg px-2 py-1 text-[9px] font-bold">Barbería Premium</div>
         </div>
 
         {/* Listing Result block */}
         <div className="p-4 space-y-4">
           <div className="relative h-44 rounded-xl overflow-hidden bg-stone-950">
             <img 
-              src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80" 
-              alt="Bodega Tapas Valladolid"
+              src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80" 
+              alt="Barbería Castilla Valladolid"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/10 to-transparent" />
             
             <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[10px] font-black uppercase text-emerald-400">Muy Concurrido • Abierto</span>
             </div>
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-extrabold text-white">Bodega Tapas Valladolid</h4>
+              <h4 className="text-sm font-extrabold text-white">Barbería Castilla Valladolid</h4>
               <span className="text-[10px] font-black text-brand-gold bg-brand-gold/10 px-2 py-0.5 rounded border border-brand-gold/20">TOP #1</span>
             </div>
 
@@ -54,7 +54,7 @@ export function GoogleMapsMobileMockup() {
             </div>
 
             <p className="text-[11px] text-stone-400 leading-normal">
-              📍 Calle del Santiago 15, Valladolid • Cocina castellana tradicional, croquetas caseras y el mejor vino de la Ribera del Duero.
+              📍 Calle de Santiago 15, Valladolid • Barbería tradicional y de vanguardia, afeitados clásicos, cortes de pelo a navaja y arreglo de barba.
             </p>
           </div>
 
@@ -154,10 +154,10 @@ export function InstagramReelsMockup() {
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-4.5 bg-black rounded-full z-20" />
 
       <div className="bg-black rounded-[2rem] overflow-hidden relative h-[480px]">
-        {/* Full background food video representation */}
+        {/* Full background hair/barber video representation */}
         <img 
-          src="https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=600&q=80" 
-          alt="Croquetas crujientes en el reel"
+          src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80" 
+          alt="Corte de cabello y barba en el reel"
           className="w-full h-full object-cover opacity-85"
           referrerPolicy="no-referrer"
         />
@@ -170,7 +170,7 @@ export function InstagramReelsMockup() {
           <span className="text-xs font-black tracking-widest uppercase">Reels</span>
           <div className="flex items-center gap-1.5 text-[9px] font-bold bg-black/40 px-2 py-1 rounded-full">
             <Flame className="w-3 h-3 text-brand-crimson" />
-            <span>Tapas Bar Vibes</span>
+            <span>Barber & Style Vibes</span>
           </div>
         </div>
 
@@ -184,21 +184,21 @@ export function InstagramReelsMockup() {
         {/* Bottom Left Content Metadata */}
         <div className="absolute bottom-6 left-4 right-16 space-y-3 text-white z-10">
           <div className="flex items-center gap-2">
-            <div className="w-7.5 h-7.5 rounded-full bg-brand-crimson flex items-center justify-center text-[10px] font-black border border-white/15">
-              VT
+            <div className="w-7.5 h-7.5 rounded-full bg-brand-gold flex items-center justify-center text-[10px] font-black border border-white/15 text-brand-dark">
+              VB
             </div>
             <div>
-              <h5 className="text-[11px] font-extrabold">ValladolidTapas</h5>
-              <p className="text-[8px] text-stone-400">Descubre lo mejor de nuestra ciudad</p>
+              <h5 className="text-[11px] font-extrabold">ValladolidBarber</h5>
+              <p className="text-[8px] text-stone-400">Estilo y tendencia en Valladolid</p>
             </div>
           </div>
 
           <div className="space-y-1">
             <p className="text-xs font-black leading-tight">
-              Contenido que detiene el scroll y llena mesas 🎥✨
+              Contenido que detiene el scroll y llena agendas 🎥✨
             </p>
             <p className="text-[9px] text-stone-300">
-              Vídeos cortos gastronómicos diseñados para hacer salivar a tu audiencia local.
+              Vídeos cortos de transformaciones reales y cortes impecables diseñados para captar miradas locales.
             </p>
           </div>
         </div>

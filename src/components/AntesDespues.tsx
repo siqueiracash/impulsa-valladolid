@@ -14,12 +14,11 @@ export default function AntesDespues() {
         <div className="text-center space-y-3">
           <span className="text-brand-gold text-xs font-black uppercase tracking-[0.25em] bg-brand-gold/10 px-3.5 py-1.5 rounded-full inline-block">
             Transformación Real
-          </span>
-          <h3 className="text-2xl md:text-4xl font-black text-white font-serif">
+          </span>          <h3 className="text-2xl md:text-4xl font-black text-white font-serif">
             El Impacto: Antes y Después de Impulsa
           </h3>
           <p className="text-stone-400 text-sm max-w-xl mx-auto">
-            Vea la diferencia radical que experimenta un restaurante tradicional en Valladolid al transformar su presencia digital en Google Maps de nuestra mano.
+            Vea la diferencia radical que experimenta un negocio tradicional (como una barbería, clínica o tienda local) en Valladolid al transformar su presencia digital en Google Maps de nuestra mano.
           </p>
         </div>
 
@@ -67,7 +66,7 @@ export default function AntesDespues() {
                   {/* Grayed blurred image */}
                   <div className="relative h-40 rounded-2xl overflow-hidden bg-stone-950 border border-stone-800">
                     <img 
-                      src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=50"
+                      src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=50"
                       alt="Local Vacío"
                       className="w-full h-full object-cover grayscale opacity-30 contrast-125 blur-[1px]"
                       referrerPolicy="no-referrer"
@@ -79,7 +78,7 @@ export default function AntesDespues() {
                   </div>
 
                   <div>
-                    <h4 className="text-base font-extrabold text-stone-300">Taverna El Rincón</h4>
+                    <h4 className="text-base font-extrabold text-stone-300">Barbería Castilla</h4>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs font-bold text-stone-500">3.4</span>
                       <div className="flex text-stone-600">
@@ -109,7 +108,7 @@ export default function AntesDespues() {
 
                   {/* SEO placement status */}
                   <div className="bg-red-950/20 border border-red-950/40 rounded-xl p-3 text-center text-xs">
-                    <p className="text-stone-400 font-medium">Búsqueda: <strong className="text-stone-300">"tapas Valladolid"</strong></p>
+                    <p className="text-stone-400 font-medium">Búsqueda: <strong className="text-stone-300">"barbería Valladolid"</strong></p>
                     <p className="text-brand-crimson font-black uppercase tracking-wider text-[11px] mt-0.5">Oculto en página 3 de Google Maps</p>
                   </div>
                 </div>
@@ -124,11 +123,11 @@ export default function AntesDespues() {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Gorgeous high-end restaurant image */}
+                  {/* Gorgeous high-end business image */}
                   <div className="relative h-40 rounded-2xl overflow-hidden bg-brand-dark-sec border border-brand-gold/10">
                     <img 
-                      src="https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=600&q=80"
-                      alt="Tapas Exquisitas Valladolid"
+                      src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=600&q=80"
+                      alt="Barbería Castilla Valladolid"
                       className="w-full h-full object-cover hover:scale-105 transition-all duration-700"
                       referrerPolicy="no-referrer"
                     />
@@ -139,7 +138,7 @@ export default function AntesDespues() {
                   </div>
 
                   <div>
-                    <h4 className="text-base font-extrabold text-white font-serif">Taverna El Rincón</h4>
+                    <h4 className="text-base font-extrabold text-white font-serif">Barbería Castilla</h4>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs font-black text-brand-gold">4.9</span>
                       <div className="flex text-brand-gold">
@@ -155,7 +154,7 @@ export default function AntesDespues() {
                   <div className="space-y-2 text-xs text-stone-300 border-t border-white/5 pt-3">
                     <p className="flex items-start gap-1.5">
                       <span className="text-brand-gold font-bold">✓</span> 
-                      <span>Calle Santiago, 14, Valladolid</span>
+                      <span>Calle Santiago, 15, Valladolid</span>
                     </p>
                     <p className="flex items-start gap-1.5">
                       <span className="text-brand-gold font-bold">✓</span>
@@ -169,7 +168,7 @@ export default function AntesDespues() {
 
                   {/* SEO placement status */}
                   <div className="bg-brand-gold/10 border border-brand-gold/20 rounded-xl p-3 text-center text-xs">
-                    <p className="text-stone-300 font-medium">Búsqueda: <strong className="text-white">"tapas Valladolid"</strong></p>
+                    <p className="text-stone-300 font-medium">Búsqueda: <strong className="text-white">"barbería Valladolid"</strong></p>
                     <p className="text-brand-gold font-black uppercase tracking-widest text-[11px] mt-0.5">Puesto #1 en el Google Local Pack</p>
                   </div>
                 </div>
@@ -195,7 +194,7 @@ export default function AntesDespues() {
                     <div>
                       <h5 className="text-xs uppercase font-black tracking-wider text-stone-300">Abandono de Clientes Potenciales</h5>
                       <p className="text-xs leading-relaxed mt-0.5 text-stone-400">
-                        La gente busca fotos de los platos en alta calidad. Las fotos tomadas con poca luz o un perfil vacío ahuyentan el apetito de inmediato.
+                        La gente busca fotos de los trabajos o servicios (como cortes, instalaciones o platos) en alta calidad. Las fotos deficientes o un perfil vacío ahuyentan el interés de inmediato.
                       </p>
                     </div>
                   </div>
@@ -203,9 +202,9 @@ export default function AntesDespues() {
                   <div className="flex gap-3">
                     <span className="text-brand-crimson font-bold text-lg flex-shrink-0">✗</span>
                     <div>
-                      <h5 className="text-xs uppercase font-black tracking-wider text-stone-300">Sin Reservas ni Tracción</h5>
+                      <h5 className="text-xs uppercase font-black tracking-wider text-stone-300">Sin Citas ni Clientes Nuevos</h5>
                       <p className="text-xs leading-relaxed mt-0.5 text-stone-400">
-                        Nadie tiene paciencia para hacer scroll hasta la página 3 de Google Maps. Si no estás entre los 3 primeros, tu competencia directa se queda con el 75% de las comandas diarias.
+                        Nadie tiene paciencia para hacer scroll hasta la página 3 de Google Maps. Si no estás entre los 3 primeros de Valladolid, tu competencia directa se queda con el 75% de los clientes diarios.
                       </p>
                     </div>
                   </div>
@@ -213,9 +212,9 @@ export default function AntesDespues() {
                   <div className="flex gap-3">
                     <span className="text-brand-crimson font-bold text-lg flex-shrink-0">✗</span>
                     <div>
-                      <h5 className="text-xs uppercase font-black tracking-wider text-stone-300">Reseñas Negativas Sin Responder</h5>
+                      <h5 className="text-xs uppercase font-black tracking-wider text-stone-300">Reseñas Desatendidas</h5>
                       <p className="text-xs leading-relaxed mt-0.5 text-stone-400">
-                        La falta de una estrategia de gestión de reviews genera desconfianza y perjudica el ranking en el algoritmo local.
+                        La falta de una estrategia activa para responder y conseguir nuevas valoraciones genera desconfianza y penaliza tu posicionamiento en Valladolid.
                       </p>
                     </div>
                   </div>
@@ -225,19 +224,19 @@ export default function AntesDespues() {
               <div className="space-y-6 text-stone-300 animate-fade-in">
                 <h4 className="text-xl font-bold text-brand-gold flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-brand-gold animate-pulse" />
-                  La Transformación Completa de la Mesa
+                  La Transformación Completa del Negocio
                 </h4>
                 <p className="text-sm leading-relaxed text-stone-300">
-                  Al posicionarse en el <strong className="text-brand-gold">Top 3 de Google Maps</strong> y contar con fotografía gastronómica profesional, se detiene el scroll de los clientes y se llenan las mesas todos los fines de semana.
+                  Al posicionarse en el <strong className="text-brand-gold">Top 3 de Google Maps</strong> y contar con fotografía profesional del establecimiento, se capta la atención de los usuarios y se llena la agenda de clientes todas las semanas.
                 </p>
 
                 <div className="space-y-4 pt-2">
                   <div className="flex gap-3">
                     <span className="text-brand-gold font-bold text-lg flex-shrink-0">✓</span>
                     <div>
-                      <h5 className="text-xs uppercase font-black tracking-wider text-white">Impacto Gastronómico Visual</h5>
+                      <h5 className="text-xs uppercase font-black tracking-wider text-white">Impacto Visual Profesional</h5>
                       <p className="text-xs leading-relaxed mt-0.5 text-stone-400">
-                        Fotografías deliciosas que disparan el deseo de comer al instante, haciendo que el cliente decida antes del primer bocado.
+                        Fotografías deslumbrantes que disparan el deseo de reservar o comprar al instante, mostrando la calidad de tus servicios de forma premium.
                       </p>
                     </div>
                   </div>
@@ -245,9 +244,9 @@ export default function AntesDespues() {
                   <div className="flex gap-3">
                     <span className="text-brand-gold font-bold text-lg flex-shrink-0">✓</span>
                     <div>
-                      <h5 className="text-xs uppercase font-black tracking-wider text-white">Domínio absoluto en Google Valladolid</h5>
+                      <h5 className="text-xs uppercase font-black tracking-wider text-white">Dominio Absoluto en Google Valladolid</h5>
                       <p className="text-xs leading-relaxed mt-0.5 text-stone-400">
-                        Estar en el Top 3 le garantiza visibilidad masiva y directa a las llamadas telefónicas o clics hacia su chat de reservas de WhatsApp.
+                        Estar en el Top 3 le garantiza flujo continuo de llamadas telefónicas, clics a la web, solicitudes de ruta física y reservas directas por WhatsApp.
                       </p>
                     </div>
                   </div>
@@ -255,9 +254,9 @@ export default function AntesDespues() {
                   <div className="flex gap-3">
                     <span className="text-brand-gold font-bold text-lg flex-shrink-0">✓</span>
                     <div>
-                      <h5 className="text-xs uppercase font-black tracking-wider text-white">Estrategia Activa de Captación y Opiniones</h5>
+                      <h5 className="text-xs uppercase font-black tracking-wider text-white">Fidelización y Reseñas Positivas</h5>
                       <p className="text-xs leading-relaxed mt-0.5 text-stone-400">
-                        Código QR personalizado y tácticas guiadas que incentivan las reseñas de 5 estrellas, disparando su puntuación y reputación local.
+                        Código QR personalizado y tácticas guiadas que incentivan las reseñas de 5 estrellas, disparando su puntuación y reputación local de forma orgánica.
                       </p>
                     </div>
                   </div>
@@ -267,7 +266,7 @@ export default function AntesDespues() {
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between gap-4">
                     <div className="space-y-0.5">
                       <span className="block text-[10px] font-black uppercase text-brand-gold tracking-widest">Resultado Promedio</span>
-                      <span className="block text-sm font-bold text-white">+45 reservas adicionales diarias</span>
+                      <span className="block text-sm font-bold text-white">+85% de incremento en llamadas y visitas</span>
                     </div>
                     <CheckCircle2 className="w-8 h-8 text-brand-gold" />
                   </div>
