@@ -23,6 +23,7 @@ interface AuditFormProps {
 export default function AuditForm({ triggerAlert }: AuditFormProps) {
   const [dynamicCity, setDynamicCity] = useState('Valladolid');
   const [businessName, setBusinessName] = useState('');
+  const [businessType, setBusinessType] = useState('Restaurante');
   const [phone, setPhone] = useState('');
   const [contactName, setContactName] = useState('');
   const [address, setAddress] = useState('');
@@ -85,6 +86,7 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
         },
         body: JSON.stringify({
           businessName,
+          businessType,
           dynamicCity,
           phone,
           contactName,
@@ -113,6 +115,7 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
       const mockResult = {
         id: Date.now().toString(),
         businessName,
+        businessType,
         dynamicCity,
         phone,
         contactName,
@@ -241,6 +244,27 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
 
                     <div className="space-y-2">
                       <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                        <Award className="w-4 h-4 text-brand-gold" /> Tipo de Negocio <span className="text-brand-crimson">*</span>
+                      </label>
+                      <select 
+                        required
+                        value={businessType}
+                        onChange={(e) => setBusinessType(e.target.value)}
+                        className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all cursor-pointer"
+                      >
+                        <option value="Restaurante" className="bg-brand-dark text-white">Restaurante</option>
+                        <option value="Gimnasio" className="bg-brand-dark text-white">Gimnasio (Academia)</option>
+                        <option value="Barbería / Peluquería" className="bg-brand-dark text-white">Barbería / Peluquería</option>
+                        <option value="Tienda / Comercio" className="bg-brand-dark text-white">Tienda / Comercio</option>
+                        <option value="Clínica / Salud" className="bg-brand-dark text-white">Clínica / Salud</option>
+                        <option value="Estética / Belleza" className="bg-brand-dark text-white">Estética / Belleza</option>
+                        <option value="Servicios Profesionales" className="bg-brand-dark text-white">Servicios Profesionales</option>
+                        <option value="Otros" className="bg-brand-dark text-white">Otros</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
                         <Phone className="w-4 h-4 text-brand-gold" /> WhatsApp / Teléfono <span className="text-brand-crimson">*</span>
                       </label>
                       <input 
@@ -278,19 +302,19 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
                         className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
                       />
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
-                      <Globe className="w-4 h-4 text-brand-gold" /> Sitio Web (Opcional)
-                    </label>
-                    <input 
-                      type="text"
-                      value={website}
-                      onChange={(e) => setWebsite(e.target.value)}
-                      placeholder="Ej. www.minegocio.com"
-                      className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
-                    />
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                        <Globe className="w-4 h-4 text-brand-gold" /> Sitio Web (Opcional)
+                      </label>
+                      <input 
+                        type="text"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        placeholder="Ej. www.minegocio.com"
+                        className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                      />
+                    </div>
                   </div>
 
                   <button 

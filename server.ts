@@ -17,6 +17,7 @@ app.use(cors());
 interface Lead {
   id: string;
   businessName: string;
+  businessType?: string;
   dynamicCity: string;
   phone: string;
   contactName?: string;
@@ -82,7 +83,7 @@ if (API_KEY) {
 // 1. Audit endpoint using Gemini or high-quality simulation
 app.post('/api/audit', async (req, res) => {
   try {
-    const { businessName, dynamicCity, phone, contactName, address, comments, instagram, facebook, tiktok, linkedin, website } = req.body;
+    const { businessName, businessType, dynamicCity, phone, contactName, address, comments, instagram, facebook, tiktok, linkedin, website } = req.body;
     
     if (!businessName) {
       return res.status(400).json({ error: "El nombre del negocio es obligatorio." });
@@ -96,9 +97,10 @@ app.post('/api/audit', async (req, res) => {
 
     if (ai) {
       try {
-        console.log(`[GEMINI] Ejecutando auditoría con IA para: ${businessName} en ${dynamicCity}`);
+        console.log(`[GEMINI] Ejecutando auditoría con IA para: ${businessName} (${businessType}) en ${dynamicCity}`);
         const prompt = `Analiza la presencia online local y SEO de un negocio en Google Maps.
         Nombre del negocio: "${businessName}"
+        Tipo de negocio: "${businessType || 'Restaurante'}"
         Ciudad: "${dynamicCity || 'Valladolid'}"
         Detalles adicionales: "${comments || 'Ninguno'}"
         
@@ -168,6 +170,7 @@ app.post('/api/audit', async (req, res) => {
     const newLead: Lead = {
       id: Date.now().toString(),
       businessName,
+      businessType: businessType || 'Restaurante',
       dynamicCity: dynamicCity || 'Valladolid',
       phone: phone || '',
       contactName: contactName || '',

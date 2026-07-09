@@ -242,7 +242,14 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
                     adminLeads.map((lg) => (
                       <tr key={lg.id} className="hover:bg-white/2 transition-colors">
                         <td className="px-8 py-5">
-                          <span className="block text-sm font-extrabold text-white">{lg.businessName}</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="block text-sm font-extrabold text-white">{lg.businessName}</span>
+                            {lg.businessType && (
+                              <span className="text-[9px] bg-brand-gold/15 text-brand-gold px-2 py-0.5 rounded-full font-black uppercase tracking-wider border border-brand-gold/20">
+                                {lg.businessType}
+                              </span>
+                            )}
+                          </div>
                           <span className="block text-[10px] text-stone-500">{new Date(lg.datetime).toLocaleString('es') || 'Reciente'}</span>
                         </td>
                         <td className="px-6 py-5">
@@ -300,12 +307,16 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
                   
                   <div className="grid grid-cols-2 gap-4 bg-brand-dark p-5 rounded-2xl border border-white/5">
                     <div>
+                      <span className="block text-[10px] uppercase font-black text-stone-500">Tipo de Negocio</span>
+                      <span className="text-sm font-bold text-brand-gold">{selectedLead.businessType || 'No especificado'}</span>
+                    </div>
+                    <div>
                       <span className="block text-[10px] uppercase font-black text-stone-500">Nombre del Contacto</span>
                       <span className="text-sm font-bold text-white">{selectedLead.contactName || 'No indicado'}</span>
                     </div>
-                    <div>
+                    <div className="col-span-2 pt-2 border-t border-white/5 mt-1">
                       <span className="block text-[10px] uppercase font-black text-stone-500">WhatsApp / Teléfono</span>
-                      <span className="text-sm font-bold text-brand-gold font-mono">{selectedLead.phone || 'No indicado'}</span>
+                      <span className="text-sm font-bold text-white font-mono">{selectedLead.phone || 'No indicado'}</span>
                     </div>
                     {selectedLead.website && (
                       <div className="col-span-2 pt-2 border-t border-white/5 mt-1">
