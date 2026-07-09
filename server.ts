@@ -2,13 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Safe path determination
+const distPath = path.join(process.cwd(), 'dist');
 
 const app = express();
 app.use(express.json());
@@ -212,22 +211,30 @@ app.post('/api/leads', (req, res) => {
 // Serve static build or delegate to Vite Middleware
 const PORT = 3000;
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'dist')));
-  app.get('*', (_, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+async function startServer() {
+  if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(distPath));
+    app.get('*', (_, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    // Vite dev mode
+    try {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+      console.log("[DEV] Vite dev middleware integrado con éxito.");
+    } catch (err) {
+      console.error("[DEV] Error al inicializar Vite:", err);
+    }
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[SERVER] Servidor corriendo en http://0.0.0.0:${PORT}`);
   });
-} else {
-  // Vite dev mode
-  const { createServer: createViteServer } = await import('vite');
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa',
-  });
-  app.use(vite.middlewares);
-  console.log("[DEV] Vite dev middleware integrado con éxito.");
 }
 
-app.listen(PORT, () => {
-  console.log(`[SERVER] Servidor corriendo en http://localhost:${PORT}`);
-});
+startServer();
