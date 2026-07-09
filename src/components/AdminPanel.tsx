@@ -1,5 +1,19 @@
 import { useState } from 'react';
-import { Database, Lock, AlertCircle, X, MessageSquare } from 'lucide-react';
+import { Database, Lock, AlertCircle, X, MessageSquare, Instagram, Facebook, Linkedin, Globe } from 'lucide-react';
+
+const TiktokIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 interface AdminPanelProps {
   setView: (view: 'landing' | 'admin') => void;
@@ -221,10 +235,56 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
                       <span className="block text-[10px] uppercase font-black text-stone-500">WhatsApp / Teléfono</span>
                       <span className="text-sm font-bold text-brand-gold font-mono">{selectedLead.phone || 'No indicado'}</span>
                     </div>
+                    {selectedLead.website && (
+                      <div className="col-span-2 pt-2 border-t border-white/5 mt-1">
+                        <span className="block text-[10px] uppercase font-black text-stone-500">Sitio Web</span>
+                        <a 
+                          href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-brand-gold hover:underline flex items-center gap-1.5 mt-0.5"
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                          {selectedLead.website}
+                        </a>
+                      </div>
+                    )}
                     <div className="col-span-2 pt-2 border-t border-white/5 mt-1">
                       <span className="block text-[10px] uppercase font-black text-stone-500">Comentarios Adicionales</span>
                       <span className="text-xs font-bold text-stone-300 leading-normal block">{selectedLead.comments || 'Sin comentarios'}</span>
                     </div>
+
+                    {(selectedLead.instagram || selectedLead.facebook || selectedLead.tiktok || selectedLead.linkedin) && (
+                      <div className="col-span-2 pt-2 border-t border-white/5 mt-1 space-y-2">
+                        <span className="block text-[10px] uppercase font-black text-stone-550">Redes Sociales</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {selectedLead.instagram && (
+                            <div className="flex items-center gap-2 text-stone-300 bg-brand-dark-sec/50 p-2 rounded-lg border border-white/5 text-xs">
+                              <Instagram className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                              <span className="truncate font-bold">{selectedLead.instagram}</span>
+                            </div>
+                          )}
+                          {selectedLead.facebook && (
+                            <div className="flex items-center gap-2 text-stone-300 bg-brand-dark-sec/50 p-2 rounded-lg border border-white/5 text-xs">
+                              <Facebook className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                              <span className="truncate font-bold">{selectedLead.facebook}</span>
+                            </div>
+                          )}
+                          {selectedLead.tiktok && (
+                            <div className="flex items-center gap-2 text-stone-300 bg-brand-dark-sec/50 p-2 rounded-lg border border-white/5 text-xs">
+                              <TiktokIcon className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                              <span className="truncate font-bold">{selectedLead.tiktok}</span>
+                            </div>
+                          )}
+                          {selectedLead.linkedin && (
+                            <div className="flex items-center gap-2 text-stone-300 bg-brand-dark-sec/50 p-2 rounded-lg border border-white/5 text-xs">
+                              <Linkedin className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                              <span className="truncate font-bold">{selectedLead.linkedin}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3">

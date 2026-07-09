@@ -23,6 +23,11 @@ interface Lead {
   contactName?: string;
   address?: string;
   comments?: string;
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+  linkedin?: string;
+  website?: string;
   auditScore?: number;
   report?: any;
   datetime: string;
@@ -78,7 +83,7 @@ if (API_KEY) {
 // 1. Audit endpoint using Gemini or high-quality simulation
 app.post('/api/audit', async (req, res) => {
   try {
-    const { businessName, dynamicCity, phone, contactName, address, comments } = req.body;
+    const { businessName, dynamicCity, phone, contactName, address, comments, instagram, facebook, tiktok, linkedin, website } = req.body;
     
     if (!businessName) {
       return res.status(400).json({ error: "El nombre del negocio es obligatorio." });
@@ -169,6 +174,11 @@ app.post('/api/audit', async (req, res) => {
       contactName: contactName || '',
       address: address || '',
       comments: comments || '',
+      instagram: instagram || '',
+      facebook: facebook || '',
+      tiktok: tiktok || '',
+      linkedin: linkedin || '',
+      website: website || '',
       auditScore,
       report: reportJson,
       datetime: new Date().toISOString()

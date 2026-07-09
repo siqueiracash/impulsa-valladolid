@@ -1,6 +1,20 @@
 import { useState } from 'react';
-import { Sparkles, MapPin, Phone, User, Map, MessageSquare, TrendingUp, Award } from 'lucide-react';
+import { Sparkles, MapPin, Phone, User, Map, MessageSquare, TrendingUp, Award, ArrowLeft, Instagram, Facebook, Linkedin, Globe } from 'lucide-react';
 import { dbSync } from '../lib/supabase';
+
+const TiktokIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 interface AuditFormProps {
   triggerAlert: (type: 'success' | 'err', text: string) => void;
@@ -13,10 +27,33 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
   const [contactName, setContactName] = useState('');
   const [address, setAddress] = useState('');
   const [comments, setComments] = useState('');
+  const [website, setWebsite] = useState('');
+
+  // Novas redes sociais solicitadas pelo usuário para a segunda etapa
+  const [instagram, setInstagram] = useState('');
+  const [facebook, setFacebook] = useState('');
+  const [tiktok, setTiktok] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+
+  // Controle de etapas do formulário
+  const [step, setStep] = useState(1);
 
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditProgress, setAuditProgress] = useState('');
   const [currentScore, setCurrentScore] = useState<any>(null);
+
+  const handleNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!businessName.trim()) {
+      triggerAlert('err', 'Por favor, introduce el nombre del negocio.');
+      return;
+    }
+    if (!phone.trim()) {
+      triggerAlert('err', 'Por favor, introduce tu número de WhatsApp o Teléfono.');
+      return;
+    }
+    setStep(2);
+  };
 
   const runAudit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +89,12 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
           phone,
           contactName,
           address,
-          comments
+          comments,
+          instagram,
+          facebook,
+          tiktok,
+          linkedin,
+          website
         })
       });
 
@@ -76,6 +118,11 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
         contactName,
         address,
         comments,
+        instagram,
+        facebook,
+        tiktok,
+        linkedin,
+        website,
         auditScore: 71,
         report: {
           seoScore: 68,
@@ -149,108 +196,204 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
           )}
 
           {!currentScore ? (
-            <form onSubmit={runAudit} className="space-y-8">
-              {/* Select dynamic city indicator */}
-              <div className="bg-brand-dark p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-white/5">
-                <div>
-                  <span className="block text-xs font-black uppercase text-brand-gold tracking-wider">Provincia Principal de Operaciones</span>
-                  <span className="block text-sm font-bold text-stone-300">Analizando competencia localizada en:</span>
-                </div>
-                <div className="flex gap-2">
-                  {['Valladolid', 'Madrid'].map((city) => (
-                    <button
-                      type="button"
-                      key={city}
-                      onClick={() => setDynamicCity(city)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                        dynamicCity === city 
-                          ? 'bg-brand-gold text-brand-dark font-black shadow-lg shadow-brand-gold/5' 
-                          : 'bg-brand-dark-sec hover:bg-stone-800 text-stone-300 border border-white/5'
-                      }`}
-                    >
-                      {city}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <form onSubmit={step === 1 ? handleNextStep : runAudit} className="space-y-8">
+              {step === 1 ? (
+                <>
+                  {/* Select dynamic city indicator */}
+                  <div className="bg-brand-dark p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-white/5">
+                    <div>
+                      <span className="block text-xs font-black uppercase text-brand-gold tracking-wider">Provincia Principal de Operaciones</span>
+                      <span className="block text-sm font-bold text-stone-300">Analizando competencia localizada en:</span>
+                    </div>
+                    <div className="flex gap-2">
+                      {['Valladolid', 'Madrid'].map((city) => (
+                        <button
+                          type="button"
+                          key={city}
+                          onClick={() => setDynamicCity(city)}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                            dynamicCity === city 
+                              ? 'bg-brand-gold text-brand-dark font-black shadow-lg shadow-brand-gold/5' 
+                              : 'bg-brand-dark-sec hover:bg-stone-800 text-stone-300 border border-white/5'
+                          }`}
+                        >
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Inputs fields grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-brand-gold" /> Nombre del Negocio <span className="text-brand-crimson">*</span>
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Ej. Restaurante San Pablo o Clínica Serna"
-                    className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
-                  />
-                </div>
+                  {/* Inputs fields grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-brand-gold" /> Nombre del Negocio <span className="text-brand-crimson">*</span>
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        placeholder="Ej. Restaurante San Pablo o Clínica Serna"
+                        className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
-                    <Phone className="w-4 h-4 text-brand-gold" /> WhatsApp / Teléfono <span className="text-brand-crimson">*</span>
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Ej. +34 600 112 233"
-                    className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                        <Phone className="w-4 h-4 text-brand-gold" /> WhatsApp / Teléfono <span className="text-brand-crimson">*</span>
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Ej. +34 600 112 233"
+                        className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-brand-gold" /> Su Nombre (Contacto)
-                  </label>
-                  <input 
-                    type="text"
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    placeholder="Ej. Carlos Martínez"
-                    className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                        <User className="w-4 h-4 text-brand-gold" /> Su Nombre (Contacto)
+                      </label>
+                      <input 
+                        type="text"
+                        value={contactName}
+                        onChange={(e) => setContactName(e.target.value)}
+                        placeholder="Ej. Carlos Martínez"
+                        className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
-                    <Map className="w-4 h-4 text-brand-gold" /> Dirección / Link de Maps
-                  </label>
-                  <input 
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Ej. Plaza España 4 o pegue link de Maps"
-                    className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
-                  />
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                        <Map className="w-4 h-4 text-brand-gold" /> Dirección / Link de Maps
+                      </label>
+                      <input 
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Ej. Plaza España 4 o pegue link de Maps"
+                        className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
-                  <MessageSquare className="w-4 h-4 text-brand-gold" /> ¿Algún comentario extra sobre sus competidores directos?
-                </label>
-                <textarea 
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  placeholder="Ej. Me cuesta superar a Restaurante X en los mapas..."
-                  rows={3}
-                  className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all resize-none placeholder:text-stone-600"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-brand-gold" /> Sitio Web (Opcional)
+                    </label>
+                    <input 
+                      type="text"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      placeholder="Ej. www.minegocio.com"
+                      className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                    />
+                  </div>
 
-              <button 
-                type="submit"
-                className="w-full py-4.5 bg-brand-gold hover:bg-amber-600 text-brand-dark text-xs font-extrabold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-gold/5 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-brand-dark fill-current" />
-                <span>Iniciar Auditoría Automatizada</span>
-              </button>
+                  <button 
+                    type="submit"
+                    className="w-full py-4.5 bg-brand-gold hover:bg-amber-600 text-brand-dark text-xs font-extrabold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-gold/5 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer"
+                  >
+                    <span>AVANÇAR</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-2">
+                      <div>
+                        <span className="text-xs font-black uppercase text-brand-gold tracking-wider block">Paso 2 de 2</span>
+                        <h3 className="text-lg font-black text-white mt-1">Redes Sociales y Detalles (Opcional)</h3>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setStep(1)} 
+                        className="text-stone-400 hover:text-brand-gold text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ArrowLeft className="w-4 h-4" /> Volver atrás
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                          <Instagram className="w-4 h-4 text-brand-gold" /> Instagram
+                        </label>
+                        <input 
+                          type="text"
+                          value={instagram}
+                          onChange={(e) => setInstagram(e.target.value)}
+                          placeholder="Ej. @mi_restaurante"
+                          className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                          <Facebook className="w-4 h-4 text-brand-gold" /> Facebook
+                        </label>
+                        <input 
+                          type="text"
+                          value={facebook}
+                          onChange={(e) => setFacebook(e.target.value)}
+                          placeholder="Ej. facebook.com/mi_negocio"
+                          className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                          <TiktokIcon className="w-4 h-4 text-brand-gold" /> TikTok
+                        </label>
+                        <input 
+                          type="text"
+                          value={tiktok}
+                          onChange={(e) => setTiktok(e.target.value)}
+                          placeholder="Ej. @mi_negocio_tiktok"
+                          className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                          <Linkedin className="w-4 h-4 text-brand-gold" /> LinkedIn
+                        </label>
+                        <input 
+                          type="text"
+                          value={linkedin}
+                          onChange={(e) => setLinkedin(e.target.value)}
+                          placeholder="Ej. linkedin.com/company/mi_negocio"
+                          className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all placeholder:text-stone-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-4 border-t border-white/5 mt-4">
+                      <label className="text-xs font-black uppercase text-stone-400 tracking-wider flex items-center gap-1.5">
+                        <MessageSquare className="w-4 h-4 text-brand-gold" /> ¿Algún comentario extra sobre sus competidores directos? (Opcional)
+                      </label>
+                      <textarea 
+                        value={comments}
+                        onChange={(e) => setComments(e.target.value)}
+                        placeholder="Ej. Me cuesta superar a Restaurante X en los mapas..."
+                        rows={3}
+                        className="w-full bg-brand-dark border border-white/5 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-brand-gold focus:bg-black/40 transition-all resize-none placeholder:text-stone-600"
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    className="w-full py-4.5 bg-brand-gold hover:bg-amber-600 text-brand-dark text-xs font-extrabold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-gold/5 transition-all flex items-center justify-center gap-2 mt-8 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 text-brand-dark fill-current" />
+                    <span>INICIAR AUDITORIA</span>
+                  </button>
+                </>
+              )}
             </form>
           ) : (
             <div className="space-y-8 animate-fade-in-up text-white">
@@ -340,6 +483,12 @@ export default function AuditForm({ triggerAlert }: AuditFormProps) {
                   setContactName('');
                   setAddress('');
                   setComments('');
+                  setInstagram('');
+                  setFacebook('');
+                  setTiktok('');
+                  setLinkedin('');
+                  setWebsite('');
+                  setStep(1);
                   setCurrentScore(null);
                 }}
                 className="text-xs font-bold text-brand-gold hover:underline mx-auto block mt-4"
