@@ -102,7 +102,7 @@ export function StorefrontLaCasa() {
         {/* Store display food photo */}
         <div className="relative h-44 rounded-xl overflow-hidden bg-stone-900 border border-amber-950/40">
           <img 
-            src="https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=600&q=80" 
+            src="https://images.unsplash.com/photo-1538332576228-eb5b4c4de6f5?auto=format&fit=crop&w=600&q=80" 
             alt="Embutidos y Tapas Tradicionales"
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -156,7 +156,7 @@ export function InstagramReelsMockup() {
       <div className="bg-black rounded-[2rem] overflow-hidden relative h-[480px]">
         {/* Full background aesthetic/skincare video representation */}
         <img 
-          src="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&w=600&q=80" 
+          src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80" 
           alt="Tratamiento de cuidado facial en el reel"
           className="w-full h-full object-cover opacity-85"
           referrerPolicy="no-referrer"
