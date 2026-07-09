@@ -1,5 +1,8 @@
 {
-  "name": "Impulsa Valladolid | Marketing Digital Local",
-  "description": "Impulsa tu negocio local en Valladolid. Auditoría gratuita de Google Business, redes sociales y estrategia digital para pequeñas empresas.",
-  "requestFramePermissions": []
+  "name": "Impulsa Valladolid",
+  "description": "Herramienta de auditoría gratuita y landing page para impulsar negocios locales de Valladolid en Google Maps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

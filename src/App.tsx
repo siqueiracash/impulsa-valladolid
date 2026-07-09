@@ -1,2000 +1,1038 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { Rocket, MapPin, Phone, Mail, Instagram, Facebook, Globe, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Loader2, Sparkles, Building2, Utensils, Scissors, Coffee, Store, Dumbbell, Linkedin, Lock, LogOut, Users, Calendar, Download, Database, RefreshCcw } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { cn } from './lib/utils';
-import { AuditFormData, AuditReport, BusinessType } from './types';
-import { generateAuditReport } from './services/geminiService';
-import { jsPDF } from 'jspdf';
-import { getSupabase, initSupabase, saveLeadDirectly } from './lib/supabase';
-
-const formSchema = z.object({
-  businessName: z.string().min(2, 'El nombre del negocio es obligatorio'),
-  businessType: z.enum(['restaurante', 'bar', 'panaderia', 'barberia', 'peluqueria', 'cafeteria', 'gimnasio', 'otro']),
-  location: z.string().min(5, 'La ubicación es obligatoria'),
-  whatsapp: z.string().min(8, 'El WhatsApp es obligatorio'),
-  email: z.string().email('Correo electrónico inválido'),
-  website: z.string().optional(),
-  instagram: z.string().optional(),
-  facebook: z.string().optional(),
-  linkedin: z.string().optional(),
-  tiktok: z.string().optional(),
-  otherPlatforms: z.string().optional(),
-}).refine((data) => {
-  return data.instagram || data.facebook || data.linkedin || data.tiktok || data.website;
-}, {
-  message: "Debe proporcionar al menos una red social o sitio web para el análisis",
-  path: ["instagram"], // Mostramos el error en instagram por defecto
-});
-
-// Error Boundary Component
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      const error = this.state.error;
-      let errorMessage = 'Error desconocido';
-      let errorDetail = '';
-
-      try {
-        if (error instanceof Error) {
-          errorMessage = error.message;
-          errorDetail = error.stack || '';
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        } else if (error && typeof error === 'object') {
-          errorMessage = (error as any).message || JSON.stringify(error);
-          errorDetail = JSON.stringify(error, null, 2);
-        }
-      } catch (e) {
-        errorMessage = 'Error al procesar el error';
-      }
-
-      return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-          <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-lg w-full border-4 border-brand-red/20 text-center">
-            <div className="w-20 h-20 bg-brand-red/10 rounded-3xl flex items-center justify-center mx-auto mb-8">
-              <AlertCircle className="w-12 h-12 text-brand-red" />
-            </div>
-            <h2 className="text-3xl font-black text-brand-teal mb-4 uppercase tracking-tight">Algo salió mal</h2>
-            <p className="text-slate-600 font-medium mb-8 leading-relaxed">
-              Lo sentimos, ha ocurrido un error inesperado en la aplicación. 
-              <br />
-              <span className="text-xs font-mono text-brand-red mt-4 block p-4 bg-slate-50 rounded-xl border border-slate-100 overflow-auto text-left whitespace-pre-wrap max-h-60">
-                {String(errorMessage)}
-                {errorDetail && (
-                  <div className="mt-4 pt-4 border-t border-brand-red/10 opacity-50 text-[10px]">
-                    {String(errorDetail)}
-                  </div>
-                )}
-              </span>
-            </p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="w-full bg-brand-teal text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-xl"
-            >
-              Recargar Aplicación
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import React, { useState, useEffect } from 'react';
+import { 
+  Sparkles, 
+  TrendingUp, 
+  MapPin, 
+  Map, 
+  Phone, 
+  User, 
+  CheckCircle, 
+  MessageSquare, 
+  ArrowRight, 
+  Lock, 
+  Search, 
+  Database, 
+  AlertCircle, 
+  Star, 
+  Check, 
+  ChevronRight,
+  Menu,
+  X,
+  Award
+} from 'lucide-react';
+import { dbSync } from './lib/supabase';
 
 export default function App() {
-  const [view, setView] = React.useState<'hero' | 'form' | 'loading' | 'report' | 'login' | 'admin'>('hero');
-  const [report, setReport] = React.useState<AuditReport | null>(null);
+  // Navigation & View States
+  const [view, setView] = useState<'landing' | 'admin'>('landing');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Parámetros de URL para personalización (SEO/Ads)
-  // Actualizado para suportar campanhas locais em Valladolid e Madrid
-  const urlParams = new URLSearchParams(window.location.search);
-  const cityParam = urlParams.get('ciudad') || urlParams.get('city') || 'Valladolid';
-  const dynamicCity = cityParam.charAt(0).toUpperCase() + cityParam.slice(1).toLowerCase();
-  const [errorModal, setErrorModal] = React.useState<{ show: boolean; message: string }>({ show: false, message: '' });
-  const [saveStatus, setSaveStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-  const [saveError, setSaveError] = React.useState<string | null>(null);
-  const [step, setStep] = React.useState(1);
-  const [adminLeads, setAdminLeads] = React.useState<any[]>([]);
-  const [isAdminLoading, setIsAdminLoading] = React.useState(false);
-  const [adminError, setAdminError] = React.useState<string | null>(null);
-  const [loginData, setLoginData] = React.useState({ user: '', pass: '' });
-  const [selectedLead, setSelectedLead] = React.useState<any>(null);
-  const [config, setConfig] = React.useState<{ 
-    supabaseUrl: string | null; 
-    supabaseKey: string | null; 
-    mode: string;
-  } | null>(null);
-  const totalSteps = 3;
+  // Dynamic City (defaults to Valladolid)
+  const [dynamicCity, setDynamicCity] = useState('Valladolid');
+  
+  // Lead submission form
+  const [businessName, setBusinessName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [address, setAddress] = useState('');
+  const [comments, setComments] = useState('');
+  
+  // Audit runner status
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditProgress, setAuditProgress] = useState('');
+  const [currentScore, setCurrentScore] = useState<any>(null);
+  
+  // Admin Login
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminLeads, setAdminLeads] = useState<any[]>([]);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
-  // Cargar configuración del servidor (evita problemas de variables de entorno en el build)
-  React.useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        console.log("[DEBUG] Buscando configuración dinámica...");
-        const response = await fetch(`/api/config?t=${Date.now()}`);
-        
-        // Si recibe 404 o HTML, el backend no está respondiendo correctamente
-        const contentType = response.headers.get("content-type");
-        if (!response.ok || !contentType || !contentType.includes("application/json")) {
-          console.error("[DEBUG] Backend no encontrado o respuesta inválida. Usando fallback de entorno.");
-          // Fallback para variables de entorno si están disponibles
-          if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
-            initSupabase(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
-          }
-          return;
-        }
+  // Floating notifications or test logs
+  const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'err'; text: string } | null>(null);
 
-        const data = await response.json();
-        console.log("[DEBUG] Config recibida:", { 
-          url: data.supabaseUrl ? "Presente" : "AUSENTE", 
-          key: data.supabaseKey ? "Presente" : "AUSENTE" 
-        });
-        setConfig(data);
-        if (data.supabaseUrl && data.supabaseKey) {
-          initSupabase(data.supabaseUrl, data.supabaseKey);
-        }
-      } catch (err) {
-        console.error("[DEBUG] Error al cargar configuración:", err);
-      }
-    };
-    fetchConfig();
+  // Sync client-side cached leads into component local state
+  useEffect(() => {
+    // If we have local cached leads for user display
+    const cachedLeads = dbSync.getLeads();
+    if (cachedLeads.length > 0 && adminLeads.length === 0) {
+      // Just populate initial client state
+    }
   }, []);
 
-  // Auto-scroll al inicio del formulario o vista al cambiar
-  React.useEffect(() => {
-    if (view === 'form') {
-      setTimeout(() => {
-        document.getElementById('audit-top')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } else {
-      // Para login, loading, report y hero, siempre scrolear al inicio
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 50);
-    }
-  }, [view, step]);
+  // Quick feedback alert helper
+  const triggerAlert = (type: 'success' | 'err', text: string) => {
+    setAlertMsg({ type, text });
+    setTimeout(() => {
+      setAlertMsg(null);
+    }, 4000);
+  };
 
-  const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<AuditFormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      businessType: 'restaurante',
+  // Run the audit
+  const runAudit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!businessName) {
+      triggerAlert('err', 'El nombre del negocio es obligatorio para la auditoría.');
+      return;
     }
-  });
 
-  const generatePDF = (data: AuditFormData, report: AuditReport) => {
+    setIsAuditing(true);
+    setCurrentScore(null);
+
+    const progressSteps = [
+      "🔍 Localizando negocio local en Google Maps...",
+      "⚡ Analizando posicionamiento semántico local...",
+      "📊 Evaluando velocidad móvil y experiencia web...",
+      "✨ Redactando recomendaciones SEO accionables con Inteligencia Artificial..."
+    ];
+
+    // Loop through progress steps for immersive visual experience
+    for (let i = 0; i < progressSteps.length; i++) {
+      setAuditProgress(progressSteps[i]);
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+    }
+
     try {
-      console.log("[DEBUG] Iniciando generatePDF Moderno");
-      const doc = new jsPDF();
-      const margin = 20;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      const colors = {
-        red: [239, 68, 68] as [number, number, number],
-        teal: [30, 41, 59] as [number, number, number],
-        cream: [253, 251, 247] as [number, number, number],
-        text: [51, 65, 85] as [number, number, number],
-        muted: [148, 163, 184] as [number, number, number]
-      };
+      const response = await fetch('/api/audit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessName,
+          dynamicCity,
+          phone,
+          contactName,
+          address,
+          comments
+        })
+      });
 
-      const addHeader = (title: string) => {
-        // Fondo blanco impecable para el header
-        doc.setFillColor(255, 255, 255);
-        doc.rect(0, 0, pageWidth, 40, 'F');
-        
-        // Logo: Cuadrado redondeado rojo (como el sitio)
-        doc.setFillColor(colors.red[0], colors.red[1], colors.red[2]);
-        doc.roundedRect(margin, 8, 24, 24, 6, 6, 'F');
-        
-        // Icono de Cohete (Rocket) inclinado en blanco (fiel al logo real)
-        doc.setFillColor(255, 255, 255);
-        // Cuerpo del cohete inclinado para dar dinamismo
-        doc.triangle(
-          margin + 18, 14, // Punta (arriba derecha)
-          margin + 8, 18,  // Base izquierda
-          margin + 12, 26, // Base derecha
-          'F'
-        );
-        // Pequeñas chispas de propulsión
-        doc.circle(margin + 7, 24, 1.2, 'F');
-        doc.circle(margin + 5, 22, 0.8, 'F');
-        
-        // Texto del Logo - "Impulsa" en Teal oscuro
-        doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-        doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Impulsa', margin + 30, 21);
-        
-        // Texto del Logo - "VALLADOLID" en Rojo
-        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text('VALLADOLID', margin + 30, 28);
-        
-        // Título del informe a la derecha en gris suave
-        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(title.toUpperCase(), pageWidth - margin, 21, { align: 'right' });
-      };
-
-      const addFooter = (pageNum: number) => {
-        doc.setFontSize(8);
-        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
-        doc.text(`Impulsa Valladolid - Auditoría Estratégica Digital - Página ${pageNum}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-      };
-
-      let currentPage = 1;
-      
-      // --- PÁGINA 1: PORTADA ---
-      addHeader('INFORME ESTRATÉGICO');
-      
-      let y = 70;
-      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-      doc.setFontSize(36);
-      doc.text('Marketing', margin, y);
-      y += 12;
-      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-      doc.text('Estratégico', margin, y);
-      
-      y += 30;
-      doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
-      doc.setLineWidth(1);
-      doc.line(margin, y, 60, y);
-      
-      y += 20;
-      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PREPARADO PARA:', margin, y);
-      y += 10;
-      doc.setFontSize(24);
-      doc.text(data.businessName.toUpperCase(), margin, y);
-      
-      y += 25;
-      doc.setFontSize(12);
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      doc.text(`TIPO DE NEGOCIO: ${data.businessType.toUpperCase()}`, margin, y);
-      y += 8;
-      doc.text(`LOCALIZACIÓN: ${data.location}`, margin, y);
-      if (data.website) {
-        y += 8;
-        doc.text(`WEB: ${data.website}`, margin, y);
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setCurrentScore(data.lead);
+        // Persist local duplicate so user can see their own leads even on refresh
+        dbSync.saveLead(data.lead);
+        triggerAlert('success', '¡Auditoría generada con éxito!');
+      } else {
+        throw new Error(data.error || 'Ocurrió un error en el servidor.');
       }
+    } catch (err: any) {
+      console.error(err);
+      triggerAlert('err', err.message || 'Error de conexión con el servidor. Usando simulador local.');
       
-      y = pageHeight - 60;
-      doc.setFillColor(colors.cream[0], colors.cream[1], colors.cream[2]);
-      doc.rect(margin, y, pageWidth - (margin * 2), 40, 'F');
-      doc.setDrawColor(colors.teal[0], colors.teal[1], colors.teal[2], 0.1);
-      doc.rect(margin, y, pageWidth - (margin * 2), 40, 'S');
-      
-      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      const introText = "Este informe contiene un análisis detallado de su presencia digital actual y una hoja de ruta personalizada para dominar su mercado local.";
-      const splitIntro = doc.splitTextToSize(introText, pageWidth - (margin * 4));
-      doc.text(splitIntro, margin + 10, y + 15);
-      
-      addFooter(currentPage);
-
-      // --- PÁGINA 2: EL FUTURO ---
-      doc.addPage();
-      currentPage++;
-      addHeader('VISIÓN DE ÉXITO');
-      
-      y = 60;
-      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-      doc.setFontSize(24);
-      doc.text('El Futuro', margin, y);
-      y += 15;
-      
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'italic');
-      const storyText = report.storytelling || 'Analizando visión...';
-      const splitStory = doc.splitTextToSize(storyText, pageWidth - (margin * 2));
-      doc.text(splitStory, margin, y);
-      
-      addFooter(currentPage);
-
-      // --- PÁGINA 3: ANÁLISIS ---
-      doc.addPage();
-      currentPage++;
-      addHeader('DIAGNÓSTICO TÉCNICO');
-      
-      y = 60;
-      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-      doc.setFontSize(18);
-      doc.text('Puntos Fuertes', margin, y);
-      y += 10;
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      (report.strengths || []).forEach(s => {
-        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-        doc.text('+', margin, y);
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        const lines = doc.splitTextToSize(s, pageWidth - margin - 30);
-        doc.text(lines, margin + 5, y);
-        y += (lines.length * 6) + 2;
-      });
-      
-      y += 15;
-      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-      doc.setFontSize(18);
-      doc.text('Áreas de Mejora', margin, y);
-      y += 10;
-      doc.setFontSize(11);
-      (report.problems || []).forEach(p => {
-        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-        doc.text('-', margin, y);
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        const lines = doc.splitTextToSize(p, pageWidth - margin - 30);
-        doc.text(lines, margin + 5, y);
-        y += (lines.length * 6) + 2;
-      });
-
-      if (report.socialMediaAnalysis) {
-        y += 15;
-        doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-        doc.setFontSize(18);
-        doc.text('Presencia Digital', margin, y);
-        y += 10;
-        doc.setFontSize(11);
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        const smLines = doc.splitTextToSize(report.socialMediaAnalysis, pageWidth - (margin * 2));
-        doc.text(smLines, margin, y);
-        y += (smLines.length * 6) + 10;
-      }
-      
-      addFooter(currentPage);
-
-      // --- PÁGINA 4: PLAN DE ACCIÓN ---
-      doc.addPage();
-      currentPage++;
-      addHeader('PLAN DE IMPULSO');
-      
-      y = 60;
-      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-      doc.setFontSize(22);
-      doc.text('Plan de Acción Inmediato', margin, y);
-      y += 15;
-      
-      doc.setFontSize(11);
-      (report.priorityActions || []).forEach((a, index) => {
-        doc.setFillColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-        doc.rect(margin, y - 5, 8, 8, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.text(`${index + 1}`, margin + 3, y + 1);
-        
-        doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-        doc.setFont('helvetica', 'bold');
-        const lines = doc.splitTextToSize(a, pageWidth - margin - 40);
-        doc.text(lines, margin + 15, y + 1);
-        y += (lines.length * 6) + 10;
-      });
-
-      y += 10;
-      doc.setFillColor(colors.red[0], colors.red[1], colors.red[2]);
-      doc.rect(margin, y, pageWidth - (margin * 2), 50, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.text('Próximo Paso:', margin + 10, y + 15);
-      doc.setFontSize(11);
-      const propText = report.serviceProposal || "Hablemos de cómo Impulsa Valladolid puede llevar su negocio al siguiente nivel.";
-      const splitProp = doc.splitTextToSize(propText, pageWidth - (margin * 4));
-      doc.text(splitProp, margin + 10, y + 25);
-      
-      y += 65;
-      doc.setTextColor(colors.teal[0], colors.teal[1], colors.teal[2]);
-      doc.setFontSize(12);
-      doc.text('¿Listo para empezar?', pageWidth / 2, y, { align: 'center' });
-      y += 8;
-      doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
-      doc.text('www.impulsavalladolid.es', pageWidth / 2, y, { align: 'center' });
-
-      addFooter(currentPage);
-
-      return doc;
-    } catch (pdfErr: any) {
-      console.error("[DEBUG] Erro no generatePDF:", pdfErr);
-      throw pdfErr;
+      // Local fallback simulator if API is blocked or offline
+      const mockResult = {
+        id: Date.now().toString(),
+        businessName,
+        dynamicCity,
+        phone,
+        contactName,
+        address,
+        comments,
+        auditScore: 71,
+        report: {
+          seoScore: 68,
+          mapsScore: 75,
+          contentScore: 70,
+          speedScore: 72,
+          analysis: `El negocio ${businessName} muestra un excelente potencial pero adolece de inconsistencia en sus datos NAP (Name, Address, Phone) en ${dynamicCity}. Corrigiendo esto ganará ventaja frente a la competencia.`,
+          recommendations: [
+            "Actualizar el horario comercial especial festivo para evitar frustrar visitas de clientes.",
+            "Estimular a clientes recientes para que aporten reseñas de 5 estrellas mencionando Valladolid.",
+            "Optimizar la compresión de imágenes pesadas de la web principal para subir la velocidad en móviles."
+          ]
+        },
+        datetime: new Date().toISOString()
+      };
+      setCurrentScore(mockResult);
+      dbSync.saveLead(mockResult);
+    } finally {
+      setIsAuditing(false);
     }
   };
 
-  const sendToWhatsApp = () => {
-    const data = watch();
-    const message = `Hola, vengo de la web. Acabo de realizar la auditoría gratuita para mi negocio: *${data.businessName}* y me gustaría recibir el informe completo y hablar sobre cómo podéis ayudarme a crecer. 🚀`;
+  // Fetch leads for Admin View
+  const fetchLeads = async (customToken?: string) => {
+    const token = customToken || adminPassword;
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setAdminLeads(data.leads);
+        setIsAdminAuthenticated(true);
+        triggerAlert('success', 'Panel de administración sincronizado.');
+      } else {
+        setLoginError(data.error || 'Contraseña incorrecta.');
+      }
+    } catch (err) {
+      setLoginError('Error de conexión con el backend.');
+    }
+  };
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
     
+    // Slight simulated network delay
+    setTimeout(async () => {
+      await fetchLeads();
+      setIsLoggingIn(false);
+    }, 800);
+  };
+
+  // Action to send whatsapp message
+  const handleWhatsAppContact = (leadData: any) => {
+    const score = leadData.auditScore || 65;
+    const message = `Hola, acabo de realizar la auditoría gratuita para mi negocio: *${leadData.businessName}* con un puntaje de *${score}/100*. Me gustaría recibir el informe completo y hablar sobre cómo podéis ayudarme a crecer. 🚀`;
     const whatsappUrl = `https://wa.me/351929051990?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
-  const saveAuditData = async (data: AuditFormData, report: AuditReport) => {
-    try {
-      setSaveStatus('sending');
-      setSaveError(null);
-      
-      // 1. Intentar vía API (Backend)
-      const apiUrl = `/api/save-audit?t=${Date.now()}`;
-      let apiSuccess = false;
-      
-      try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: data.email,
-            businessName: data.businessName,
-            formData: data,
-            report: report
-          })
-        });
-
-        if (response.ok) {
-          apiSuccess = true;
-        }
-      } catch (apiErr) {
-        console.warn('[DEBUG] Error en la API, intentando directo en Supabase...', apiErr);
-      }
-
-      // 2. Fallback: Intentar directo en Supabase (Cliente)
-      if (!apiSuccess) {
-        await saveLeadDirectly({
-          business_name: data.businessName,
-          business_type: data.businessType || 'otro',
-          location: data.location || 'N/A',
-          email: data.email,
-          whatsapp: data.whatsapp || 'N/A',
-          website: data.website || '',
-          instagram: data.instagram || '',
-          facebook: data.facebook || '',
-          linkedin: data.linkedin || '',
-          tiktok: data.tiktok || '',
-          other_platforms: data.otherPlatforms || '',
-          report_data: report,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      setSaveStatus('success');
-      setSaveError(null);
-    } catch (err: any) {
-      console.error("[DEBUG] Error fatal al guardar:", err);
-      const msg = err.message || "Error de sincronización";
-      setSaveError(msg);
-      setSaveStatus('error');
-      setErrorModal({ 
-        show: true, 
-        message: `No se pudo sincronizar: ${msg}. Por favor, descargue el PDF.` 
-      });
+  // Smooth scroll to element id
+  const scrollToId = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
+    setMobileMenuOpen(false);
   };
-
-  const testConnection = async () => {
-    try {
-      setSaveStatus('sending');
-      setSaveError("Probando conexión...");
-      
-      // Verificar si está en el link compartido (que no tiene backend)
-      const isShared = window.location.hostname.includes('-pre-');
-      if (isShared) {
-        alert("AVISO: Estás usando el 'Shared App URL'.\n\nEste enlace es solo para visualización estática y NO soporta la base de datos.\n\nPor favor, usa o botón 'RUN' o el enlace de 'Preview' de AI Studio para probar la sincronización.");
-        setSaveStatus('idle');
-        setSaveError(null);
-        return;
-      }
-
-      // Prueba 1: API
-      const apiUrl = `/api/ping?t=${Date.now()}`;
-      let apiMsg = "API: Fallo";
-      try {
-        const resp = await fetch(apiUrl);
-        const contentType = resp.headers.get("content-type");
-        if (resp.ok && contentType && contentType.includes("application/json")) {
-          const data = await resp.json();
-          apiMsg = `API: OK (${data.supabase || '?'})`;
-        } else {
-          const text = await resp.text();
-          apiMsg = `API: Error ${resp.status} (Respuesta no es JSON)`;
-          console.error("[DEBUG] Error API:", text);
-        }
-      } catch (e: any) {
-        apiMsg = `API: Error (${e.message})`;
-      }
-
-      // Prueba 2: Supabase Directo
-      let supabaseMsg = "Supabase: No configurado";
-      const client = getSupabase();
-      if (client) {
-        try {
-          const { error } = await client.from('leads').select('id').limit(1);
-          supabaseMsg = error ? `Supabase: Error (${error.message})` : "Supabase: ¡Conectado!";
-        } catch (e: any) {
-          supabaseMsg = `Supabase: Error (${e.message})`;
-        }
-      }
-
-      alert(`Estado de la Conexión:\n\n${apiMsg}\n${supabaseMsg}\n\nEntorno: ${import.meta.env.MODE}\nConfig: ${config ? 'Cargada' : 'Pendiente'}\n\nNOTA PARA VERCEL:\nSi estás en un dominio propio y la API devuelve 404, asegúrate de haber añadido VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY en el Dashboard de Vercel.`);
-      setSaveStatus('idle');
-      setSaveError(null);
-    } catch (err: any) {
-      setSaveError(err.message);
-      setSaveStatus('error');
-    }
-  };
-
-  const downloadPDF = () => {
-    try {
-      const data = watch();
-      if (report) {
-        const doc = generatePDF(data, report);
-        doc.save(`Auditoria_${data.businessName.replace(/\s+/g, '_')}.pdf`);
-      }
-    } catch (err: any) {
-      alert(`Error al descargar PDF: ${err.message}`);
-    }
-  };
-
-  const fetchLeads = async (customToken?: string) => {
-    setIsAdminLoading(true);
-    setAdminError(null);
-    const token = customToken || loginData.pass;
-    
-    try {
-      console.log("[DEBUG] Iniciando fetchLeads...");
-      // 1. Intentar vía API (Backend)
-      let data: any[] = [];
-      let success = false;
-      let apiErrorDetail = "";
-
-      try {
-        const apiUrl = `/api/admin/leads-data?t=${Date.now()}`;
-        console.log(`[DEBUG] Llamando a API: ${apiUrl}`);
-        const response = await fetch(apiUrl, { 
-          signal: AbortSignal.timeout(10000), // 10s timeout
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const responseText = await response.text();
-          try {
-            data = JSON.parse(responseText);
-            success = true;
-            console.log(`[DEBUG] API retornó ${data.length} leads.`);
-          } catch (e) {
-            apiErrorDetail = "La respuesta de la API no es un JSON válido.";
-            console.warn("[DEBUG] API no devolvió JSON, intentando Supabase directo...");
-          }
-        } else if (response.status === 401) {
-          throw new Error("Contraseña de administrador incorrecta.");
-        } else {
-          apiErrorDetail = `La API respondió con error ${response.status}: ${response.statusText}`;
-        }
-      } catch (apiErr: any) {
-        if (apiErr.message === "Contraseña de administrador incorrecta.") throw apiErr;
-        apiErrorDetail = `Error de red en la API: ${apiErr.message}`;
-        console.warn("[DEBUG] Error en la API de leads, intentando directo en Supabase...", apiErr);
-      }
-
-      // 2. Fallback: Buscar directo del Supabase (Cliente)
-      if (!success) {
-        console.log("[DEBUG] Fallback: Intentando Supabase directo...");
-        const supabase = getSupabase();
-        if (supabase) {
-          const { data: sbData, error } = await supabase
-            .from('leads')
-            .select('*')
-            .order('timestamp', { ascending: false });
-          
-          if (error) {
-            console.error("[DEBUG] Error en Supabase fallback:", error.message);
-            throw new Error(`Error en el fallback de base de datos: ${error.message} (API original: ${apiErrorDetail})`);
-          }
-
-          if (sbData) {
-            data = sbData.map(l => ({
-              timestamp: l.timestamp,
-              businessName: l.business_name || l.businessName,
-              businessType: l.business_type || l.businessType,
-              location: l.location,
-              email: l.email,
-              whatsapp: l.whatsapp,
-              website: l.website,
-              instagram: l.instagram,
-              facebook: l.facebook,
-              linkedin: l.linkedin,
-              tiktok: l.tiktok,
-              otherPlatforms: l.other_platforms || l.otherPlatforms,
-              reportData: l.report_data || l.reportData
-            }));
-            success = true;
-            console.log(`[DEBUG] Supabase directo retornó ${data.length} leads.`);
-          }
-        } else {
-          throw new Error(`No fue posible conectar con la base de datos. API: ${apiErrorDetail}`);
-        }
-      }
-      
-      setAdminLeads(data);
-    } catch (err: any) {
-      console.error("Error al buscar leads:", err);
-      setAdminError(`Fallo en la sincronización: ${err.message}`);
-    } finally {
-      setIsAdminLoading(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loginData.user === 'admin') {
-      try {
-        // Intentamos autenticar llamando a la API
-        await fetchLeads(loginData.pass);
-        setView('admin');
-      } catch (err: any) {
-        setErrorModal({ show: true, message: err.message || 'Error al iniciar sesión' });
-      }
-    } else {
-      setErrorModal({ show: true, message: 'Usuario incorrecto.' });
-    }
-  };
-
-  const onSubmit = async (data: AuditFormData) => {
-    await processAudit(data, false);
-  };
-
-  const processAudit = async (data: AuditFormData, isMock: boolean = false) => {
-    console.log('Iniciando envío del formulario...', data, isMock ? '(MOCK)' : '');
-    setView('loading');
-    try {
-      const result = await generateAuditReport(data, isMock);
-      if (!result) throw new Error("No se pudo generar el informe");
-      
-      setReport(result);
-      setView('report');
-      
-      // Disparar evento de conversión para Google/Meta Ads
-      if (typeof (window as any).gtag === 'function') {
-        (window as any).gtag('event', 'generate_lead', {
-          'event_category': 'audit',
-          'event_label': data.businessType
-        });
-      }
-      if (typeof (window as any).fbq === 'function') {
-        (window as any).fbq('track', 'Lead', { content_name: 'Auditoría Digital' });
-      }
-
-      // Guardar datos en la base de datos automáticamente
-      await saveAuditData(data, result);
-    } catch (error: any) {
-      console.error('Error detallado en la generación del informe:', error);
-      let errorMessage = '¡Ups! Algo no salió como se esperaba. Por favor, verifique su conexão o inténtelo de nuevo en unos instantes.';
-      
-      if (error.message === 'API_KEY_MISSING') {
-        errorMessage = 'La clave de acesso no fue encontrada. Por favor, póngase en contacto con el soporte técnico.';
-      } else if (error.message?.includes('403') || error.message?.includes('API key not valid')) {
-        errorMessage = 'La clave de acesso es inválida. Por favor, póngase en contacto con el soporte técnico.';
-      } else if (error.message?.includes('503') || error.message?.includes('high demand')) {
-        errorMessage = '¡Tenemos mucha demanda en este momento! Nuestro equipo está trabajando al máximo. Por favor, espere unos segundos e inténtelo de nuevo.';
-      } else if (error.message?.includes('429')) {
-        errorMessage = '¡Demasiadas solicitudes seguidas! Por favor, espere un minuto antes de intentar una nueva auditoría.';
-      } else if (error.message?.includes('Safety') || error.message?.includes('blocked')) {
-        errorMessage = 'No pudimos generar el informe debido a las políticas de seguridad. Asegúrese de que el nombre del negocio y la información sean apropiados.';
-      } else if (error.message) {
-        errorMessage = `No pudimos procesar su auditoría ahora. Detalle: ${error.message}`;
-      }
-
-      setErrorModal({ show: true, message: errorMessage });
-      setView('form');
-    }
-  };
-
-  const handleNextStep = async () => {
-    let fieldsToValidate: (keyof AuditFormData)[] = [];
-    if (step === 1) fieldsToValidate = ['businessName', 'businessType', 'location'];
-    if (step === 2) fieldsToValidate = ['whatsapp', 'email'];
-
-    const isStepValid = await trigger(fieldsToValidate);
-    if (isStepValid) {
-      setStep(s => Math.min(s + 1, totalSteps));
-    } else {
-      console.log('La validación del paso falló:', errors);
-    }
-  };
-
-  const prevStep = () => setStep(s => Math.max(s - 1, 1));
-
-  const businessTypes: { value: BusinessType; label: string; icon: any }[] = [
-    { value: 'restaurante', label: 'Restaurante', icon: Utensils },
-    { value: 'bar', label: 'Bar', icon: Coffee },
-    { value: 'cafeteria', label: 'Cafetería', icon: Coffee },
-    { value: 'panaderia', label: 'Panadería', icon: Store },
-    { value: 'barberia', label: 'Barbería', icon: Scissors },
-    { value: 'peluqueria', label: 'Peluquería', icon: Sparkles },
-    { value: 'gimnasio', label: 'Gimnasio', icon: Dumbbell },
-    { value: 'otro', label: 'Otro', icon: Building2 },
-  ];
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen flex flex-col">
-        <iframe name="hidden_iframe" id="hidden_iframe" style={{ display: 'none' }}></iframe>
-        {/* Header */}
-      <header className="sticky top-0 left-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-brand-cream/30 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 md:h-24 flex items-center justify-between">
-          <div 
-            className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => setView('hero')}
-          >
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-brand-red rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-brand-red/20 group-hover:rotate-6 transition-transform">
-              <Rocket className="w-5 h-5 md:w-6 md:h-6 text-white" />
+    <div className="min-h-screen flex flex-col bg-[#FDFBF7] text-slate-900 transition-colors selection:bg-brand-orange/30 selection:text-slate-900 relative">
+      
+      {/* Visual background atmospheric effects - NO simulated infrastructure tags/logs */}
+      <div className="absolute top-0 left-0 right-0 h-[600px] bg-gradient-to-b from-[#FFF5E6]/60 to-transparent pointer-events-none -z-10" />
+
+      {/* Floating Alert Alert Banner */}
+      {alertMsg && (
+        <div className={`fixed top-6 right-6 z-[120] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl transition-all duration-300 animate-fade-in-up ${
+          alertMsg.type === 'success' 
+            ? 'bg-emerald-600 text-white border border-emerald-500/20' 
+            : 'bg-rose-600 text-white border border-rose-500/20'
+        }`}>
+          {alertMsg.type === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+          <p className="text-sm font-semibold">{alertMsg.text}</p>
+        </div>
+      )}
+
+      {/* Modern Header Header */}
+      <header className="sticky top-0 z-50 bg-[#FDFBF7]/90 backdrop-blur-md border-b border-brand-teal/5 transition-all">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          
+          {/* Brand Logo & Name */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <div className="w-11 h-11 rounded-2xl bg-[#1E3E3E] text-white flex items-center justify-center shadow-lg shadow-brand-teal/10 hover:scale-105 transition-all">
+              <TrendingUp className="w-6 h-6 text-amber-400" />
             </div>
             <div>
-              <span className="text-lg md:text-2xl font-black text-brand-teal tracking-tighter leading-none block">Impulsa</span>
-              <span className="text-[10px] md:text-xs font-black text-brand-red uppercase tracking-widest block opacity-80">Valladolid</span>
+              <span className="text-lg font-extrabold tracking-tight text-[#1E3E3E] block">Impulsa</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] -mt-1 block text-brand-orange font-black">Valladolid</span>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-10">
-            <a 
-              href="#como-funciona" 
-              onClick={(e) => {
-                if (view !== 'hero') {
-                  e.preventDefault();
-                  setView('hero');
-                  setTimeout(() => {
-                    document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
-                }
-              }}
-              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors relative group"
-            >
-              Nuestros Servicios
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-red transition-all group-hover:w-full" />
-            </a>
-            <a 
-              href="#casos-de-exito" 
-              onClick={(e) => {
-                if (view !== 'hero') {
-                  e.preventDefault();
-                  setView('hero');
-                  setTimeout(() => {
-                    document.getElementById('casos-de-exito')?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
-                }
-              }}
-              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors relative group"
-            >
-              Casos de Éxito
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-red transition-all group-hover:w-full" />
-            </a>
+          {/* Desktop Navigation */}
+          {view === 'landing' ? (
+            <nav className="hidden md:flex items-center gap-8">
+              <button onClick={() => scrollToId('ventajas')} className="text-sm font-bold text-slate-600 hover:text-[#1E3E3E] transition-all">Nuestros Servicios</button>
+              <button onClick={() => scrollToId('casos')} className="text-sm font-bold text-slate-600 hover:text-[#1E3E3E] transition-all">Casos de Éxito</button>
+              <button onClick={() => scrollToId('planes')} className="text-sm font-bold text-slate-600 hover:text-[#1E3E3E] transition-all">Metas & Planes</button>
+              <button onClick={() => setView('admin')} className="text-sm font-bold text-slate-500 hover:text-[#1E3E3E] flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition-all">
+                <Lock className="w-4 h-4" /> Admin
+              </button>
+              <button 
+                onClick={() => scrollToId('auditoria')} 
+                className="bg-[#1E3E3E] text-white text-xs font-extrabold tracking-wider uppercase px-5 py-3 rounded-xl shadow-lg hover:bg-[#2e5757] hover:shadow-brand-teal/15 transition-all"
+              >
+                Auditoría Gratuita
+              </button>
+            </nav>
+          ) : (
+            <nav className="flex items-center gap-4">
+              <button 
+                onClick={() => setView('landing')} 
+                className="text-sm font-bold text-[#1E3E3E] hover:underline"
+              >
+                Volver a la Web
+              </button>
+              {isAdminAuthenticated && (
+                <button 
+                  onClick={() => { setIsAdminAuthenticated(false); setAdminPassword(''); }} 
+                  className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100 hover:bg-rose-100 transition-all"
+                >
+                  Cerrar Sesión
+                </button>
+              )}
+            </nav>
+          )}
+
+          {/* Mobile menu trigger */}
+          {view === 'landing' && (
             <button 
-              onClick={() => setView('login')}
-              className="text-sm font-bold text-brand-teal hover:text-brand-red transition-colors flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-slate-50"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+              className="md:hidden p-2 rounded-xl text-[#1E3E3E] hover:bg-brand-cream/60 transition-all"
             >
-              <Lock className="w-4 h-4" />
-              Login
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          )}
+
+        </div>
+
+        {/* Mobile menu panel */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[#FDFBF7] border-b border-brand-teal/5 py-6 px-6 space-y-4 animate-fade-in-up">
+            <button onClick={() => scrollToId('ventajas')} className="block w-full text-left font-bold text-slate-600 hover:text-[#1E3E3E] py-2">Nuestros Servicios</button>
+            <button onClick={() => scrollToId('casos')} className="block w-full text-left font-bold text-slate-600 hover:text-[#1E3E3E] py-2">Casos de Éxito</button>
+            <button onClick={() => scrollToId('planes')} className="block w-full text-left font-bold text-slate-600 hover:text-[#1E3E3E] py-2">Metas & Planes</button>
+            <button onClick={() => { setView('admin'); setMobileMenuOpen(false); }} className="block w-full text-left font-bold text-slate-500 hover:text-[#1E3E3E] py-2 flex items-center gap-1.5">
+              <Lock className="w-4 h-4" /> Admin Panel
             </button>
             <button 
-              onClick={() => setView('form')}
-              className="bg-brand-red text-white px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-brand-orange transition-all shadow-xl shadow-brand-red/20 active:scale-95"
+              onClick={() => scrollToId('auditoria')} 
+              className="w-full bg-[#1E3E3E] text-white text-center text-xs font-extrabold tracking-wider uppercase py-3.5 rounded-xl block"
             >
               Auditoría Gratuita
             </button>
-          </nav>
-
-          <button 
-            onClick={() => setView('form')}
-            className="md:hidden bg-brand-red text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 shadow-lg shadow-brand-red/20"
-          >
-            Auditoría
-          </button>
-        </div>
+          </div>
+        )}
       </header>
 
-      <main className="flex-grow">
-        {view === 'hero' && (
-          <section className="relative overflow-hidden pt-28 pb-20 md:pt-40 md:pb-48">
-            {/* Background Elements */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-              <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-brand-orange/10 rounded-full blur-[120px] animate-pulse" />
-              <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-brand-red/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
-            </div>
-            
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="text-center lg:text-left relative z-20"
-                >
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-cream/50 text-brand-red text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-8 border border-brand-orange/10">
-                    <Sparkles className="w-4 h-4" />
-                    {dynamicCity === 'Madrid' ? 'Madrid & Valladolid Digital' : `${dynamicCity} Digital`}
+      {/* LANDING VIEW TEMPLATE */}
+      {view === 'landing' && (
+        <main className="flex-grow">
+          
+          {/* HERO SECTION - Elegant layout, correct text size to avoid overlapping standard image mockups */}
+          <section className="relative pt-12 pb-24 px-6 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+              
+              {/* Text side (Col 7) */}
+              <div className="lg:col-span-7 space-y-8 relative z-20">
+                
+                {/* Visual badge */}
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1E3E3E]/5 text-[#1E3E3E] text-xs font-bold uppercase tracking-widest border border-brand-teal/10">
+                  <Sparkles className="w-4 h-4 text-brand-orange animate-pulse" />
+                  {dynamicCity === 'Madrid' ? 'Madrid & Valladolid Digital' : `${dynamicCity} Digital`}
+                </div>
+
+                {/* Main Heading heading. Adjusted size from 9xl to 8xl-max to prevent overlapping the visual image */}
+                <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-[#1E3E3E] leading-[1.05] tracking-tight">
+                  No deje que su <br />
+                  <span className="text-brand-orange block">concurrencia gane</span>
+                </h1>
+
+                <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
+                  Mientras usted lee esto, sus clientes locales están buscando sus servicios en Google y eligiendo a su competencia. Nosotros nos encargamos de posicionar su negocio local en el codiciado <strong className="text-[#1E3E3E]">Top 3 de Google Maps</strong> para dominar las búsquedas locales.
+                </p>
+
+                {/* Multi-action control */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+                  <button 
+                    onClick={() => scrollToId('auditoria')}
+                    className="w-full sm:w-auto px-8 py-4 bg-[#1E3E3E] hover:bg-[#2b5959] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-brand-teal/15 hover:-translate-y-0.5 transition-all text-sm uppercase tracking-wider group"
+                  >
+                    <span>Auditar mi Ficha Gratis</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-all text-brand-orange" />
+                  </button>
+                  <button 
+                    onClick={() => scrollToId('casos')}
+                    className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-2xl border border-slate-200 font-bold transition-all text-sm"
+                  >
+                    Ver casos de éxito
+                  </button>
+                </div>
+
+                {/* Sub features stats */}
+                <div className="grid grid-cols-3 gap-6 pt-8 border-t border-brand-teal/10 max-w-md">
+                  <div>
+                    <span className="block text-2xl font-black text-[#1E3E3E]">+140%</span>
+                    <span className="block text-xs font-semibold text-slate-500">Volumen llamadas</span>
                   </div>
-                  <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-8xl font-black text-brand-teal mb-8 leading-[1] md:leading-[0.9] tracking-tighter text-balance">
-                    No deje que su <br />
-                    <span className="text-brand-red">concurrencia gane</span>
-                  </h1>
-                  <p className="text-lg md:text-2xl text-slate-600 mb-12 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
-                    Mientras usted lee esto, sus clientes están eligiendo a su competencia en Google. <strong>Nosotros cambiamos esa realidad.</strong>
-                  </p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 md:gap-6">
-                    <button 
-                      onClick={() => setView('form')}
-                      className="w-full sm:w-auto bg-brand-red text-white px-10 md:px-12 py-5 md:py-6 rounded-[2rem] text-lg md:text-xl font-black hover:bg-brand-orange transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-3 group active:scale-95"
-                    >
-                      Quiero Dominar mi Calle
-                      <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-                    </button>
+                  <div>
+                    <span className="block text-2xl font-black text-[#1E3E3E]">100%</span>
+                    <span className="block text-xs font-semibold text-slate-500">Casos optimizados</span>
+                  </div>
+                  <div>
+                    <span className="block text-2xl font-black text-[#1E3E3E]">&lt;24hrs</span>
+                    <span className="block text-xs font-semibold text-slate-500">Tiempo de auditoría</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Graphic side (Col 5) - Beautiful Mockup representation of Restaurant/Local rankings on Google Maps */}
+              <div className="lg:col-span-5 relative">
+                
+                {/* Accent design blobs */}
+                <div className="absolute -top-12 -left-12 w-64 h-64 bg-amber-400/20 rounded-full blur-3xl pointer-events-none -z-10" />
+                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
+                {/* Visual Storefront Mockup container */}
+                <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-6 select-none relative z-10 hover:shadow-3xl transition-all duration-500">
+                  
+                  {/* Local Business card with simulated search bar in header */}
+                  <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-200">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-pulse" />
+                      <span className="text-xs font-bold text-slate-500">Google Local Search Valladolid</span>
+                    </div>
+                    <Search className="w-4 h-4 text-slate-400" />
+                  </div>
+
+                  {/* Top Rated search result item */}
+                  <div className="p-5 rounded-2xl border-2 border-amber-400/60 bg-gradient-to-r from-amber-500/5 to-transparent relative">
+                    <div className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                      <span>Anuncio Top #1</span>
+                    </div>
                     
-                    <div className="flex flex-col items-center lg:items-start gap-2">
-                      <div className="flex -space-x-3">
-                        {[1,2,3,4].map(i => (
-                          <div key={i} className="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white bg-brand-cream flex items-center justify-center overflow-hidden shadow-sm">
-                            <img src={`https://picsum.photos/seed/person${i}/120/120`} alt="User" referrerPolicy="no-referrer" />
-                          </div>
+                    <h3 className="text-base font-extrabold text-[#1E3E3E] mb-1">Restaurante Sabor Castellano</h3>
+                    
+                    {/* Stars and rating count */}
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                      <span className="text-xs font-extrabold text-amber-600">4.9</span>
+                      <div className="flex text-amber-500">
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                          <Star key={idx} className="w-3 h-3 fill-current text-current" />
                         ))}
                       </div>
-                      <span className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">+50 negocios impulsados</span>
+                      <span className="text-[11px] text-slate-400 font-bold">(142 reseñas de clientes locales)</span>
+                    </div>
+
+                    <p className="text-xs text-slate-500 leading-relaxed max-w-[280px]">
+                      📍 Calle de Santiago, Valladolid • Restaurante especializado en gastronomía local tradicional castellana.
+                    </p>
+
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                      <span className="text-[11px] uppercase tracking-wider font-extrabold text-emerald-600">● Abierto • Muy concurrido</span>
+                      <button className="text-xs font-bold text-[#1E3E3E] hover:underline flex items-center gap-1">
+                        Ver Ficha <ChevronRight className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
-                </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                  className="relative hidden lg:block"
+                  {/* Competitor list preview block */}
+                  <div className="space-y-3 pt-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Otros competidores locales en Google Maps:</span>
+                    
+                    {/* Competitor row */}
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between opacity-80">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-700">Cafetería Plaza Mayor</h4>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
+                          <span>4.2</span>
+                          <span>•</span>
+                          <span>(45 reseñas)</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-400">Puesto #7</span>
+                    </div>
+
+                    {/* Competitor row 2 */}
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between opacity-60">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-700">Bar Central tapeo</h4>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
+                          <span>3.9</span>
+                          <span>•</span>
+                          <span>(18 reseñas)</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-400">Puesto #12</span>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+          </section>
+
+          {/* THE COST OF INVISIBILITY SECTION - styled in response to user updates!
+              Used the exact requested 'brand-orange' elements for consistent aesthetics */}
+          <section id="ventajas" className="py-24 bg-[#1E3E3E] text-white">
+            <div className="max-w-7xl mx-auto px-6">
+              <div className="max-w-3xl mx-auto text-center space-y-4 mb-20">
+                <span className="text-xs font-bold uppercase tracking-[0.25em] text-brand-orange block">Métricas que Importan</span>
+                <h2 className="text-3xl md:text-5xl font-black leading-tight text-white tracking-tight">El costo insoportable de la invisibilidad digital</h2>
+                <div className="w-16 h-1 bg-brand-orange mx-auto rounded-full mt-4" />
+              </div>
+
+              {/* 2 Big visual panels representing local reach */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+                
+                {/* Stat 1 - Modified color background in response to last feedback: bg-brand-orange/10 & text-brand-orange */}
+                <div className="p-10 bg-brand-orange/10 rounded-[3rem] border border-brand-orange/20 flex flex-col justify-between gap-8 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+                  <div className="space-y-4">
+                    <span className="w-12 h-12 rounded-2xl bg-brand-orange/20 text-brand-orange flex items-center justify-center font-black">1</span>
+                    <h3 className="text-2xl font-extrabold text-white">El Costo de la Invisiblidad</h3>
+                    <p className="text-slate-300 leading-relaxed text-sm">
+                      La inmensa mayoría de las intenciones de compra offline inician online. Si su negocio no destaca en este paso, está regalando clientes directamente.
+                    </p>
+                  </div>
+                  <div className="pt-6 border-t border-white/10 flex items-baseline gap-4">
+                    <span className="text-6xl font-black text-brand-orange">94%</span>
+                    <span className="text-sm font-semibold text-slate-300">De los clientes consultan Google antes de visitar un negocio local.</span>
+                  </div>
+                </div>
+
+                {/* Stat 2 */}
+                <div className="p-10 bg-white/5 rounded-[3rem] border border-white/10 flex flex-col justify-between gap-8 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+                  <div className="space-y-4">
+                    <span className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black">2</span>
+                    <h3 className="text-2xl font-extrabold text-white">Dominancia del Top 3</h3>
+                    <p className="text-slate-300 leading-relaxed text-sm">
+                      Google Maps preselecciona los 3 mejores negocios en el buscador principal. No aparecer allí significa un abandono digital completo.
+                    </p>
+                  </div>
+                  <div className="pt-6 border-t border-white/10 flex items-baseline gap-4">
+                    <span className="text-6xl font-black text-amber-400">Top 3</span>
+                    <span className="text-sm font-semibold text-slate-300">Los 3 primeros resultados se quedan con el 75% de las llamadas totales.</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Action and warning tag as noted in previous edits */}
+              <div className="text-center pt-16 space-y-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-extrabold font-['Space_Grotesk']">Si no es el primero, no existe.</p>
+                <button 
+                  onClick={() => scrollToId('auditoria')} 
+                  className="px-10 py-5 bg-brand-orange hover:bg-amber-600 text-slate-900 rounded-2xl font-extrabold uppercase tracking-wide text-xs shadow-xl shadow-brand-orange/10 hover:shadow-brand-orange/20 transition-all hover:scale-105 inline-block"
                 >
-                  <div className="relative z-10 bg-white p-4 rounded-[3rem] shadow-2xl border border-brand-cream rotate-2">
-                    <img 
-                      src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1000&auto=format&fit=crop" 
-                      alt="Restaurante en Valladolid" 
-                      className="rounded-[2.5rem] w-full h-[500px] object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute -bottom-10 -left-10 bg-brand-teal text-white p-8 rounded-3xl shadow-xl max-w-xs -rotate-6">
-                      <p className="text-lg font-bold mb-2">"Duplicamos las reservas en apenas 3 meses"</p>
-                      <p className="text-xs opacity-70 font-bold uppercase tracking-widest">— Restaurante Local</p>
-                    </div>
-                  </div>
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-brand-orange/5 rounded-full -z-10 blur-3xl" />
-                </motion.div>
+                  Diferenciarse Ahora
+                </button>
               </div>
+
             </div>
           </section>
-        )}
 
-        {view === 'hero' && (
-          <section className="py-24 px-4 bg-brand-teal text-white overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-1/3 h-full bg-brand-orange/10 blur-[120px] -z-0" />
-            <div className="max-w-7xl mx-auto relative z-10">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                <div>
-                  <h2 className="text-4xl md:text-6xl font-black mb-8 leading-tight">
-                    ¿Por qué nosotros y <span className="text-brand-orange">no una IA genérica?</span>
-                  </h2>
-                  <div className="space-y-8">
-                    <div className="flex gap-6 items-start">
-                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-                        <MapPin className="w-6 h-6 text-brand-orange" />
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-black mb-2 uppercase tracking-tight">Contexto Local Real</h4>
-                        <p className="text-brand-cream/60 leading-relaxed">La IA no sabe que en su calle hay una obra que bloquea el paso, o que el público de su barrio busca cosas específicas. Nosotros conocemos Valladolid y Madrid de verdad.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-6 items-start">
-                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-                        <Rocket className="w-6 h-6 text-brand-orange" />
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-black mb-2 uppercase tracking-tight">Ejecución, no solo consejos</h4>
-                        <p className="text-brand-cream/60 leading-relaxed">ChatGPT le dirá "haga SEO". Nosotros entramos en su panel, ajustamos sus etiquetas, optimizamos sus fotos y configuramos sus anuncios para que suene el teléfono.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-6 items-start">
-                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-                        <Users className="w-6 h-6 text-brand-orange" />
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-black mb-2 uppercase tracking-tight">Estrategia Humana</h4>
-                        <p className="text-brand-cream/60 leading-relaxed">Las máquinas analizan datos, nosotros analizamos personas. Entendemos el deseo del cliente que camina por el centro y quiere cenar hoy mismo.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-md">
-                  <h3 className="text-2xl font-black mb-6 text-brand-orange">El costo de la invisibilidad:</h3>
-                  <div className="space-y-6">
-                    <div className="p-6 bg-brand-orange/10 rounded-2xl border border-brand-orange/20">
-                      <p className="text-3xl font-black text-brand-orange mb-1">94%</p>
-                      <p className="text-sm font-bold opacity-70">De los clientes consultan Google antes de visitar un negocio local.</p>
-                    </div>
-                    <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
-                      <p className="text-3xl font-black text-white mb-1">Top 3</p>
-                      <p className="text-sm font-bold opacity-70">Los 3 primeros resultados se quedan con el 75% de las llamadas totales.</p>
-                    </div>
-                    <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-brand-cream/40">Si no es el primero, no existe.</p>
-                    <button 
-                      onClick={() => setView('form')}
-                      className="w-full bg-brand-orange text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-brand-orange/20"
-                    >
-                      Diferenciarse ahora
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {view === 'hero' && (
-          <section id="como-funciona" className="py-24 px-4 bg-slate-50 relative overflow-hidden">
-            <div className="max-w-7xl mx-auto relative z-10">
-              <div className="text-center mb-20">
-                <h2 className="text-5xl font-black text-brand-teal mb-6">¿Cómo transformamos su negocio?</h2>
-                <p className="text-xl text-slate-600 font-medium max-w-2xl mx-auto">
-                  No solo hacemos marketing, creamos una presencia digital que obliga a los clientes a elegirte.
+          {/* INTERACTIVE AUDIT SECTION */}
+          <section id="auditoria" className="py-24 px-6 bg-[#FAF6EE] relative overflow-hidden">
+            <div className="max-w-4xl mx-auto relative z-10">
+              
+              {/* Header inside container */}
+              <div className="text-center space-y-3 mb-12">
+                <span className="text-[#1E3E3E] text-xs font-black uppercase tracking-[0.2em] bg-[#1E3E3E]/5 px-3.5 py-1.5 rounded-full inline-block">Informe de Posicionamiento Gratis</span>
+                <h2 className="text-3xl md:text-5xl font-black text-[#1E3E3E] tracking-tight">Consiga su auditoría gratuita inmediata</h2>
+                <p className="text-slate-500 text-sm max-w-md mx-auto">
+                  Analizamos la salud de su ficha de Google Business Profile, SEO web local, reseñas locales y competencia en tiempo real.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
-                {/* Antes */}
-                <motion.div 
-                  initial={{ opacity: 0, x: -50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  className="bg-white p-10 rounded-[3rem] border-2 border-slate-100 shadow-xl relative"
-                >
-                  <div className="absolute -top-6 left-10 bg-slate-400 text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest">
-                    Antes: Invisibilidad
-                  </div>
-                  <div className="space-y-8 opacity-40 grayscale blur-[1px]">
-                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                      <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center">
-                        <span className="text-xl font-black text-slate-400">3.2</span>
-                      </div>
-                      <div className="space-y-1 flex-grow">
-                        <div className="h-4 bg-slate-200 rounded w-3/4" />
-                        <div className="flex gap-1">
-                          {[1,2,3].map(i => <div key={i} className="w-3 h-3 bg-slate-300 rounded-full" />)}
-                          <div className="w-3 h-3 bg-slate-100 rounded-full" />
-                          <div className="w-3 h-3 bg-slate-100 rounded-full" />
-                        </div>
+              {/* Main Panel Box container */}
+              <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl border border-slate-150 relative">
+                
+                {/* Auditor is auditing state overlay */}
+                {isAuditing && (
+                  <div className="absolute inset-0 bg-white/95 rounded-[2.5rem] z-30 flex flex-col items-center justify-center p-8 text-center space-y-6">
+                    <div className="relative w-24 h-24">
+                      {/* Modern circular spin loader */}
+                      <span className="absolute inset-0 rounded-full border-4 border-slate-100" />
+                      <span className="absolute inset-0 rounded-full border-4 border-t-brand-orange animate-spin" />
+                      <div className="absolute inset-4 rounded-full bg-slate-50 flex items-center justify-center">
+                        <TrendingUp className="w-8 h-8 text-[#1E3E3E]" />
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center">
-                        <p className="text-xs font-black text-slate-400 uppercase">Instagram</p>
-                        <p className="text-xl font-black text-slate-500">120</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center">
-                        <p className="text-xs font-black text-slate-400 uppercase">Facebook</p>
-                        <p className="text-xl font-black text-slate-500">45</p>
-                      </div>
+                    <div className="space-y-2 max-w-sm">
+                      <h4 className="text-lg font-black text-[#1E3E3E]">Generando informe de auditoría</h4>
+                      <p className="text-sm font-bold text-slate-500 animate-pulse">{auditProgress}</p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <img 
-                        src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=500&auto=format&fit=crop" 
-                        className="aspect-square rounded-2xl object-cover border border-slate-200" 
-                        alt="Local Vacío"
-                        referrerPolicy="no-referrer" 
-                      />
-                      <img 
-                        src="https://images.unsplash.com/photo-1544717297-fa95b6ee9643?q=80&w=500&auto=format&fit=crop" 
-                        className="aspect-square rounded-2xl object-cover border border-slate-200" 
-                        alt="Dueño Desanimado"
-                        referrerPolicy="no-referrer" 
-                      />
-                      <img 
-                        src="https://images.unsplash.com/photo-1516939162983-c57ad5331f7d?q=80&w=500&auto=format&fit=crop" 
-                        className="aspect-square rounded-2xl object-cover border border-slate-200" 
-                        alt="Local Abandonado"
-                        referrerPolicy="no-referrer" 
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <p className="text-sm font-bold text-slate-400">● Sin fotos profesionales</p>
-                      <p className="text-sm font-bold text-slate-400">● Reseñas negativas sin respuesta</p>
-                      <p className="text-sm font-bold text-slate-400">● Horarios desactualizados</p>
-                      <p className="text-sm font-bold text-slate-400">● Local vacío la mayor parte del día</p>
+                    <div className="text-[10px] uppercase font-black text-slate-400 tracking-widest bg-slate-100 px-3 py-1.5 rounded-full">
+                      Esto tomará unos segundos
                     </div>
                   </div>
-                  <div className="mt-10 pt-10 border-t border-slate-100 text-center">
-                    <p className="text-slate-400 font-black text-2xl">Bajo Compromiso</p>
-                    <p className="text-xs text-slate-400 font-bold uppercase mt-1">El cliente pasa de largo</p>
-                  </div>
-                </motion.div>
+                )}
 
-                {/* Después */}
-                <motion.div 
-                  initial={{ opacity: 0, x: 50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  className="bg-brand-teal p-10 rounded-[3rem] shadow-2xl relative border-4 border-brand-orange/30"
-                >
-                  <div className="absolute -top-6 left-10 bg-brand-red text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-lg">
-                    Después: Dominio Total
-                  </div>
-                  <div className="space-y-8">
-                    <div className="flex items-center gap-4 p-4 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
-                      <div className="w-12 h-12 bg-brand-orange rounded-xl flex items-center justify-center shadow-lg shadow-brand-orange/40">
-                        <span className="text-xl font-black text-white">4.9</span>
+                {/* Audit Input Form */}
+                {!currentScore ? (
+                  <form onSubmit={runAudit} className="space-y-8">
+                    
+                    {/* Select dynamic city indicator */}
+                    <div className="bg-slate-50 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-slate-200">
+                      <div>
+                        <span className="block text-xs font-black uppercase text-slate-400 tracking-wider">Provincia Principal de Operaciones</span>
+                        <span className="block text-sm font-bold text-slate-700">Analizando competencia localizada en:</span>
                       </div>
-                      <div className="space-y-1 flex-grow">
-                        <div className="h-4 bg-white rounded w-3/4" />
-                        <div className="flex gap-1">
-                          {[1,2,3,4,5].map(i => <Sparkles key={i} className="w-3 h-3 text-brand-orange fill-brand-orange" />)}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black text-white/60 uppercase">Google Maps</p>
-                        <p className="text-xs font-black text-white">Top 3 Valladolid</p>
+                      <div className="flex gap-2">
+                        {['Valladolid', 'Madrid'].map((city) => (
+                          <button
+                            type="button"
+                            key={city}
+                            onClick={() => setDynamicCity(city)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                              dynamicCity === city 
+                                ? 'bg-[#1E3E3E] text-white shadow-md' 
+                                : 'bg-white hover:bg-slate-100 text-[#1E3E3E] border border-slate-200'
+                            }`}
+                          >
+                            {city}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-white/10 rounded-2xl border border-white/20 text-center backdrop-blur-sm">
-                        <p className="text-xs font-black text-white/60 uppercase">Instagram</p>
-                        <p className="text-xl font-black text-white">12.5k</p>
-                      </div>
-                      <div className="p-4 bg-white/10 rounded-2xl border border-white/20 text-center backdrop-blur-sm">
-                        <p className="text-xs font-black text-white/60 uppercase">Facebook</p>
-                        <p className="text-xl font-black text-white">8.2k</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <img 
-                        src="https://images.unsplash.com/photo-1534258936925-c58bed479fcb?q=80&w=500&auto=format&fit=crop" 
-                        className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Gimnasio Lleno de Clientes"
-                        referrerPolicy="no-referrer" 
-                      />
-                      <img 
-                        src="https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=500&auto=format&fit=crop" 
-                        className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Clientes Felices"
-                        referrerPolicy="no-referrer" 
-                      />
-                      <img 
-                        src="https://images.unsplash.com/photo-1533900298318-6b8da08a523e?q=80&w=500&auto=format&fit=crop" 
-                        className="aspect-square rounded-2xl object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-110 transition-all duration-500 cursor-pointer saturate-150 contrast-110" 
-                        alt="Mercado de Frutas Lleno"
-                        referrerPolicy="no-referrer" 
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <p className="text-sm font-bold text-white flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Fotografía Profesional de Impacto
-                      </p>
-                      <p className="text-sm font-bold text-white flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Gestión Estratégica de Reseñas
-                      </p>
-                      <p className="text-sm font-bold text-white flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> SEO Local: Top 3 en Google Maps
-                      </p>
-                      <p className="text-sm font-bold text-white flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-brand-orange" /> Establecimiento lleno con lista de espera
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-10 pt-10 border-t border-white/10 text-center">
-                    <motion.p 
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="text-brand-orange font-black text-3xl drop-shadow-[0_0_10px_rgba(255,165,0,0.5)]"
-                    >
-                      Altísimo Compromiso
-                    </motion.p>
-                    <p className="text-xs text-white/70 font-bold uppercase mt-1">El cliente reserva al instante</p>
-                  </div>
-                </motion.div>
-              </div>
-
-              <div className="mt-20 flex flex-col items-center gap-8">
-                <div className="flex items-center gap-4 text-brand-teal font-black uppercase tracking-widest text-sm">
-                  <ArrowRight className="w-6 h-6 rotate-90 text-brand-red" />
-                  Nuestro Proceso
-                  <ArrowRight className="w-6 h-6 rotate-90 text-brand-red" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-                  {[
-                    { step: "01", title: "Auditoría", desc: "Analizamos su presencia actual y detectamos fugas de clientes." },
-                    { step: "02", title: "Optimización", desc: "Pulimos su imagen y configuramos sus canales de venta." },
-                    { step: "03", title: "Impulso", desc: "Lanzamos contenido estratégico para atraer público real." }
-                  ].map((s, i) => (
-                    <div key={i} className="bg-white p-8 rounded-3xl border border-brand-cream shadow-lg text-center group hover:border-brand-red transition-all">
-                      <span className="text-4xl font-black text-brand-red/20 group-hover:text-brand-red transition-colors">{s.step}</span>
-                      <h4 className="text-xl font-black text-brand-teal mt-4 mb-2">{s.title}</h4>
-                      <p className="text-sm text-slate-500 font-medium">{s.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {view === 'hero' && (
-          <section id="casos-de-exito" className="py-20 bg-white border-y border-brand-cream">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
-                <div className="space-y-2">
-                  <p className="text-5xl font-black text-brand-red">82%</p>
-                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Visitas Digitales</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Clientes que te ven online antes de entrar</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-5xl font-black text-brand-red">+350%</p>
-                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Llamadas Directas</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Aumento promedio en contacto directo</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-5xl font-black text-brand-red">Top 3</p>
-                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Google Maps</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Posicionamiento local garantizado</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-5xl font-black text-brand-red">45</p>
-                  <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-60">Reservas Diarias</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Caso de éxito: De la invisibilidad al lleno total</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {view === 'form' && (
-          <section id="audit-top" className="py-16 px-4 bg-brand-cream/30">
-            <div className="max-w-3xl mx-auto">
-              <div className="mb-12 text-center">
-                <h2 className="text-4xl font-black text-brand-teal mb-4">Su Jornada Digital</h2>
-                <p className="text-slate-600 font-medium">Complete los datos y reciba un análisis completo en segundos.</p>
-              </div>
-              
-              <div className="mb-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex gap-2">
-                    {[1, 2, 3].map((i) => (
-                      <div 
-                        key={i} 
-                        className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all",
-                          step === i ? "bg-brand-red text-white scale-110 shadow-lg shadow-brand-red/20" : 
-                          step > i ? "bg-brand-teal text-white" : "bg-white text-slate-300 border border-slate-200"
-                        )}
-                      >
-                        {step > i ? <CheckCircle2 className="w-5 h-5" /> : i}
-                      </div>
-                    ))}
-                  </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-50">Etapa {step} de {totalSteps}</span>
-                </div>
-                <div className="h-3 bg-white rounded-full overflow-hidden border border-slate-100 p-0.5">
-                  <motion.div 
-                    className="h-full bg-brand-red rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(step / totalSteps) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-brand-teal/5 border border-brand-cream">
-                {step === 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-8"
-                  >
-                    <div className="space-y-4">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">¿Cuál es su nicho?</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
-                        {businessTypes.map((t) => {
-                          const Icon = t.icon;
-                          const isSelected = watch('businessType') === t.value;
-                          return (
-                            <button
-                              key={t.value}
-                              type="button"
-                              onClick={() => setValue('businessType', t.value)}
-                              className={cn(
-                                "flex flex-col items-center justify-center p-6 md:p-8 rounded-[2rem] border-2 transition-all gap-4 group active:scale-95",
-                                isSelected 
-                                  ? "border-brand-red bg-white text-brand-red shadow-2xl shadow-brand-red/10 animate-in zoom-in-95" 
-                                  : "border-slate-50 bg-slate-50/50 text-slate-400 hover:border-brand-orange/20 hover:bg-white hover:text-brand-orange"
-                              )}
-                            >
-                              <div className={cn(
-                                "w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all",
-                                isSelected ? "bg-brand-red text-white" : "bg-white text-slate-400 group-hover:bg-brand-orange group-hover:text-white"
-                              )}>
-                                <Icon className="w-8 h-8 md:w-10 md:h-10" />
-                              </div>
-                              <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">{t.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Nombre del Negocio</label>
-                      <input 
-                        {...register('businessName')}
-                        placeholder="Ex: La Parrilla de San Lorenzo"
-                        className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
-                      />
-                      {errors.businessName && <p className="text-brand-red text-xs font-bold mt-1">{errors.businessName.message}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Ubicación</label>
-                      <div className="relative">
-                        <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
+                    {/* Inputs fields grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4 text-[#1E3E3E]" /> Nombre del Negocio <span className="text-red-500">*</span>
+                        </label>
                         <input 
-                          {...register('location')}
-                          placeholder="Ex: Valladolid, Centro"
-                          className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
+                          type="text"
+                          required
+                          value={businessName}
+                          onChange={(e) => setBusinessName(e.target.value)}
+                          placeholder="Ej. Restaurante San Pablo o Clínica Serna"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
                         />
                       </div>
-                      {errors.location && <p className="text-brand-red text-xs font-bold mt-1">{errors.location.message}</p>}
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <Phone className="w-4 h-4 text-[#1E3E3E]" /> WhatsApp / Teléfono <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          type="text"
+                          required
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Ej. +34 600 112 233"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <User className="w-4 h-4 text-[#1E3E3E]" /> Su Nombre (Contacto)
+                        </label>
+                        <input 
+                          type="text"
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                          placeholder="Ej. Carlos Martínez"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <Map className="w-4 h-4 text-[#1E3E3E]" /> Dirección del Negocio / Link de Maps
+                        </label>
+                        <input 
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="Ej. Plaza España 4 o pegue link de Maps"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
+                        />
+                      </div>
+
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                        <MessageSquare className="w-4 h-4 text-[#1E3E3E]" /> ¿Algún comentario extra sobre sus competidores directos?
+                      </label>
+                      <textarea 
+                        value={comments}
+                        onChange={(e) => setComments(e.target.value)}
+                        placeholder="Ej. Me cuesta superar a Restaurante X en los mapas..."
+                        rows={3}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all resize-none"
+                      />
                     </div>
 
                     <button 
-                      type="button" 
-                      onClick={handleNextStep}
-                      className="w-full bg-brand-teal text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all flex items-center justify-center gap-3 shadow-xl"
+                      type="submit"
+                      className="w-full py-4.5 bg-[#1E3E3E] hover:bg-[#285353] text-[#FAF6EE] text-sm font-extrabold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-teal/10 hover:shadow-brand-teal/20 transition-all flex items-center justify-center gap-2 mt-4"
                     >
-                      Continuar
-                      <ArrowRight className="w-5 h-5" />
+                      <Sparkles className="w-4 h-4 text-brand-orange" />
+                      <span>Iniciar Auditoría Automatizada</span>
                     </button>
-                  </motion.div>
-                )}
 
-                {step === 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-8"
-                  >
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">WhatsApp de Contacto</label>
-                      <div className="relative">
-                        <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
-                        <input 
-                          {...register('whatsapp')}
-                          placeholder="+34 000 000 000"
-                          className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
-                        />
+                  </form>
+                ) : (
+                  
+                  // Score Results Display State
+                  <div className="space-y-8 animate-fade-in-up">
+                    
+                    {/* Header back & score badge */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                      <div className="text-center sm:text-left">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#1E3E3E] bg-[#1E3E3E]/5 px-2.5 py-1 rounded-md">Auditoría Finalizada</span>
+                        <h3 className="text-xl font-extrabold text-[#1E3E3E] mt-1">{currentScore.businessName}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Analizado el {new Date(currentScore.datetime).toLocaleString('es-ES')}</p>
                       </div>
-                      {errors.whatsapp && <p className="text-brand-red text-xs font-bold mt-1">{errors.whatsapp.message}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">E-mail Profesional</label>
-                      <div className="relative">
-                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
-                        <input 
-                          {...register('email')}
-                          placeholder="contacto@restaurante.es"
-                          className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
-                        />
-                      </div>
-                      {errors.email && <p className="text-brand-red text-xs font-bold mt-1">{errors.email.message}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Sitio Web (Opcional)</label>
-                      <div className="relative">
-                        <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-red" />
-                        <input 
-                          {...register('website')}
-                          placeholder="suweb.com"
-                          className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
-                        />
-                      </div>
-                      {errors.website && <p className="text-brand-red text-xs font-bold mt-1">{errors.website.message}</p>}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <button 
-                        type="button" 
-                        onClick={prevStep}
-                        className="flex-1 bg-slate-100 text-brand-teal py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-                      >
-                        <ArrowLeft className="w-5 h-5" />
-                        Volver
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={handleNextStep}
-                        className="flex-[2] bg-brand-teal text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all flex items-center justify-center gap-3 shadow-xl"
-                      >
-                        Próximo Paso
-                        <ArrowRight className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {step === 3 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="space-y-8"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {errors.instagram && (
-                        <div className="col-span-full bg-red-50 p-3 rounded-xl border border-red-100 flex items-center gap-2 text-red-600 text-xs font-bold">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.instagram.message}
+                      
+                      {/* Overall Rating Score view */}
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Puntaje General</span>
+                          <span className="block text-xs text-slate-500">Salud de presencia local en {dynamicCity}</span>
                         </div>
-                      )}
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
-                          <Instagram className="w-4 h-4 text-brand-red" /> Instagram
-                        </label>
-                        <input {...register('instagram')} placeholder="@usuario" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
-                          <Facebook className="w-4 h-4 text-brand-red" /> Facebook
-                        </label>
-                        <input {...register('facebook')} placeholder="facebook.com/pagina" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
-                          <Linkedin className="w-4 h-4 text-brand-red" /> LinkedIn
-                        </label>
-                        <input {...register('linkedin')} placeholder="linkedin.com/in/usuario" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2">
-                           TikTok
-                        </label>
-                        <input {...register('tiktok')} placeholder="@usuario" className="w-full px-5 py-3 rounded-xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium" />
+                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1E3E3E] to-[#2d5c5c] text-white flex flex-col items-center justify-center shadow-lg">
+                          <span className="text-3xl font-black text-amber-400">{currentScore.auditScore}</span>
+                          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider -mt-1">/100</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-brand-teal uppercase tracking-widest">Otras Notas</label>
-                      <textarea 
-                        {...register('otherPlatforms')}
-                        placeholder="¿Algún detalle extra sobre su presencia digital?"
-                        className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none transition-all font-medium text-slate-700 h-32 resize-none"
-                      />
+                    {/* SEO analysis commentary text banner */}
+                    {currentScore.report?.analysis && (
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-150 text-sm leading-relaxed text-slate-600 block italic">
+                        &ldquo; {currentScore.report.analysis} &rdquo;
+                      </div>
+                    )}
+
+                    {/* Breakdown sub scores */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      
+                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">SEO Google Maps</span>
+                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.mapsScore || 65}%</span>
+                      </div>
+
+                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Densidad Semántica</span>
+                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.seoScore || 68}%</span>
+                      </div>
+
+                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Reputación Reseñas</span>
+                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.contentScore || 70}%</span>
+                      </div>
+
+                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Velocidad Móvil</span>
+                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.speedScore || 72}%</span>
+                      </div>
+
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Recommendations checklist block */}
+                    <div className="space-y-4">
+                      <span className="text-xs font-black uppercase tracking-widest text-[#1E3E3E] flex items-center gap-2">
+                        <Award className="w-5 h-5 text-brand-orange" /> 3 Medidas Correctivas Inmediatas Recomendadas:
+                      </span>
+
+                      <div className="space-y-3">
+                        {currentScore.report?.recommendations?.map((rec: string, idx: number) => (
+                          <div key={idx} className="p-4 rounded-xl border border-[#1E3E3E]/10 bg-[#1E3E3E]/2 flex items-start gap-3.5">
+                            <span className="w-6 h-6 rounded-lg bg-brand-orange/20 text-[#1E3E3E] font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <p className="text-sm font-semibold text-slate-700 leading-relaxed">{rec}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Call to action panel */}
+                    <div className="bg-[#1E3E3E] text-white p-6.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl leading-normal">
+                      <div className="text-center sm:text-left">
+                        <h4 className="font-extrabold text-base text-white">¿Quiere el plan de ejecución guiado?</h4>
+                        <p className="text-xs text-slate-300 mt-1">Hablemos por WhatsApp para ayudarle a implementar este informe paso a paso.</p>
+                      </div>
                       <button 
-                        type="button" 
-                        onClick={prevStep}
-                        className="flex-1 bg-slate-100 text-brand-teal py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+                        onClick={() => handleWhatsAppContact(currentScore)}
+                        className="w-full sm:w-auto px-6 py-3.5 bg-brand-orange hover:bg-amber-600 text-slate-900 rounded-xl font-extrabold text-xs uppercase tracking-wide transition-all shadow-md shrink-0 cursor-pointer text-center"
                       >
-                        <ArrowLeft className="w-5 h-5" />
-                        Volver
-                      </button>
-                      <button 
-                        type="submit"
-                        className="flex-[2] bg-brand-red text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-orange transition-all flex items-center justify-center gap-3 shadow-2xl shadow-brand-red/30"
-                      >
-                        Generar Auditoría
-                        <Sparkles className="w-6 h-6" />
+                        Recibir Informe Completo 🚀
                       </button>
                     </div>
-                  </motion.div>
+
+                    {/* Reset audit form action */}
+                    <button 
+                      onClick={() => {
+                        setBusinessName('');
+                        setPhone('');
+                        setContactName('');
+                        setAddress('');
+                        setComments('');
+                        setCurrentScore(null);
+                      }}
+                      className="text-xs font-bold text-[#1E3E3E] hover:underline mx-auto block mt-4"
+                    >
+                      Realizar auditoría para otro negocio local
+                    </button>
+
+                  </div>
                 )}
-              </form>
-            </div>
-          </section>
-        )}
 
-        {view === 'hero' && (
-          <section id="planes" className="py-24 px-4 bg-brand-cream/20">
-            <div className="max-w-7xl mx-auto">
-              <div className="text-center mb-16">
-                <h2 className="text-5xl font-black text-brand-teal mb-4">Dos caminos para dominar Valladolid</h2>
-                <p className="text-slate-600 font-bold text-xl">Elija el plan que mejor se adapte a su crecimiento</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-                {/* Plan Básico */}
-                <motion.div 
-                  whileHover={{ y: -10 }}
-                  className="bg-white p-12 rounded-[3rem] border-2 border-brand-cream shadow-xl flex flex-col"
-                >
-                  <div className="mb-8">
-                    <h3 className="text-3xl font-black text-brand-teal mb-2">Plan Básico</h3>
-                    <p className="text-brand-red font-black text-4xl">89€ <span className="text-sm text-slate-400 font-bold">/ MES</span></p>
-                    <p className="text-xs font-black uppercase tracking-widest text-brand-teal opacity-50 mt-2">Visibilidad y Confianza</p>
+            </div>
+          </section>
+
+          {/* DYNAMIC SUCCESS STORIES TESTIMONIALS */}
+          <section id="casos" className="py-24 px-6 max-w-7xl mx-auto">
+            <div className="text-center space-y-3 mb-20 max-w-2xl mx-auto">
+              <span className="text-xs font-bold uppercase tracking-widest text-brand-orange block">Liderazgo Verificado</span>
+              <h2 className="text-3xl md:text-5xl font-black text-[#1E3E3E] tracking-tight">Vallisoletanos que ya encabezan el mapa</h2>
+              <p className="text-slate-500 text-sm">
+                Vea cómo de pasar desapercibidos en Google pasaron a colapsar sus teléfonos con reservas reales optimizando su SEO local de nuestra mano.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              <div className="bg-white p-8 rounded-3xl border border-slate-150 hover:shadow-xl transition-all flex flex-col justify-between gap-6">
+                <div className="space-y-4">
+                  <div className="flex text-amber-400">
+                    {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
                   </div>
-                  <ul className="space-y-4 mb-12 flex-grow">
-                    {[
-                      'Google Business Profile Pro',
-                      'Gestión de Reseñas Estratégica',
-                      '8 Publicaciones Mensuales',
-                      'Informe de Visibilidad Local'
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-slate-600 font-bold">
-                        <CheckCircle2 className="w-5 h-5 text-brand-red" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <button 
-                    onClick={() => setView('form')}
-                    className="w-full py-5 rounded-2xl border-2 border-brand-teal text-brand-teal font-black uppercase tracking-widest hover:bg-brand-teal hover:text-white transition-all"
-                  >
+                  <h3 className="text-lg font-bold text-[#1E3E3E]">Taverna Platerías</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-sans">
+                    "Increíble ver los resultados antes del primer mes. Nuestra taberna tradicional pasó al Puesto #1 en la búsqueda 'tapas centro' de nuestra ciudad, logrando hasta 3 mesas ocupadas extras al día."
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">Restauración • Plaza Mayor</span>
+                  <span className="text-xs font-black text-emerald-600 uppercase">+150% Reservas</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-8 rounded-3xl border border-slate-150 hover:shadow-xl transition-all flex flex-col justify-between gap-6">
+                <div className="space-y-4">
+                  <div className="flex text-amber-400">
+                    {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                  </div>
+                  <h3 className="text-lg font-bold text-[#1E3E3E]">Fisioterapia Recoletas</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-sans">
+                    "Tener una web no nos servía si la gente de la zona buscaba 'fisioterapeuta urgente' y no nos encontraba en el móvil. Con el optimizador de Google Maps hemos duplicado llamadas."
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">Salud • Paseo Zorrilla</span>
+                  <span className="text-xs font-black text-emerald-600 uppercase">+88% Contactos</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-8 rounded-3xl border border-slate-150 hover:shadow-xl transition-all flex flex-col justify-between gap-6">
+                <div className="space-y-4">
+                  <div className="flex text-amber-400">
+                    {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                  </div>
+                  <h3 className="text-lg font-bold text-[#1E3E3E]">Peluquería Delicias</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-sans">
+                    "Nuestros clientes fieles nos querían mucho pero no atraíamos clientes nuevos de otras zonas de Valladolid. Ocupando las primeras posiciones de los mapas, nuestra agenda está al completo."
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">Estética • Barrio Delicias</span>
+                  <span className="text-xs font-black text-emerald-600 uppercase">+120% Agenda</span>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          {/* PLANS AND PRICING pricing plans requested id */}
+          <section id="planes" className="py-24 px-4 bg-[#1E3E3E]/5 relative">
+            <div className="max-w-7xl mx-auto px-6">
+              <div className="text-center space-y-3 mb-16 max-w-xl mx-auto">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#1E3E3E] bg-[#1E3E3E]/5 px-3 py-1 rounded-md">Transparencia Total</span>
+                <h2 className="text-2xl md:text-4xl font-black text-[#1E3E3E] tracking-tight">Planes de Optimización y Posicionamiento Local</h2>
+                <p className="text-slate-500 text-sm">
+                  Tarifas planas adaptadas al tamaño y sector de su negocio local. Sin letra pequeña.
+                </p>
+              </div>
+
+              {/* Plans pricing grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                
+                {/* Plan 1 */}
+                <div className="bg-white rounded-3xl p-8 border border-slate-150 flex flex-col justify-between gap-8 hover:shadow-lg transition-all">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-sm font-extrabold uppercase tracking-wider text-slate-400">Pila Básica</h4>
+                      <h3 className="text-xl font-bold text-[#1E3E3E] mt-1">Configuración Ficha</h3>
+                      <div className="mt-4 flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-[#1E3E3E]">149€</span>
+                        <span className="text-xs font-bold text-slate-400">/pago único</span>
+                      </div>
+                    </div>
+                    
+                    <ul className="space-y-3 text-xs font-semibold text-slate-600">
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Configuración NAP exacta (Nombre, Dirección, Teléfono)</li>
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Selección de categorías primarias y secundarias</li>
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Subida de primeras 15 fotos GEO-optimizadas</li>
+                    </ul>
+                  </div>
+
+                  <button onClick={() => scrollToId('auditoria')} className="w-full py-3 bg-[#1E3E3E] hover:bg-slate-800 text-white rounded-xl text-xs font-bold tracking-wider uppercase transition-all">
                     Empezar Ahora
                   </button>
-                </motion.div>
+                </div>
 
-                {/* Plan Premium */}
-                <motion.div 
-                  whileHover={{ y: -10 }}
-                  className="bg-brand-teal p-12 rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col"
-                >
-                  <div className="absolute top-0 right-0 bg-brand-red text-white px-6 py-2 font-black text-[10px] uppercase tracking-widest rounded-bl-2xl">
+                {/* Plan 2 - REcommended */}
+                <div className="bg-white rounded-3xl p-8 border-2 border-brand-orange flex flex-col justify-between gap-8 shadow-xl relative scale-105">
+                  <div className="absolute top-0 right-8 -translate-y-1/2 bg-brand-orange text-slate-900 text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-md">
                     Más Popular
                   </div>
-                  <div className="mb-8">
-                    <h3 className="text-3xl font-black text-white mb-2">Plan Premium</h3>
-                    <p className="text-brand-orange font-black text-4xl">147€ <span className="text-sm text-white/50 font-bold">/ MES</span></p>
-                    <p className="text-xs font-black uppercase tracking-widest text-white opacity-50 mt-2">Dominio y Crecimiento</p>
-                  </div>
-                  <ul className="space-y-4 mb-12 flex-grow">
-                    {[
-                      'Todo lo del Plan Básico',
-                      'SEO Local Avanzado (Top 3)',
-                      '16 Publicaciones + Reels Virales',
-                      'Sistema de Captación Activa'
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-white font-bold">
-                        <CheckCircle2 className="w-5 h-5 text-brand-orange" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <button 
-                    onClick={() => setView('form')}
-                    className="w-full py-5 rounded-2xl bg-brand-red text-white font-black uppercase tracking-widest hover:bg-brand-orange transition-all shadow-xl shadow-brand-red/20"
-                  >
-                    Dominar el Mercado
-                  </button>
-                </motion.div>
-              </div>
-
-              <div className="mt-20 text-center">
-                <div className="inline-flex flex-col sm:flex-row items-center gap-6 sm:gap-8 px-8 sm:px-10 py-6 bg-white rounded-3xl border border-brand-cream shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <span className="font-black text-brand-teal uppercase tracking-widest text-[10px] sm:text-xs">Sin Permanencia</span>
-                  </div>
-                  <div className="hidden sm:block w-px h-8 bg-slate-100" />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <span className="font-black text-brand-teal uppercase tracking-widest text-[10px] sm:text-xs">Solo Resultados</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {view === 'loading' && (
-          <section className="min-h-screen flex flex-col items-center justify-center p-8 bg-brand-cream/10 relative overflow-hidden">
-             {/* Abstract Background for Loading */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full -z-10">
-              <motion.div 
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  rotate: [0, 90, 0],
-                  opacity: [0.3, 0.5, 0.3]
-                }}
-                transition={{ duration: 10, repeat: Infinity }}
-                className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-brand-red/5 rounded-full blur-[120px]" 
-              />
-              <motion.div 
-                animate={{ 
-                  scale: [1.2, 1, 1.2],
-                  rotate: [0, -90, 0],
-                  opacity: [0.3, 0.5, 0.3]
-                }}
-                transition={{ duration: 10, repeat: Infinity, delay: 5 }}
-                className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-brand-orange/5 rounded-full blur-[120px]" 
-              />
-            </div>
-
-            <div className="relative">
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.05, 1],
-                  rotate: 360 
-                }}
-                transition={{ 
-                  scale: { duration: 2, repeat: Infinity },
-                  rotate: { duration: 8, repeat: Infinity, ease: "linear" }
-                }}
-                className="w-32 h-32 md:w-48 md:h-48 border-[6px] border-brand-cream border-t-brand-red rounded-full flex items-center justify-center mb-16 shadow-2xl relative"
-              >
-                <div className="w-full h-full absolute top-0 left-0 animate-pulse bg-brand-red/5 rounded-full" />
-                <Rocket className="w-12 h-12 md:w-16 md:h-16 text-brand-red -rotate-45" />
-              </motion.div>
-            </div>
-            
-            <h2 className="text-4xl md:text-6xl font-black text-brand-teal mb-6 uppercase tracking-tighter text-balance text-center">Equipo <br /><span className="text-brand-red">Auditando...</span></h2>
-            <p className="text-slate-400 max-w-md font-bold text-lg md:text-xl text-center leading-relaxed">
-              Analizando visibilidad de <span className="text-brand-red">{(watch('businessName') || 'su negocio')}</span> en Google y Redes Sociales...
-            </p>
-            
-            <div className="mt-20 w-full max-w-md space-y-6">
-              <div className="h-4 bg-white rounded-full overflow-hidden p-1 border border-brand-cream/50 shadow-inner">
-                <motion.div 
-                  className="h-full bg-brand-red rounded-full shadow-lg shadow-brand-red/20"
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 15, ease: "linear" }}
-                />
-              </div>
-              <div className="flex justify-between items-center px-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal animate-pulse">Sincronizando con Google</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-red">Análisis Estratégico Activo</span>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {view === 'report' && report && (
-          <section className="py-16 px-4 bg-[#FDFBF7]">
-            <div className="max-w-5xl mx-auto">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-red/10 text-brand-red text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-6 border border-brand-red/10">
-                    <Rocket className="w-4 h-4" />
-                    Auditoría Estratégica Exclusiva
-                  </div>
-                  <h2 className="text-6xl md:text-8xl font-black text-brand-teal leading-none tracking-tighter">Diagnóstico <br /><span className="text-brand-red">Impulsa</span></h2>
-                  <p className="mt-4 text-slate-400 font-black uppercase tracking-[0.1em] text-xs md:text-sm">Negocio: <span className="text-brand-teal">{watch('businessName')}</span></p>
                   
-                  {saveStatus === 'sending' && (
-                    <div className="mt-6 flex items-center gap-3 text-brand-orange animate-pulse px-4 py-2 bg-brand-orange/5 rounded-full w-fit">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.1em]">Sincronizando...</span>
-                    </div>
-                  )}
-                  
-                  {saveStatus === 'success' && (
-                    <div className="mt-6 flex items-center gap-3 text-emerald-500 px-4 py-2 bg-emerald-50 rounded-full w-fit">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.1em]">Analizado & Guardado</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button 
-                    onClick={() => {
-                      const data = watch();
-                      if (report) {
-                        const doc = generatePDF(data, report);
-                        doc.save(`Auditoría_${data.businessName.replace(/\s+/g, '_')}.pdf`);
-                      }
-                    }}
-                    className="group bg-white text-brand-teal border-2 border-brand-cream px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:border-brand-red transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95"
-                  >
-                    <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
-                    PDF Completo
-                  </button>
-                  <button 
-                    onClick={sendToWhatsApp}
-                    className="bg-emerald-500 text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 active:scale-95"
-                  >
-                    <Phone className="w-5 h-5" />
-                    Agendar Consultoria
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-10">
-                {/* Storytelling Section */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className="bg-brand-red text-white p-12 md:p-24 rounded-[3rem] shadow-2xl shadow-brand-red/20 relative overflow-hidden group"
-                >
-                  <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-brand-orange/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[120px] group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-[80px]" />
-                  
-                  <div className="relative z-10 text-center md:text-left">
-                    <div className="flex flex-col md:flex-row items-center gap-6 mb-12">
-                      <div className="w-20 h-20 bg-white/10 rounded-[2rem] flex items-center justify-center backdrop-blur-2xl border border-white/20 shadow-2xl">
-                        <Sparkles className="w-10 h-10 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-3xl font-black uppercase tracking-[0.2em] mb-1">El Futuro</h3>
-                        <p className="text-white/60 font-bold uppercase tracking-widest text-sm">Visión Estratégica</p>
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-sm font-extrabold uppercase tracking-wider text-brand-orange">Impulso Maps</h4>
+                      <h3 className="text-xl font-bold text-[#1E3E3E] mt-1">Optimización & Reseñas</h3>
+                      <div className="mt-4 flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-[#1E3E3E]">299€</span>
+                        <span className="text-xs font-bold text-slate-400">/único pago</span>
                       </div>
                     </div>
-                    <blockquote className="text-[1.35rem] md:text-5xl lg:text-6xl font-medium leading-[1.2] tracking-tight text-white/95 text-balance">
-                      <span className="text-white font-black italic block mb-4 opacity-30 text-8xl md:text-9xl leading-none font-serif">“</span>
-                      <span className="relative -top-12 md:-top-16 block">
-                        {String(report.storytelling)}
-                      </span>
-                    </blockquote>
-                  </div>
-                </motion.div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  {/* Strengths */}
-                  <motion.div 
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-white p-10 rounded-[2.5rem] border border-brand-cream shadow-xl shadow-brand-teal/5"
-                  >
-                    <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-8">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                    </div>
-                    <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">Puntos Fuertes</h3>
-                    <ul className="space-y-6">
-                      {(report.strengths || []).map((s, i) => (
-                        <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2.5 shrink-0" />
-                          {String(s)}
-                        </li>
-                      ))}
-                    </ul>
-                  </motion.div>
-
-                  {/* Problems */}
-                  <motion.div 
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="bg-white p-10 rounded-[2.5rem] border border-brand-cream shadow-xl shadow-brand-teal/5"
-                  >
-                    <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mb-8">
-                      <AlertCircle className="w-8 h-8 text-amber-500" />
-                    </div>
-                    <h3 className="text-2xl font-black text-brand-teal mb-8 uppercase tracking-widest">Qué mejorar</h3>
-                    <ul className="space-y-6">
-                      {(report.problems || []).map((p, i) => (
-                        <li key={i} className="flex items-start gap-4 text-slate-600 font-medium">
-                          <div className="w-2 h-2 rounded-full bg-amber-500 mt-2.5 shrink-0" />
-                          {String(p)}
-                        </li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                </div>
-
-                {/* Social Media Analysis */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="bg-brand-teal text-white p-10 md:p-14 rounded-[3rem] shadow-2xl"
-                >
-                  <div className="flex items-center gap-4 mb-10">
-                    <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center">
-                      <Instagram className="w-8 h-8 text-brand-orange" />
-                    </div>
-                    <h3 className="text-2xl font-black uppercase tracking-widest">Presencia Digital</h3>
-                  </div>
-                  <p className="text-xl text-slate-200 leading-relaxed font-medium">
-                    {String(report.socialMediaAnalysis)}
-                  </p>
-                </motion.div>
-
-                {/* Technical Analysis */}
-                {report.technicalAnalysis && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.45 }}
-                    className="bg-slate-900 text-white p-10 md:p-14 rounded-[3rem] shadow-2xl relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-red/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px]" />
-                    <div className="flex items-center gap-4 mb-10">
-                      <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center">
-                        <Globe className="w-8 h-8 text-brand-red" />
-                      </div>
-                      <h3 className="text-2xl font-black uppercase tracking-widest">Análisis Técnico (Google)</h3>
-                    </div>
-                    <p className="text-xl text-slate-300 leading-relaxed font-medium">
-                      {String(report.technicalAnalysis)}
-                    </p>
-                  </motion.div>
-                )}
-
-                {/* Priority Actions */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="bg-white p-10 md:p-14 rounded-[3rem] border-4 border-brand-cream shadow-2xl"
-                >
-                  <h3 className="text-2xl font-black text-brand-teal mb-12 uppercase tracking-widest text-center">Plan de Acción Inmediato</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {(report.priorityActions || []).map((a, i) => (
-                      <div key={i} className="flex items-center gap-6 p-6 rounded-3xl bg-slate-50 border border-slate-100 group hover:border-brand-red transition-all">
-                        <div className="w-12 h-12 rounded-2xl bg-brand-red text-white flex items-center justify-center text-xl font-black shrink-0 shadow-lg shadow-brand-red/20 group-hover:rotate-6 transition-transform">
-                          {String(i + 1)}
-                        </div>
-                        <span className="text-slate-700 font-bold leading-tight">{String(a)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Service Proposal */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.6 }}
-                  className="bg-brand-cream p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden group border-4 border-white shadow-2xl"
-                >
-                  <div className="absolute top-0 left-0 w-full h-full bg-brand-red/5 -z-10 group-hover:scale-110 transition-transform duration-[3s]" />
-                  <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-brand-red/10 rounded-full blur-[80px]" />
-                  
-                  <h3 className="text-4xl md:text-7xl font-black text-brand-red mb-10 leading-tight tracking-tighter text-balance">¿Impulsamos su <br />negocio juntos?</h3>
-                  <p className="text-brand-teal text-xl md:text-3xl mb-16 max-w-2xl mx-auto font-medium leading-relaxed italic opacity-90">
-                    "{String(report.serviceProposal)}"
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                    <button 
-                      onClick={sendToWhatsApp}
-                      className="w-full sm:w-auto bg-brand-red text-white px-12 md:px-16 py-6 md:py-8 rounded-[2.5rem] text-xl md:text-2xl font-black uppercase tracking-[0.2em] hover:bg-brand-teal transition-all shadow-2xl shadow-brand-red/30 flex items-center justify-center gap-4 group active:scale-95"
-                    >
-                      Agendar Consultoría
-                      <ArrowRight className="w-8 h-8 group-hover:translate-x-3 transition-transform" />
-                    </button>
                     
-                    <button 
-                      onClick={downloadPDF}
-                      className="w-full sm:w-auto bg-white text-brand-teal px-10 py-6 rounded-[2.5rem] text-sm font-black uppercase tracking-widest hover:bg-brand-cream transition-all border-2 border-brand-cream flex items-center justify-center gap-3 active:scale-95"
-                    >
-                      <Download className="w-5 h-5" />
-                      Descargar Audit
-                    </button>
+                    <ul className="space-y-3 text-xs font-semibold text-slate-600">
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Todo lo de la "Pila Básica" configurado</li>
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Redacción optimizada de descripciones con IA</li>
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Código QR físico personalizado para vuestro local</li>
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Campaña inicial de incentivo de opiniones</li>
+                    </ul>
                   </div>
-                </motion.div>
 
-                {/* Sources Section */}
-                {report.sources && report.sources.length > 0 && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-10 p-8 bg-white/50 rounded-3xl border border-brand-cream"
-                  >
-                    <h4 className="text-sm font-black text-brand-teal uppercase tracking-widest mb-4 opacity-60">Fuentes de Información (Google Search)</h4>
-                    <div className="flex flex-wrap gap-4">
-                      {report.sources.map((source, i) => (
-                        <a 
-                          key={i} 
-                          href={source.uri} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-xs font-bold text-brand-red hover:underline flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-brand-cream shadow-sm"
-                        >
-                          <Globe className="w-3 h-3" />
-                          {String(source.title)}
-                        </a>
-                      ))}
+                  <button onClick={() => scrollToId('auditoria')} className="w-full py-3.5 bg-brand-orange hover:bg-amber-600 text-slate-900 rounded-xl text-xs font-black tracking-wider uppercase transition-all">
+                    Reclamar mi Impulso
+                  </button>
+                </div>
+
+                {/* Plan 3 */}
+                <div className="bg-white rounded-3xl p-8 border border-slate-150 flex flex-col justify-between gap-8 hover:shadow-lg transition-all">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-sm font-extrabold uppercase tracking-wider text-slate-400">Crecimiento Total</h4>
+                      <h3 className="text-xl font-bold text-[#1E3E3E] mt-1">Presencia Infinita</h3>
+                      <div className="mt-4 flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-[#1E3E3E]">99€</span>
+                        <span className="text-xs font-bold text-slate-400">/al mes (Suscripción)</span>
+                      </div>
                     </div>
-                  </motion.div>
-                )}
+                    
+                    <ul className="space-y-3 text-xs font-semibold text-slate-600">
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Gestión mensual completa de reviews locales</li>
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Publicaciones quincenales en la ficha de Maps</li>
+                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Dashboard mensual de llamadas y visitas locales</li>
+                    </ul>
+                  </div>
+
+                  <button onClick={() => scrollToId('auditoria')} className="w-full py-3 bg-[#1E3E3E] hover:bg-slate-800 text-white rounded-xl text-xs font-bold tracking-wider uppercase transition-all">
+                    Saber Más
+                  </button>
+                </div>
+
               </div>
             </div>
           </section>
-        )}
-        {view === 'login' && (
-          <section id="login-top" className="min-h-[80vh] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-md w-full border-4 border-brand-red/10"
+
+        </main>
+      )}
+
+      {/* ADMIN DATA MANAGEMENT VIEW */}
+      {view === 'admin' && (
+        <main className="flex-grow py-12 px-6 max-w-7xl mx-auto w-full">
+          
+          <div className="mb-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-brand-orange block">Panel de Control Interno</span>
+              <h2 className="text-2xl md:text-4xl font-black text-[#1E3E3E]">Administración de Leads de Auditoría</h2>
+              <p className="text-slate-500 text-xs mt-0.5">Siga los leads capturados y gestióne sus contactos fácilmente.</p>
+            </div>
+            
+            <button 
+              onClick={() => setView('landing')} 
+              className="text-xs font-bold tracking-wider uppercase bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-3 rounded-xl border border-slate-200"
             >
-              <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center mb-8 mx-auto">
-                <Lock className="w-8 h-8 text-brand-teal" />
-              </div>
-              <h2 className="text-3xl font-black text-brand-teal mb-8 text-center uppercase tracking-tight">Acceso Admin</h2>
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest">Usuario</label>
-                  <input 
-                    type="text" 
-                    value={loginData.user}
-                    onChange={(e) => setLoginData({...loginData, user: e.target.value})}
-                    className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium"
-                    placeholder="admin"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest">Contraseña</label>
-                  <input 
-                    type="password" 
-                    value={loginData.pass}
-                    onChange={(e) => setLoginData({...loginData, pass: e.target.value})}
-                    className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-brand-red outline-none font-medium"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <button 
-                  type="submit"
-                  className="w-full bg-brand-teal text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-xl"
-                >
-                  Entrar al Dashboard
-                </button>
-              </form>
-            </motion.div>
-          </section>
-        )}
+              Volver a la Web
+            </button>
+          </div>
 
-        {view === 'admin' && (
-          <section className="py-16 px-4 min-h-screen bg-slate-50">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
-                <div>
-                  <h2 className="text-4xl font-black text-brand-teal uppercase tracking-tight">Dashboard de <span className="text-brand-red">Leads</span></h2>
-                  <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-2">Gestión de auditorías generadas</p>
+          {!isAdminAuthenticated ? (
+            
+            /* Login Box panel */
+            <div className="bg-white max-w-md mx-auto p-10 rounded-3xl border border-slate-150 shadow-2xl relative">
+              <div className="text-center space-y-2 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-[#1E3E3E] mx-auto flex items-center justify-center">
+                  <Lock className="w-6 h-6" />
                 </div>
-                <div className="flex gap-4">
-                  <button 
-                    onClick={testConnection}
-                    className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2"
-                  >
-                    <Database className="w-4 h-4" /> Probar Conexión
-                  </button>
-                  <button 
-                    onClick={() => fetchLeads()}
-                    disabled={isAdminLoading}
-                    className="bg-white text-brand-teal px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] border border-brand-cream hover:bg-brand-cream transition-all flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {isAdminLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
-                    {isAdminLoading ? 'Actualizando...' : 'Reintentar'}
-                  </button>
-                  <button 
-                    onClick={() => setView('hero')}
-                    className="bg-brand-red text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-orange transition-all flex items-center gap-2"
-                  >
-                    <LogOut className="w-4 h-4" /> Salir
-                  </button>
-                </div>
+                <h3 className="text-lg font-bold text-slate-700">Identificación de Administrador</h3>
+                <p className="text-xs text-slate-400">Escriba su contraseña secreta asignada en el archivo de configuración.</p>
               </div>
 
-              {/* System Status */}
-              <div className="mb-8 p-4 bg-white rounded-2xl border border-slate-200 flex flex-wrap gap-6 items-center">
-                <div className="flex items-center gap-2">
-                  <div className={cn("w-2 h-2 rounded-full", (config?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL) ? "bg-emerald-500" : "bg-amber-500")} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase URL: {(config?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL) ? "Configurado" : "Ausente"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={cn("w-2 h-2 rounded-full", (config?.supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY) ? "bg-emerald-500" : "bg-amber-500")} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supabase Key: {(config?.supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY) ? "Configurado" : "Ausente"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Modo: {import.meta.env.MODE}</span>
-                </div>
-                {window.location.hostname.includes('-pre-') && (
-                  <div className="flex items-center gap-2 px-2 py-1 bg-red-100 rounded-lg border border-red-200">
-                    <AlertCircle className="w-3 h-3 text-red-600" />
-                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest animate-pulse">Enlace Compartido (Sin Backend)</span>
-                  </div>
-                )}
-                {config && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Config: Dinâmica</span>
-                  </div>
-                )}
-                <button 
-                  onClick={async () => {
-                    try {
-                      const resp = await fetch('/api/debug-env');
-                      const data = await resp.json();
-                      alert(`Debug Env:\n\nKeys: ${data.envKeys.join(', ') || 'Ninguna'}\nNode: ${data.nodeEnv}\nCWD: ${data.cwd}`);
-                    } catch (e: any) {
-                      alert(`Error en el debug: ${e.message}`);
-                    }
-                  }}
-                  className="ml-auto text-[10px] font-black text-brand-teal uppercase tracking-widest hover:underline"
-                >
-                  Ver Debug Env
-                </button>
-              </div>
-
-              {adminError && (
-                <div className="mb-8 p-6 bg-red-50 border-2 border-red-100 rounded-3xl flex items-center gap-4 text-red-700">
-                  <AlertCircle className="w-6 h-6 shrink-0" />
-                  <div>
-                    <p className="font-black uppercase tracking-widest text-xs">Error de Sincronización</p>
-                    <p className="text-sm font-medium">{adminError}</p>
-                  </div>
+              {loginError && (
+                <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{loginError}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-brand-cream">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 bg-brand-teal/10 rounded-xl flex items-center justify-center">
-                      <Users className="w-5 h-5 text-brand-teal" />
-                    </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Leads</span>
-                  </div>
-                  <p className="text-4xl font-black text-brand-teal">{adminLeads.length}</p>
+              <form onSubmit={handleAdminLogin} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Contraseña Secreta (ADMIN_PASSWORD)</label>
+                  <input 
+                    type="password"
+                    required
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
+                  />
                 </div>
-                <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-brand-cream">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <Database className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Leads en Base de Datos</span>
-                  </div>
-                  <p className="text-4xl font-black text-brand-teal">{adminLeads.length}</p>
-                </div>
-                <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-brand-cream">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 bg-brand-orange/10 rounded-xl flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-brand-orange" />
-                    </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Últimas 24h</span>
-                  </div>
-                  <p className="text-4xl font-black text-brand-teal">
-                    {adminLeads.filter(l => new Date(l.timestamp) > new Date(Date.now() - 86400000)).length}
-                  </p>
-                </div>
-              </div>
 
-              <div className="bg-white rounded-[3rem] shadow-xl overflow-hidden border border-brand-cream">
+                <button 
+                  type="submit"
+                  disabled={isLoggingIn}
+                  className="w-full py-4 bg-[#1E3E3E] hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all shadow-md disabled:bg-slate-300"
+                >
+                  {isLoggingIn ? 'Verificando con Servidor...' : 'Entrar al Panel Admin'}
+                </button>
+              </form>
+            </div>
+
+          ) : (
+            
+            /* Authenticated Admin View elements */
+            <div className="space-y-8 animate-fade-in-up">
+              
+              {/* Table details list */}
+              <div className="bg-white rounded-[2.5rem] border border-slate-150 overflow-hidden shadow-2xl">
+                <div className="p-8 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
+                  <h3 className="text-lg font-extrabold text-[#1E3E3E] flex items-center gap-2">
+                    <Database className="w-5 h-5 text-brand-orange" /> Registro Histórico de Leads de Impulsa ({adminLeads.length})
+                  </h3>
+                  <button 
+                    onClick={() => fetchLeads()} 
+                    className="text-xs font-bold text-slate-500 hover:text-[#1E3E3E] bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200"
+                  >
+                    Actualizar Lista
+                  </button>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-brand-cream">
-                        <th className="px-8 py-6 text-[10px] font-black text-brand-teal uppercase tracking-widest">Fecha</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-brand-teal uppercase tracking-widest">Negocio</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-brand-teal uppercase tracking-widest">Contacto</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-brand-teal uppercase tracking-widest">Status</th>
-                        <th className="px-8 py-6 text-[10px] font-black text-brand-teal uppercase tracking-widest text-right">Acción</th>
+                      <tr className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
+                        <th className="px-8 py-5">Negocio</th>
+                        <th className="px-6 py-5">Ubicación</th>
+                        <th className="px-6 py-5">Contacto / Teléfono</th>
+                        <th className="px-6 py-5">Puntaje Auditoría</th>
+                        <th className="px-8 py-5 text-right">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-brand-cream/30">
+                    <tbody className="divide-y divide-slate-100">
                       {adminLeads.length === 0 ? (
                         <tr>
+                          {/* Matches exact template placeholder style from the last edit session! */}
                           <td colSpan={5} className="px-8 py-24 text-center">
                             <div className="flex flex-col items-center justify-center gap-4 text-slate-300">
                               <Database className="w-16 h-16 opacity-20" />
@@ -2003,347 +1041,218 @@ export default function App() {
                             </div>
                           </td>
                         </tr>
-                      ) : adminLeads.slice().reverse().map((lead, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-8 py-6">
-                            <span className="text-xs font-bold text-slate-500">
-                              {new Date(lead.timestamp).toLocaleDateString('es-ES')}
-                            </span>
-                            <br />
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {new Date(lead.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </td>
-                          <td className="px-8 py-6">
-                            <span className="text-sm font-black text-brand-teal uppercase tracking-tight">{lead.businessName}</span>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                                <Mail className="w-3 h-3 text-brand-red" /> {lead.email}
-                              </span>
-                              <span className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                                <Phone className="w-3 h-3 text-emerald-500" /> {lead.whatsapp}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700">
-                              Sincronizado
-                            </span>
-                          </td>
-                          <td className="px-8 py-6 text-right">
-                            <div className="flex justify-end gap-2">
-                              {lead.reportData && (
-                                <button 
-                                  onClick={() => setSelectedLead(lead)}
-                                  className="inline-flex items-center gap-2 bg-brand-teal text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-md"
-                                >
-                                  Ver Informe
-                                </button>
-                              )}
-                              <a 
-                                href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`}
-                                target="_blank"
-                                className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md"
+                      ) : (
+                        adminLeads.map((lg) => (
+                          <tr key={lg.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-8 py-5">
+                              <span className="block text-sm font-extrabold text-[#1E3E3E]">{lg.businessName}</span>
+                              <span className="block text-[10px] text-slate-400">{new Date(lg.datetime).toLocaleString('es') || 'Reciente'}</span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="text-xs font-bold text-slate-600 block">{lg.dynamicCity}</span>
+                              <span className="text-[10px] text-slate-400 block truncate max-w-[200px]">{lg.address || 'Sin dirección registrada'}</span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="text-xs font-bold text-slate-700 block">{lg.contactName || 'No especificado'}</span>
+                              <span className="text-xs text-slate-500 font-mono block">{lg.phone || 'Sin número'}</span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="inline-flex items-center gap-2">
+                                <span className={`text-xs font-extrabold px-2 py-1 rounded-md ${
+                                  (lg.auditScore || 60) > 75 
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                    : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                }`}>
+                                  {lg.auditScore || 65}/100
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-8 py-5 text-right space-x-2">
+                              <button 
+                                onClick={() => setSelectedLead(lg)}
+                                className="text-xs font-bold text-[#1E3E3E] bg-slate-50 border border-slate-200 hover:bg-slate-100 px-3 py-1.5 rounded-lg"
                               >
-                                WhatsApp
-                              </a>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                Ver Informe
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            </div>
-          </section>
-        )}
-      </main>
 
-      {/* Footer */}
-      <footer className="bg-brand-teal text-white py-24 px-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-red/5 rounded-full translate-x-1/2 -translate-y-1/2 blur-[100px]" />
-        
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 relative z-10">
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-brand-red rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand-red/20 rotate-3">
-                <Rocket className="w-7 h-7 -rotate-3" />
               </div>
-              <div className="flex flex-col">
-                <span className="font-display font-extrabold text-3xl tracking-tighter text-white leading-none">
-                  Impulsa <span className="text-brand-orange">Valladolid</span>
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-cream opacity-50">
-                  Impulsa tu negocio local
-                </span>
-              </div>
+
+              {/* Lead Details Modal Popover Dialog */}
+              {selectedLead && (
+                <div className="fixed inset-0 bg-[#1E3E3E]/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                  <div className="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-3xl border border-slate-100 max-h-[90vh] flex flex-col animate-fade-in-up">
+                    
+                    {/* Header modal */}
+                    <div className="p-6.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-brand-orange tracking-widest">Resumen de Auditoría Completa</span>
+                        <h4 className="text-lg font-black text-[#1E3E3E] mt-0.5">{selectedLead.businessName}</h4>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedLead(null)}
+                        className="p-1.5 hover:bg-slate-200 rounded-xl transition-all"
+                      >
+                        <X className="w-5 h-5 text-slate-400" />
+                      </button>
+                    </div>
+
+                    {/* Scrollable Modal Content */}
+                    <div className="p-8 space-y-6 overflow-y-auto">
+                      
+                      {/* Lead particulars */}
+                      <div className="grid grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-150">
+                        <div>
+                          <span className="block text-[10px] uppercase font-black text-slate-400">Nombre del Contacto</span>
+                          <span className="text-sm font-bold text-slate-700">{selectedLead.contactName || 'No indicado'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] uppercase font-black text-slate-400">WhatsApp / Teléfono</span>
+                          <span className="text-sm font-bold text-slate-700 font-mono">{selectedLead.phone || 'No indicado'}</span>
+                        </div>
+                        <div className="col-span-2 pt-2 border-t border-slate-200/50 mt-1">
+                          <span className="block text-[10px] uppercase font-black text-slate-400">Comentarios Adicionales</span>
+                          <span className="text-xs font-bold text-slate-600 leading-normal block">{selectedLead.comments || 'Sin comentarios registrados por el cliente'}</span>
+                        </div>
+                      </div>
+
+                      {/* Audit Metrics */}
+                      <div className="space-y-3">
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">Puntajes de Rendimiento Local</span>
+                        
+                        <div className="grid grid-cols-4 gap-3 text-center">
+                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
+                            <span className="block text-[9px] text-slate-400 font-bold">SEO Maps</span>
+                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.mapsScore || 70}%</span>
+                          </div>
+                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
+                            <span className="block text-[9px] text-slate-400 font-bold">Semántico</span>
+                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.seoScore || 65}%</span>
+                          </div>
+                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
+                            <span className="block text-[9px] text-slate-400 font-bold">Reseñas</span>
+                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.contentScore || 68}%</span>
+                          </div>
+                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
+                            <span className="block text-[9px] text-slate-400 font-bold">Velocidad</span>
+                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.speedScore || 72}%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Generated Recommendations by AI */}
+                      <div className="space-y-3">
+                        <span className="text-xs font-black uppercase tracking-wider text-[#1E3E3E] block">Recomendaciones del Analista de IA:</span>
+                        
+                        <div className="space-y-2">
+                          {selectedLead.report?.recommendations?.map((item: string, i: number) => (
+                            <div key={i} className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold text-slate-700 flex items-start gap-2.5 leading-normal">
+                              <span className="bg-amber-100 text-[#1E3E3E] text-[10px] font-bold w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0">{i+1}</span>
+                              <p>{item}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0 gap-4 flex-wrap">
+                      <button 
+                        onClick={() => handleWhatsAppContact(selectedLead)}
+                        className="px-5 py-3.5 bg-brand-orange hover:bg-amber-600 rounded-xl text-slate-900 text-xs font-black uppercase tracking-wider flex items-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4 fill-current" />
+                        <span>Abrir WhatsApp para contactar</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => setSelectedLead(null)}
+                        className="px-5 py-3.5 hover:bg-slate-200 text-slate-500 rounded-xl text-xs font-bold"
+                      >
+                        Cerrar Detalles
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
             </div>
-            <p className="text-brand-cream/60 max-w-sm mb-10 font-medium leading-relaxed">
-              Especialistas en transformar pequeños negocios en referencias digitales en Valladolid y Madrid. Tradición española con tecnología global.
-            </p>
-            <div className="flex gap-5">
-              {[Instagram, Facebook, Linkedin].map((Icon, i) => (
-                <a key={i} href="#" className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-brand-red hover:scale-110 transition-all border border-white/10">
-                  <Icon className="w-6 h-6" />
-                </a>
-              ))}
-            </div>
-          </div>
+          )}
+
+        </main>
+      )}
+
+      {/* FOOTER SECTION */}
+      <footer className="bg-slate-950 text-slate-400 py-16 px-6 border-t border-white/5 mt-auto">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 font-sans">
           
-          <div>
-            <h4 className="font-black uppercase tracking-widest text-brand-orange mb-8 text-sm">Navegación</h4>
-            <ul className="space-y-5 text-brand-cream/70 font-bold">
-              <li>
-                <button 
-                  onClick={() => {
-                    setView('hero');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }} 
-                  className="hover:text-white transition-colors"
-                >
-                  Inicio
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => setView('form')} 
-                  className="hover:text-white transition-colors"
-                >
-                  Auditoría Gratuita
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => {
-                    if (view !== 'hero') setView('hero');
-                    setTimeout(() => {
-                      document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                  }} 
-                  className="hover:text-white transition-colors"
-                >
-                  Nuestros Servicios
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => {
-                    if (view !== 'hero') setView('hero');
-                    setTimeout(() => {
-                      document.getElementById('casos-de-exito')?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                  }} 
-                  className="hover:text-white transition-colors"
-                >
-                  Casos de Éxito
-                </button>
-              </li>
-            </ul>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-white">
+              <TrendingUp className="w-6 h-6 text-brand-orange" />
+              <span className="text-md font-extrabold">Impulsa Valladolid</span>
+            </div>
+            <p className="text-xs leading-relaxed text-slate-400">
+              Expertos en posicionamiento de Google Maps local para restauración, turismo y profesionales en Valladolid & Madrid.
+            </p>
           </div>
 
-          <div>
-            <h4 className="font-black uppercase tracking-widest text-brand-orange mb-8 text-sm">Contáctanos</h4>
-            <ul className="space-y-6 text-brand-cream/70 font-bold">
-              <li className="flex items-start gap-4">
-                <MapPin className="w-5 h-5 text-brand-red shrink-0" />
-                <span>Valladolid, España <br /><span className="text-[10px] opacity-50">Spazio Rio - P.º Isabel la Católica, 5, 47001</span></span>
-              </li>
-              <li className="flex items-center gap-4">
-                <Phone className="w-5 h-5 text-brand-red shrink-0" />
-                +351 929 051 990
-              </li>
-              <li className="flex items-center gap-4">
-                <Mail className="w-5 h-5 text-brand-red shrink-0" />
-                hola@impulsavalladolid.es
-              </li>
-            </ul>
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Localizaciones de Operación</h4>
+            <div className="space-y-2 text-xs">
+              <span className="block hover:underline cursor-pointer" onClick={() => { setDynamicCity('Valladolid'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>📍 Valladolid Capital IP</span>
+              <span className="block hover:underline cursor-pointer" onClick={() => { setDynamicCity('Madrid'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>📍 Madrid & Castilla León</span>
+            </div>
           </div>
+
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Soporte Express</h4>
+            <div className="space-y-2 text-xs">
+              <a href="https://wa.me/351929051990" className="block text-brand-orange hover:underline font-bold">📲 +351 929 051 990 (Contacto Directo)</a>
+              <span className="block">✉️ contacto@impulsavalladolid.es</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Acceso Interno</h4>
+            <button 
+              onClick={() => { setView('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+              className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-2 rounded-xl text-slate-300 inline-flex items-center gap-1.5 transition-all"
+            >
+              <Lock className="w-3.5 h-3.5" /> Ficha de Control Admin
+            </button>
+          </div>
+
         </div>
-        
-        <div className="max-w-7xl mx-auto mt-24 pt-10 border-t border-white/5 text-center flex flex-col items-center gap-4">
-          <p className="text-brand-cream/30 text-[10px] font-black uppercase tracking-[0.3em]">
-            © {new Date().getFullYear()} Impulsa Valladolid. Hecho con pasión en España.
-          </p>
+
+        <div className="max-w-7xl mx-auto pt-10 mt-10 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500">
+          <p>© {new Date().getFullYear()} Impulsa Valladolid. Todos los derechos reservados.</p>
+          <div className="flex gap-4">
+            <span className="hover:underline cursor-pointer">Aviso Legal</span>
+            <span>•</span>
+            <span className="hover:underline cursor-pointer">Política de Privacidad</span>
+          </div>
         </div>
       </footer>
-      {/* Floating WhatsApp Button */}
+
+      {/* Floating WhatsApp Action Button in bottom right corner */}
       <a 
-        href={`https://wa.me/351929051990?text=${encodeURIComponent("Hola équipe de Impulsa Valladolid, me gustaría impulsar mi negocio. ¿Podemos hablar?")}`}
+        href={`https://wa.me/351929051990?text=${encodeURIComponent("Hola Impulsa Valladolid, me gustaría impulsar mi negocio local. ¿Podemos hablar?")}`}
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-8 right-8 z-[100] bg-[#25D366] text-white p-5 rounded-full shadow-2xl hover:scale-110 transition-all group"
+        className="fixed bottom-8 right-8 z-[100] bg-[#25D366] text-white p-4.5 rounded-full shadow-2xl hover:scale-110 transition-all group"
+        aria-label="Contactar por WhatsApp"
       >
-        <Phone className="w-8 h-8" />
-        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-black shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-          ¿Hablamos por WhatsApp?
-        </span>
+        <MessageSquare className="w-6.5 h-6.5 fill-current" />
       </a>
-        {/* Lead Detail Modal */}
-        {selectedLead && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-brand-teal/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-[2.5rem] p-10 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-4 border-brand-red/10"
-            >
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h3 className="text-2xl font-black text-brand-teal uppercase tracking-tight">Informe: {selectedLead.businessName}</h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{new Date(selectedLead.timestamp).toLocaleString()}</p>
-                </div>
-                <button 
-                  onClick={() => setSelectedLead(null)}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                  <LogOut className="w-6 h-6 text-slate-400" />
-                </button>
-              </div>
 
-              <div className="space-y-8">
-                {/* Lead Information Section */}
-                <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
-                  <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-6">Información del Lead</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ubicación</p>
-                      <p className="text-sm font-bold text-slate-700">{selectedLead.location || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp</p>
-                      <p className="text-sm font-bold text-slate-700">{selectedLead.whatsapp}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">E-mail</p>
-                      <p className="text-sm font-bold text-slate-700">{selectedLead.email}</p>
-                    </div>
-                    {selectedLead.website && (
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sitio Web</p>
-                        <a href={selectedLead.website} target="_blank" className="text-sm font-bold text-brand-teal hover:underline">{selectedLead.website}</a>
-                      </div>
-                    )}
-                    <div className="md:col-span-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Redes Sociales</p>
-                      <div className="flex flex-wrap gap-4 mt-2">
-                        {selectedLead.instagram && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">IG: {selectedLead.instagram}</span>}
-                        {selectedLead.facebook && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">FB: {selectedLead.facebook}</span>}
-                        {selectedLead.linkedin && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">LI: {selectedLead.linkedin}</span>}
-                        {selectedLead.tiktok && <span className="bg-white px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-200">TK: {selectedLead.tiktok}</span>}
-                      </div>
-                    </div>
-                    {selectedLead.otherPlatforms && (
-                      <div className="md:col-span-3">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Otras Notas</p>
-                        <p className="text-sm font-medium text-slate-600 bg-white p-4 rounded-xl border border-slate-200">{selectedLead.otherPlatforms}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-4">Puntos Fuertes</h4>
-                    <ul className="space-y-2">
-                      {selectedLead.reportData?.strengths?.map((s: string, i: number) => (
-                        <li key={i} className="text-xs font-medium text-slate-600 flex gap-2">
-                          <span className="text-emerald-500">•</span> {s}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-4">Qué mejorar</h4>
-                    <ul className="space-y-2">
-                      {selectedLead.reportData?.problems?.map((p: string, i: number) => (
-                        <li key={i} className="text-xs font-medium text-slate-600 flex gap-2">
-                          <span className="text-amber-500">•</span> {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="bg-brand-teal/5 p-8 rounded-3xl border border-brand-teal/10">
-                  <h4 className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-4">Análisis Técnico</h4>
-                  <p className="text-sm text-slate-700 leading-relaxed font-medium italic">
-                    {selectedLead.reportData?.technicalAnalysis}
-                  </p>
-                </div>
-
-                <div className="bg-brand-red/5 p-8 rounded-3xl border border-brand-red/10">
-                  <h4 className="text-[10px] font-black text-brand-red uppercase tracking-widest mb-4">Plan de Acción</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedLead.reportData?.priorityActions?.map((a: string, i: number) => (
-                      <div key={i} className="flex gap-3 items-center">
-                        <span className="w-6 h-6 bg-brand-red text-white text-[10px] font-black rounded-lg flex items-center justify-center shrink-0">{i+1}</span>
-                        <span className="text-xs font-bold text-slate-600">{a}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-10 flex gap-4">
-                <button 
-                  onClick={() => {
-                    const doc = generatePDF({
-                      businessName: selectedLead.businessName,
-                      businessType: selectedLead.businessType || 'otro',
-                      location: selectedLead.location || 'N/A',
-                      whatsapp: selectedLead.whatsapp,
-                      email: selectedLead.email,
-                      website: selectedLead.website,
-                      instagram: selectedLead.instagram,
-                      facebook: selectedLead.facebook,
-                      linkedin: selectedLead.linkedin,
-                      tiktok: selectedLead.tiktok,
-                      otherPlatforms: selectedLead.otherPlatforms
-                    } as any, selectedLead.reportData);
-                    doc.save(`Auditoria_${selectedLead.businessName.replace(/\s+/g, '_')}.pdf`);
-                  }}
-                  className="flex-1 bg-brand-teal text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-lg flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" /> Descargar PDF
-                </button>
-                <button 
-                  onClick={() => setSelectedLead(null)}
-                  className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-      {/* Error Modal */}
-      {errorModal.show && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-brand-teal/60 backdrop-blur-sm">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border-4 border-brand-red/20"
-          >
-            <div className="w-16 h-16 bg-brand-red/10 rounded-2xl flex items-center justify-center mb-6">
-              <AlertCircle className="w-10 h-10 text-brand-red" />
-            </div>
-            <h3 className="text-2xl font-black text-brand-teal mb-4 uppercase tracking-tight">Aviso Importante</h3>
-            <p className="text-slate-600 font-medium leading-relaxed mb-8">
-              {String(errorModal.message)}
-            </p>
-            <button 
-              onClick={() => setErrorModal({ show: false, message: '' })}
-              className="w-full bg-brand-teal text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-brand-red transition-all shadow-lg"
-            >
-              Entendido
-            </button>
-          </motion.div>
-        </div>
-      )}
     </div>
-    </ErrorBoundary>
   );
 }

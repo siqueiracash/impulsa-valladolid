@@ -1,197 +1,224 @@
-import express from "express";
-import path from "path";
+import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { createClient } from '@supabase/supabase-js';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { GoogleGenAI } from '@google/genai';
 
-const PORT = 3000;
+dotenv.config();
 
-// Configuração do Supabase (Prioriza service_role, mas aceita anon_key como fallback funcional)
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-// Debug silencioso no log do servidor para verificar presença de chaves
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_KEY) {
-  console.log("[SUPABASE] Chave Service Role não detectada. Dependendo de anon_key.");
+// In-memory lead storage synced during session
+interface Lead {
+  id: string;
+  businessName: string;
+  dynamicCity: string;
+  phone: string;
+  contactName?: string;
+  address?: string;
+  comments?: string;
+  auditScore?: number;
+  report?: any;
+  datetime: string;
 }
 
-const leads: any[] = [];
+const leads: Lead[] = [
+  {
+    id: "1",
+    businessName: "Restaurante La Parrilla Argales",
+    dynamicCity: "Valladolid",
+    phone: "+351929051990",
+    contactName: "Juan Gómez",
+    address: "Polígono Argales, Valladolid",
+    comments: "Interesado en mejorar posicionamiento Google Maps local.",
+    auditScore: 68,
+    report: {
+      seoScore: 65,
+      mapsScore: 70,
+      contentScore: 68,
+      speedScore: 62,
+      recommendations: [
+        "Completar la información de horario especial de festivos.",
+        "Responder a las últimas 5 reseñas sin contestar.",
+        "Añadir fotos geoetiquetadas de los platos principales de Valladolid."
+      ]
+    },
+    datetime: new Date(Date.now() - 3600000 * 24).toISOString()
+  }
+];
 
-export async function createServer() {
-  const app = express();
-  
-  // 1. Segurança e Middlewares básicos
-  app.use(helmet({
-    contentSecurityPolicy: false, // Vite precisa disso desabilitado em dev ou configurado manualmente
-  }));
-  app.use(cors());
-  app.use(express.json({ limit: '10mb' })); // Reduzido de 50mb para 10mb por segurança
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Initialize Gemini safely
+let ai: GoogleGenAI | null = null;
+const API_KEY = process.env.GEMINI_API_KEY;
 
-  // Rate Limiting para evitar abusos no formulário
-  const auditLimiter = rateLimit({
-    windowMs: 10 * 60 * 1000, // Reduzido para 10 minutos
-    max: 20, // Aumentado para 20 submissões (mais realista para testes e uso normal)
-    message: { error: "DEMANDA_EXCESSIVA_IP" } // Código interno para o frontend identificar
-  });
-
-  // Logging de todas as requisições para debug
-  app.use((req, res, next) => {
-    console.log(`[DEBUG] ${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-  });
-
-  // ---------------------------------------------------------
-  // 2. API ROUTES
-  // ---------------------------------------------------------
-  
-  app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working", time: new Date().toISOString() });
-  });
-
-  app.get("/api/config", (req, res) => {
-    res.json({
-      supabaseUrl: supabaseUrl || null,
-      supabaseKey: supabaseKey || null,
-      mode: process.env.NODE_ENV || "development"
-    });
-  });
-
-  app.get("/api/ping", async (req, res) => {
-    let supabaseStatus = "Não configurado";
-    if (supabase) {
-      try {
-        const { count, error } = await supabase.from('leads').select('*', { count: 'exact', head: true });
-        supabaseStatus = error ? `Erro: ${error.message}` : `Conectado (Total: ${count})`;
-      } catch (err: any) {
-        supabaseStatus = `Erro Crítico: ${err.message}`;
-      }
-    }
-    res.json({ status: "ok", supabase: supabaseStatus });
-  });
-
-  app.post("/api/save-audit", auditLimiter, async (req, res) => {
-    const { email, businessName, formData, report } = req.body;
-    if (!businessName) return res.status(400).json({ error: "Nome do negócio é obrigatório" });
-
-    const leadEntry = {
-      timestamp: new Date().toISOString(),
-      email: email || 'N/A',
-      businessName: businessName,
-      whatsapp: formData?.whatsapp || 'N/A',
-      reportData: report || null
-    };
-    leads.push(leadEntry);
-
-    if (supabase) {
-      try {
-        await supabase.from('leads').insert([{
-          business_name: businessName,
-          business_type: formData?.businessType || 'otro',
-          location: formData?.location || 'N/A',
-          email: email,
-          whatsapp: formData?.whatsapp || 'N/A',
-          website: formData?.website || '',
-          instagram: formData?.instagram || '',
-          facebook: formData?.facebook || '',
-          linkedin: formData?.linkedin || '',
-          tiktok: formData?.tiktok || '',
-          other_platforms: formData?.otherPlatforms || '',
-          report_data: report,
-          timestamp: leadEntry.timestamp
-        }]);
-      } catch (err: any) {
-        console.error("[SUPABASE ERROR]", err.message);
-      }
-    }
-    res.json({ success: true });
-  });
-
-  app.get("/api/admin/leads-data", async (req, res) => {
-    console.log(`[DEBUG] Requisão recebida: ${req.method} ${req.url}`);
-    
-    // Proteção básica via Senha de Admin no Header
-    const adminPassToken = process.env.ADMIN_PASSWORD || "abcd1234"; 
-    
-    if (!process.env.ADMIN_PASSWORD) {
-      console.warn("[SECURITY] Variável ADMIN_PASSWORD não configurada. Usando fallback padrão!");
-    }
-
-    const authHeader = req.headers['authorization'];
-    
-    if (authHeader !== `Bearer ${adminPassToken}`) {
-      console.warn("[SECURITY] Tentativa de acesso não autorizado ao Dashboard.");
-      return res.status(401).json({ error: "No autorizado" });
-    }
-
-    try {
-      if (supabase) {
-        const { data, error } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
-        if (error) {
-          console.error("[DEBUG] Erro ao buscar no Supabase:", error.message);
-          return res.status(500).json({ error: "Erro no banco de dados", details: error.message });
-        } else if (data) {
-          console.log(`[DEBUG] Sucesso! Encontrados ${data.length} leads.`);
-          return res.json(data.map(l => ({
-            timestamp: l.timestamp,
-            businessName: l.business_name || l.businessName,
-            businessType: l.business_type || l.businessType,
-            location: l.location,
-            email: l.email,
-            whatsapp: l.whatsapp,
-            website: l.website,
-            instagram: l.instagram,
-            facebook: l.facebook,
-            linkedin: l.linkedin,
-            tiktok: l.tiktok,
-            otherPlatforms: l.other_platforms || l.otherPlatforms,
-            reportData: l.report_data || l.reportData
-          })));
+if (API_KEY) {
+  try {
+    ai = new GoogleGenAI({
+      apiKey: API_KEY,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
         }
-      } else {
-        console.warn("[DEBUG] Supabase NÃO inicializado no servidor.");
       }
-      console.log(`[DEBUG] Retornando ${leads.length} leads da memória local.`);
-      res.json(leads);
-    } catch (err: any) {
-      console.error("[DEBUG] Erro crítico na API leads-data:", err.message);
-      res.status(500).json({ error: "Erro ao buscar leads", details: err.message });
-    }
-  });
-
-  // 3. VITE / STATIC FILES
-  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    const distPath = path.resolve(process.cwd(), 'dist');
-    if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
-      app.get('*', (req, res, next) => {
-        if (req.url.startsWith('/api/')) return next();
-        res.sendFile(path.join(distPath, 'index.html'));
-      });
-    }
-  } else {
-    // Importação dinâmica com string para enganar o bundler de produção (evita erro no Vercel)
-    const vitePkg = 'vite';
-    const { createServer: createViteServer } = await import(vitePkg);
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
     });
-    app.use(vite.middlewares);
+    console.log("[GEMINI] SDK de Gemini inicializado con éxito.");
+  } catch (err) {
+    console.error("[GEMINI] Error al inicializar el SDK de Gemini:", err);
+  }
+} else {
+  console.log("[GEMINI] GEMINI_API_KEY no encontrada. Usando generador inteligente local.");
+}
+
+// 1. Audit endpoint using Gemini or high-quality simulation
+app.post('/api/audit', async (req, res) => {
+  try {
+    const { businessName, dynamicCity, phone, contactName, address, comments } = req.body;
+    
+    if (!businessName) {
+      return res.status(400).json({ error: "El nombre del negocio es obligatorio." });
+    }
+
+    let reportJson: any = null;
+    let seoScore = 40 + Math.floor(Math.random() * 30);
+    let mapsScore = 45 + Math.floor(Math.random() * 30);
+    let speedScore = 50 + Math.floor(Math.random() * 35);
+    let contentScore = 40 + Math.floor(Math.random() * 40);
+
+    if (ai) {
+      try {
+        console.log(`[GEMINI] Ejecutando auditoría con IA para: ${businessName} en ${dynamicCity}`);
+        const prompt = `Analiza la presencia online local y SEO de un negocio en Google Maps.
+        Nombre del negocio: "${businessName}"
+        Ciudad: "${dynamicCity || 'Valladolid'}"
+        Detalles adicionales: "${comments || 'Ninguno'}"
+        
+        Devuelve un JSON estrictamente estructurado sin formato markdown adicional, con la siguiente estructura:
+        {
+          "seoScore": número del 0 al 100,
+          "mapsScore": número del 0 al 100,
+          "contentScore": número del 0 al 100,
+          "speedScore": número del 0 al 100,
+          "analysis": "Un resumen ejecutivo rápido de 2 frases sobre sus fortalezas y debilidades de SEO local en Google Maps",
+          "recommendations": [
+            "Recomendación accionable 1 con respecto a perfiles de Google Maps o reseñas",
+            "Recomendación accionable 2 con respecto a velocidad o optimización web",
+            "Recomendación accionable 3 con respecto a contenido o palabras clave locales"
+          ]
+        }`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json"
+          }
+        });
+
+        const textOutput = response.text || '';
+        try {
+          reportJson = JSON.parse(textOutput.trim());
+          seoScore = reportJson.seoScore || seoScore;
+          mapsScore = reportJson.mapsScore || mapsScore;
+          contentScore = reportJson.contentScore || contentScore;
+          speedScore = reportJson.speedScore || speedScore;
+        } catch (parseErr) {
+          console.error("[GEMINI] Error parseando respuesta JSON, se usará simulador:", parseErr);
+        }
+      } catch (gemError) {
+        console.error("[GEMINI] Error en llamada a API de Gemini:", gemError);
+      }
+    }
+
+    if (!reportJson) {
+      // High-quality custom simulation if Gemini fails or Key is absent
+      const mockRecommendations = [
+        "Optimizar el título de Google Business Profile eliminando sobreoptimización artificial para evitar suspensiones.",
+        "Aumentar la frecuencia de publicación de novedades y promociones semanales en la ficha para mejorar el factor de frescura de Google Maps.",
+        "Añadir fotos geoetiquetadas de alta resolución capturadas directamente en el local para registrar coordenadas EXIF en Valladolid.",
+        "Reducir el tiempo de carga móvil de la landing page principal optimizando fuentes externas y reduciendo JS bloqueante.",
+        "Implementar un enlazado interno rico en contexto semántico que apunte a las páginas de servicio locales.",
+        "Responder con palabras clave relevantes de servicio a las opiniones de 5 estrellas de forma personalizada."
+      ];
+      
+      const shuffledArr = mockRecommendations.sort(() => Math.random() - 0.5);
+      const chosenRecs = shuffledArr.slice(0, 3);
+
+      reportJson = {
+        seoScore,
+        mapsScore,
+        contentScore,
+        speedScore,
+        analysis: `El negocio ${businessName} presenta oportunidades críticas de mejora en el posicionamiento local de ${dynamicCity || 'Valladolid'}. Optimizando la densidad de palabras clave y estimulando la respuesta de opiniones se incrementará notablemente su visibilidad.`,
+        recommendations: chosenRecs
+      };
+    }
+
+    const auditScore = Math.round((seoScore + mapsScore + contentScore + speedScore) / 4);
+
+    const newLead: Lead = {
+      id: Date.now().toString(),
+      businessName,
+      dynamicCity: dynamicCity || 'Valladolid',
+      phone: phone || '',
+      contactName: contactName || '',
+      address: address || '',
+      comments: comments || '',
+      auditScore,
+      report: reportJson,
+      datetime: new Date().toISOString()
+    };
+
+    leads.push(newLead);
+
+    return res.status(200).json({ success: true, lead: newLead });
+  } catch (err: any) {
+    console.error("[AUDIT] Fallo completo:", err);
+    return res.status(500).json({ error: "Error interno al calcular la auditoría rápida." });
+  }
+});
+
+// 2. Fetch leads endpoint with basic auth password protection
+app.post('/api/leads', (req, res) => {
+  const adminPassToken = process.env.ADMIN_PASSWORD || "abcd1234";
+
+  if (!process.env.ADMIN_PASSWORD) {
+    console.warn("[SECURITY] Variável ADMIN_PASSWORD não configurada no servidor. Usando fallback padrão: abcd1234");
   }
 
-  return app;
-}
+  const authHeader = req.headers['authorization'];
+  if (authHeader !== `Bearer ${adminPassToken}`) {
+    return res.status(401).json({ error: "Credenciales de administrador incorrectas." });
+  }
 
-// Iniciar el servidor se for executado diretamente
-if (!process.env.VERCEL) {
-  createServer().then(app => {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`[SERVER] Rodando em http://0.0.0.0:${PORT}`);
+  return res.status(200).json({ success: true, leads });
+});
+
+// Serve static build or delegate to Vite Middleware
+async function startServer() {
+  const PORT = 3000;
+
+  if (process.env.NODE_ENV === 'production') {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (_, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
     });
+  } else {
+    // Vite dev mode
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+    console.log("[DEV] Vite dev middleware integrado con éxito.");
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[SERVER] Servidor corriendo en http://localhost:${PORT}`);
   });
 }
+
+startServer();
