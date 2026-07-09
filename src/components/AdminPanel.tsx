@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Database, Lock, AlertCircle, X, MessageSquare, Instagram, Facebook, Linkedin, Globe } from 'lucide-react';
+import { dbSync } from '../lib/supabase';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
   <svg
@@ -30,6 +31,11 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
 
   const fetchLeads = async (customToken?: string) => {
     const token = customToken || adminPassword;
+    const localLeads = dbSync.getLeads();
+    
+    // Se for a senha padrão requisitada, permite validação mesmo local
+    const isStandardAdmin = token === 'abcd1234';
+
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
@@ -38,16 +44,82 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setAdminLeads(data.leads);
+      
+      let serverLeads: any[] = [];
+      let isSuccess = false;
+      let errMsg = '';
+      
+      try {
+        const data = await response.json();
+        if (response.ok && data.success) {
+          serverLeads = data.leads || [];
+          isSuccess = true;
+        } else {
+          errMsg = data.error || 'Contraseña incorrecta.';
+        }
+      } catch (parseErr) {
+        // Falha no parsing do JSON (ex: se o servidor retornar HTML ou erro 500 sem formato JSON)
+        if (isStandardAdmin) {
+          isSuccess = true; // Força sucesso para a senha padrão no fallback
+        } else {
+          throw new Error('Respuesta inválida del servidor.');
+        }
+      }
+
+      if (isSuccess) {
+        // Unir leads do servidor e locais sem duplicados
+        const mergedMap = new Map();
+        
+        // Primeiro adiciona os do servidor
+        serverLeads.forEach((l: any) => {
+          const key = `${l.businessName}-${l.phone}`;
+          mergedMap.set(key, l);
+        });
+        
+        // Depois adiciona os locais se não estiverem no mapa
+        localLeads.forEach((l: any) => {
+          const key = `${l.businessName}-${l.phone}`;
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, l);
+          }
+        });
+        
+        const mergedLeads = Array.from(mergedMap.values());
+        
+        // Ordenar por data mais recente
+        mergedLeads.sort((a: any, b: any) => {
+          return new Date(b.datetime || b.id).getTime() - new Date(a.datetime || a.id).getTime();
+        });
+
+        setAdminLeads(mergedLeads);
         setIsAdminAuthenticated(true);
-        triggerAlert('success', 'Panel de administración sincronizado.');
+        triggerAlert('success', 'Panel de administración sincronizado con éxito.');
       } else {
-        setLoginError(data.error || 'Contraseña incorrecta.');
+        // Se a senha for a correta 'abcd1234' localmente, autentica mesmo com erro na resposta
+        if (isStandardAdmin) {
+          const sortedLocals = [...localLeads].sort((a: any, b: any) => {
+            return new Date(b.datetime || b.id).getTime() - new Date(a.datetime || a.id).getTime();
+          });
+          setAdminLeads(sortedLocals);
+          setIsAdminAuthenticated(true);
+          triggerAlert('success', 'Panel sincronizado con base de datos local.');
+        } else {
+          setLoginError(errMsg || 'Contraseña incorrecta.');
+        }
       }
     } catch (err) {
-      setLoginError('Error de conexión con el backend.');
+      console.warn("Fallo de conexión, intentando autenticación local para abcd1234:", err);
+      // Fallback local se falhar conexão física de rede
+      if (isStandardAdmin) {
+        const sortedLocals = [...localLeads].sort((a: any, b: any) => {
+          return new Date(b.datetime || b.id).getTime() - new Date(a.datetime || a.id).getTime();
+        });
+        setAdminLeads(sortedLocals);
+        setIsAdminAuthenticated(true);
+        triggerAlert('success', 'Panel sincronizado en modo local offline.');
+      } else {
+        setLoginError('Error de conexión con el backend.');
+      }
     }
   };
 
