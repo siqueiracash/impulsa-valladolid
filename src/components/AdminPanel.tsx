@@ -94,6 +94,23 @@ export default function AdminPanel({ setView, triggerAlert }: AdminPanelProps) {
         setAdminLeads(mergedLeads);
         setIsAdminAuthenticated(true);
         triggerAlert('success', 'Panel de administración sincronizado con éxito.');
+
+        // Sincronizar de vuelta al servidor en segundo plano si hay leads locales ausentes
+        if (localLeads.length > 0) {
+          try {
+            fetch('/api/sync-leads', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ leads: localLeads })
+            }).then(r => r.json()).then(resData => {
+              console.log("[SYNC] Sincronización automática completada:", resData);
+            }).catch(e => console.warn("[SYNC] Error en sincronización:", e));
+          } catch (syncErr) {
+            console.warn("[SYNC] No se pudo iniciar fetch de sincronización:", syncErr);
+          }
+        }
       } else {
         // Se a senha for a correta 'abcd1234' localmente, autentica mesmo com erro na resposta
         if (isStandardAdmin) {
