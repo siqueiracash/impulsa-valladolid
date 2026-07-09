@@ -1,66 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Sparkles, 
   TrendingUp, 
-  MapPin, 
-  Map, 
   Phone, 
-  User, 
   CheckCircle, 
   MessageSquare, 
   ArrowRight, 
   Lock, 
-  Search, 
-  Database, 
   AlertCircle, 
   Star, 
   Check, 
-  ChevronRight,
   Menu,
   X,
-  Award
+  Camera,
+  Ghost,
+  MousePointer,
+  Handshake,
+  Target,
+  Gem,
+  Mail,
+  Globe,
+  ChevronDown,
+  Shield
 } from 'lucide-react';
-import { dbSync } from './lib/supabase';
+
+// Modular component imports
+import AntesDespues from './components/AntesDespues';
+import { GoogleMapsMobileMockup, StorefrontLaCasa, InstagramReelsMockup } from './components/SlideMockups';
+import AuditForm from './components/AuditForm';
+import AdminPanel from './components/AdminPanel';
 
 export default function App() {
-  // Navigation & View States
   const [view, setView] = useState<'landing' | 'admin'>('landing');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Dynamic City (defaults to Valladolid)
-  const [dynamicCity, setDynamicCity] = useState('Valladolid');
-  
-  // Lead submission form
-  const [businessName, setBusinessName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [address, setAddress] = useState('');
-  const [comments, setComments] = useState('');
-  
-  // Audit runner status
-  const [isAuditing, setIsAuditing] = useState(false);
-  const [auditProgress, setAuditProgress] = useState('');
-  const [currentScore, setCurrentScore] = useState<any>(null);
-  
-  // Admin Login
-  const [adminPassword, setAdminPassword] = useState('');
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [adminLeads, setAdminLeads] = useState<any[]>([]);
-  const [selectedLead, setSelectedLead] = useState<any>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginError, setLoginError] = useState('');
-
-  // Floating notifications or test logs
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'err'; text: string } | null>(null);
-
-  // Sync client-side cached leads into component local state
-  useEffect(() => {
-    // If we have local cached leads for user display
-    const cachedLeads = dbSync.getLeads();
-    if (cachedLeads.length > 0 && adminLeads.length === 0) {
-      // Just populate initial client state
-    }
-  }, []);
 
   // Quick feedback alert helper
   const triggerAlert = (type: 'success' | 'err', text: string) => {
@@ -68,134 +41,6 @@ export default function App() {
     setTimeout(() => {
       setAlertMsg(null);
     }, 4000);
-  };
-
-  // Run the audit
-  const runAudit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!businessName) {
-      triggerAlert('err', 'El nombre del negocio es obligatorio para la auditoría.');
-      return;
-    }
-
-    setIsAuditing(true);
-    setCurrentScore(null);
-
-    const progressSteps = [
-      "🔍 Localizando negocio local en Google Maps...",
-      "⚡ Analizando posicionamiento semántico local...",
-      "📊 Evaluando velocidad móvil y experiencia web...",
-      "✨ Redactando recomendaciones SEO accionables con Inteligencia Artificial..."
-    ];
-
-    // Loop through progress steps for immersive visual experience
-    for (let i = 0; i < progressSteps.length; i++) {
-      setAuditProgress(progressSteps[i]);
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-    }
-
-    try {
-      const response = await fetch('/api/audit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          businessName,
-          dynamicCity,
-          phone,
-          contactName,
-          address,
-          comments
-        })
-      });
-
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setCurrentScore(data.lead);
-        // Persist local duplicate so user can see their own leads even on refresh
-        dbSync.saveLead(data.lead);
-        triggerAlert('success', '¡Auditoría generada con éxito!');
-      } else {
-        throw new Error(data.error || 'Ocurrió un error en el servidor.');
-      }
-    } catch (err: any) {
-      console.error(err);
-      triggerAlert('err', err.message || 'Error de conexión con el servidor. Usando simulador local.');
-      
-      // Local fallback simulator if API is blocked or offline
-      const mockResult = {
-        id: Date.now().toString(),
-        businessName,
-        dynamicCity,
-        phone,
-        contactName,
-        address,
-        comments,
-        auditScore: 71,
-        report: {
-          seoScore: 68,
-          mapsScore: 75,
-          contentScore: 70,
-          speedScore: 72,
-          analysis: `El negocio ${businessName} muestra un excelente potencial pero adolece de inconsistencia en sus datos NAP (Name, Address, Phone) en ${dynamicCity}. Corrigiendo esto ganará ventaja frente a la competencia.`,
-          recommendations: [
-            "Actualizar el horario comercial especial festivo para evitar frustrar visitas de clientes.",
-            "Estimular a clientes recientes para que aporten reseñas de 5 estrellas mencionando Valladolid.",
-            "Optimizar la compresión de imágenes pesadas de la web principal para subir la velocidad en móviles."
-          ]
-        },
-        datetime: new Date().toISOString()
-      };
-      setCurrentScore(mockResult);
-      dbSync.saveLead(mockResult);
-    } finally {
-      setIsAuditing(false);
-    }
-  };
-
-  // Fetch leads for Admin View
-  const fetchLeads = async (customToken?: string) => {
-    const token = customToken || adminPassword;
-    try {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setAdminLeads(data.leads);
-        setIsAdminAuthenticated(true);
-        triggerAlert('success', 'Panel de administración sincronizado.');
-      } else {
-        setLoginError(data.error || 'Contraseña incorrecta.');
-      }
-    } catch (err) {
-      setLoginError('Error de conexión con el backend.');
-    }
-  };
-
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-    setIsLoggingIn(true);
-    
-    // Slight simulated network delay
-    setTimeout(async () => {
-      await fetchLeads();
-      setIsLoggingIn(false);
-    }, 800);
-  };
-
-  // Action to send whatsapp message
-  const handleWhatsAppContact = (leadData: any) => {
-    const score = leadData.auditScore || 65;
-    const message = `Hola, acabo de realizar la auditoría gratuita para mi negocio: *${leadData.businessName}* con un puntaje de *${score}/100*. Me gustaría recibir el informe completo y hablar sobre cómo podéis ayudarme a crecer. 🚀`;
-    const whatsappUrl = `https://wa.me/351929051990?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
   };
 
   // Smooth scroll to element id
@@ -208,50 +53,58 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FDFBF7] text-slate-900 transition-colors selection:bg-brand-orange/30 selection:text-slate-900 relative">
+    <div className="min-h-screen flex flex-col bg-brand-dark text-stone-100 transition-colors selection:bg-brand-gold/30 selection:text-white relative">
       
-      {/* Visual background atmospheric effects - NO simulated infrastructure tags/logs */}
-      <div className="absolute top-0 left-0 right-0 h-[600px] bg-gradient-to-b from-[#FFF5E6]/60 to-transparent pointer-events-none -z-10" />
+      {/* Background ambient atmospheric glow */}
+      <div className="absolute top-0 left-0 right-0 h-[800px] bg-gradient-to-b from-brand-gold/10 via-brand-dark-sec/5 to-transparent pointer-events-none -z-10" />
 
-      {/* Floating Alert Alert Banner */}
+      {/* Floating Alert Banner */}
       {alertMsg && (
-        <div className={`fixed top-6 right-6 z-[120] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl transition-all duration-300 animate-fade-in-up ${
+        <div className={`fixed top-6 right-6 z-[120] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl transition-all duration-350 animate-fade-in-up ${
           alertMsg.type === 'success' 
             ? 'bg-emerald-600 text-white border border-emerald-500/20' 
-            : 'bg-rose-600 text-white border border-rose-500/20'
+            : 'bg-brand-crimson text-white border border-brand-crimson/20'
         }`}>
-          {alertMsg.type === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+          {alertMsg.type === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0 text-white" /> : <AlertCircle className="w-5 h-5 flex-shrink-0 text-white" />}
           <p className="text-sm font-semibold">{alertMsg.text}</p>
         </div>
       )}
 
-      {/* Modern Header Header */}
-      <header className="sticky top-0 z-50 bg-[#FDFBF7]/90 backdrop-blur-md border-b border-brand-teal/5 transition-all">
+      {/* Premium Header Nav */}
+      <header className="sticky top-0 z-50 bg-brand-dark/90 backdrop-blur-md border-b border-brand-gold/10 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
-          {/* Brand Logo & Name */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <div className="w-11 h-11 rounded-2xl bg-[#1E3E3E] text-white flex items-center justify-center shadow-lg shadow-brand-teal/10 hover:scale-105 transition-all">
-              <TrendingUp className="w-6 h-6 text-amber-400" />
+          {/* Custom SVG Brand Logo & Name */}
+          <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <div className="flex items-center justify-center p-1.5 bg-brand-dark-sec rounded-2xl border border-brand-gold/20 shadow-lg hover:scale-105 transition-all">
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Custom vector Map Pin */}
+                <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 5.02944 7.02944 1 12 1C16.9706 1 21 5.02944 21 10Z" fill="#CE2D30" stroke="#CE2D30" strokeWidth="1.5" />
+                <circle cx="12" cy="10" r="5" fill="#0E0908" />
+                {/* Ascending bar chart inside */}
+                <rect x="9" y="10" width="1.5" height="3" rx="0.5" fill="#E29B30" />
+                <rect x="11.25" y="8.5" width="1.5" height="4.5" rx="0.5" fill="#E29B30" />
+                <rect x="13.5" y="7" width="1.5" height="6" rx="0.5" fill="#E29B30" />
+              </svg>
             </div>
             <div>
-              <span className="text-lg font-extrabold tracking-tight text-[#1E3E3E] block">Impulsa</span>
-              <span className="text-[10px] uppercase tracking-[0.2em] -mt-1 block text-brand-orange font-black">Valladolid</span>
+              <span className="text-lg font-black tracking-tight text-white block">Impulsa</span>
+              <span className="text-[10px] uppercase tracking-[0.25em] -mt-1 block text-brand-gold font-bold">Valladolid</span>
             </div>
           </div>
 
           {/* Desktop Navigation */}
           {view === 'landing' ? (
             <nav className="hidden md:flex items-center gap-8">
-              <button onClick={() => scrollToId('ventajas')} className="text-sm font-bold text-slate-600 hover:text-[#1E3E3E] transition-all">Nuestros Servicios</button>
-              <button onClick={() => scrollToId('casos')} className="text-sm font-bold text-slate-600 hover:text-[#1E3E3E] transition-all">Casos de Éxito</button>
-              <button onClick={() => scrollToId('planes')} className="text-sm font-bold text-slate-600 hover:text-[#1E3E3E] transition-all">Metas & Planes</button>
-              <button onClick={() => setView('admin')} className="text-sm font-bold text-slate-500 hover:text-[#1E3E3E] flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition-all">
-                <Lock className="w-4 h-4" /> Admin
+              <button onClick={() => scrollToId('ventajas')} className="text-xs font-bold uppercase tracking-wider text-stone-400 hover:text-white transition-all">¿Por Qué Nosotros?</button>
+              <button onClick={() => scrollToId('casos-reales')} className="text-xs font-bold uppercase tracking-wider text-stone-400 hover:text-white transition-all">Casos de Éxito</button>
+              <button onClick={() => scrollToId('planes-precios')} className="text-xs font-bold uppercase tracking-wider text-stone-400 hover:text-white transition-all">Tarifas</button>
+              <button onClick={() => setView('admin')} className="text-xs font-bold uppercase tracking-wider text-stone-500 hover:text-brand-gold flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all">
+                <Lock className="w-3.5 h-3.5" /> Admin
               </button>
               <button 
                 onClick={() => scrollToId('auditoria')} 
-                className="bg-[#1E3E3E] text-white text-xs font-extrabold tracking-wider uppercase px-5 py-3 rounded-xl shadow-lg hover:bg-[#2e5757] hover:shadow-brand-teal/15 transition-all"
+                className="bg-brand-gold text-brand-dark text-xs font-black tracking-wider uppercase px-5 py-3 rounded-xl shadow-lg hover:bg-amber-600 transition-all cursor-pointer"
               >
                 Auditoría Gratuita
               </button>
@@ -260,18 +113,10 @@ export default function App() {
             <nav className="flex items-center gap-4">
               <button 
                 onClick={() => setView('landing')} 
-                className="text-sm font-bold text-[#1E3E3E] hover:underline"
+                className="text-xs font-bold uppercase tracking-wider text-brand-gold hover:underline"
               >
                 Volver a la Web
               </button>
-              {isAdminAuthenticated && (
-                <button 
-                  onClick={() => { setIsAdminAuthenticated(false); setAdminPassword(''); }} 
-                  className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100 hover:bg-rose-100 transition-all"
-                >
-                  Cerrar Sesión
-                </button>
-              )}
             </nav>
           )}
 
@@ -279,7 +124,7 @@ export default function App() {
           {view === 'landing' && (
             <button 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-              className="md:hidden p-2 rounded-xl text-[#1E3E3E] hover:bg-brand-cream/60 transition-all"
+              className="md:hidden p-2 rounded-xl text-stone-200 hover:bg-white/5 transition-all"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -289,16 +134,16 @@ export default function App() {
 
         {/* Mobile menu panel */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-[#FDFBF7] border-b border-brand-teal/5 py-6 px-6 space-y-4 animate-fade-in-up">
-            <button onClick={() => scrollToId('ventajas')} className="block w-full text-left font-bold text-slate-600 hover:text-[#1E3E3E] py-2">Nuestros Servicios</button>
-            <button onClick={() => scrollToId('casos')} className="block w-full text-left font-bold text-slate-600 hover:text-[#1E3E3E] py-2">Casos de Éxito</button>
-            <button onClick={() => scrollToId('planes')} className="block w-full text-left font-bold text-slate-600 hover:text-[#1E3E3E] py-2">Metas & Planes</button>
-            <button onClick={() => { setView('admin'); setMobileMenuOpen(false); }} className="block w-full text-left font-bold text-slate-500 hover:text-[#1E3E3E] py-2 flex items-center gap-1.5">
-              <Lock className="w-4 h-4" /> Admin Panel
+          <div className="md:hidden bg-brand-dark border-b border-brand-gold/10 py-6 px-6 space-y-4 animate-fade-in-up">
+            <button onClick={() => scrollToId('ventajas')} className="block w-full text-left font-bold text-stone-300 hover:text-white py-2">¿Por Qué Nosotros?</button>
+            <button onClick={() => scrollToId('casos-reales')} className="block w-full text-left font-bold text-stone-300 hover:text-white py-2">Casos de Éxito</button>
+            <button onClick={() => scrollToId('planes-precios')} className="block w-full text-left font-bold text-stone-300 hover:text-white py-2">Tarifas</button>
+            <button onClick={() => { setView('admin'); setMobileMenuOpen(false); }} className="block w-full text-left font-bold text-stone-400 hover:text-brand-gold py-2 flex items-center gap-1.5">
+              <Lock className="w-4 h-4" /> Panel Administrativo
             </button>
             <button 
               onClick={() => scrollToId('auditoria')} 
-              className="w-full bg-[#1E3E3E] text-white text-center text-xs font-extrabold tracking-wider uppercase py-3.5 rounded-xl block"
+              className="w-full bg-brand-gold text-brand-dark text-center text-xs font-extrabold tracking-wider uppercase py-3.5 rounded-xl block cursor-pointer"
             >
               Auditoría Gratuita
             </button>
@@ -310,628 +155,608 @@ export default function App() {
       {view === 'landing' && (
         <main className="flex-grow">
           
-          {/* HERO SECTION - Elegant layout, correct text size to avoid overlapping standard image mockups */}
-          <section className="relative pt-12 pb-24 px-6 max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-              
-              {/* Text side (Col 7) */}
-              <div className="lg:col-span-7 space-y-8 relative z-20">
-                
-                {/* Visual badge */}
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1E3E3E]/5 text-[#1E3E3E] text-xs font-bold uppercase tracking-widest border border-brand-teal/10">
-                  <Sparkles className="w-4 h-4 text-brand-orange animate-pulse" />
-                  {dynamicCity === 'Madrid' ? 'Madrid & Valladolid Digital' : `${dynamicCity} Digital`}
-                </div>
-
-                {/* Main Heading heading. Adjusted size from 9xl to 8xl-max to prevent overlapping the visual image */}
-                <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-[#1E3E3E] leading-[1.05] tracking-tight">
-                  No deje que su <br />
-                  <span className="text-brand-orange block">concurrencia gane</span>
-                </h1>
-
-                <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
-                  Mientras usted lee esto, sus clientes locales están buscando sus servicios en Google y eligiendo a su competencia. Nosotros nos encargamos de posicionar su negocio local en el codiciado <strong className="text-[#1E3E3E]">Top 3 de Google Maps</strong> para dominar las búsquedas locales.
-                </p>
-
-                {/* Multi-action control */}
-                <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
-                  <button 
-                    onClick={() => scrollToId('auditoria')}
-                    className="w-full sm:w-auto px-8 py-4 bg-[#1E3E3E] hover:bg-[#2b5959] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-brand-teal/15 hover:-translate-y-0.5 transition-all text-sm uppercase tracking-wider group"
-                  >
-                    <span>Auditar mi Ficha Gratis</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-all text-brand-orange" />
-                  </button>
-                  <button 
-                    onClick={() => scrollToId('casos')}
-                    className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-2xl border border-slate-200 font-bold transition-all text-sm"
-                  >
-                    Ver casos de éxito
-                  </button>
-                </div>
-
-                {/* Sub features stats */}
-                <div className="grid grid-cols-3 gap-6 pt-8 border-t border-brand-teal/10 max-w-md">
-                  <div>
-                    <span className="block text-2xl font-black text-[#1E3E3E]">+140%</span>
-                    <span className="block text-xs font-semibold text-slate-500">Volumen llamadas</span>
-                  </div>
-                  <div>
-                    <span className="block text-2xl font-black text-[#1E3E3E]">100%</span>
-                    <span className="block text-xs font-semibold text-slate-500">Casos optimizados</span>
-                  </div>
-                  <div>
-                    <span className="block text-2xl font-black text-[#1E3E3E]">&lt;24hrs</span>
-                    <span className="block text-xs font-semibold text-slate-500">Tiempo de auditoría</span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Graphic side (Col 5) - Beautiful Mockup representation of Restaurant/Local rankings on Google Maps */}
-              <div className="lg:col-span-5 relative">
-                
-                {/* Accent design blobs */}
-                <div className="absolute -top-12 -left-12 w-64 h-64 bg-amber-400/20 rounded-full blur-3xl pointer-events-none -z-10" />
-                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
-                {/* Visual Storefront Mockup container */}
-                <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-6 select-none relative z-10 hover:shadow-3xl transition-all duration-500">
-                  
-                  {/* Local Business card with simulated search bar in header */}
-                  <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-200">
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-pulse" />
-                      <span className="text-xs font-bold text-slate-500">Google Local Search Valladolid</span>
-                    </div>
-                    <Search className="w-4 h-4 text-slate-400" />
-                  </div>
-
-                  {/* Top Rated search result item */}
-                  <div className="p-5 rounded-2xl border-2 border-amber-400/60 bg-gradient-to-r from-amber-500/5 to-transparent relative">
-                    <div className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                      <span>Anuncio Top #1</span>
-                    </div>
-                    
-                    <h3 className="text-base font-extrabold text-[#1E3E3E] mb-1">Restaurante Sabor Castellano</h3>
-                    
-                    {/* Stars and rating count */}
-                    <div className="flex items-center gap-1.5 mb-2.5">
-                      <span className="text-xs font-extrabold text-amber-600">4.9</span>
-                      <div className="flex text-amber-500">
-                        {Array.from({ length: 5 }).map((_, idx) => (
-                          <Star key={idx} className="w-3 h-3 fill-current text-current" />
-                        ))}
-                      </div>
-                      <span className="text-[11px] text-slate-400 font-bold">(142 reseñas de clientes locales)</span>
-                    </div>
-
-                    <p className="text-xs text-slate-500 leading-relaxed max-w-[280px]">
-                      📍 Calle de Santiago, Valladolid • Restaurante especializado en gastronomía local tradicional castellana.
-                    </p>
-
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                      <span className="text-[11px] uppercase tracking-wider font-extrabold text-emerald-600">● Abierto • Muy concurrido</span>
-                      <button className="text-xs font-bold text-[#1E3E3E] hover:underline flex items-center gap-1">
-                        Ver Ficha <ChevronRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Competitor list preview block */}
-                  <div className="space-y-3 pt-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Otros competidores locales en Google Maps:</span>
-                    
-                    {/* Competitor row */}
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between opacity-80">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-700">Cafetería Plaza Mayor</h4>
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
-                          <span>4.2</span>
-                          <span>•</span>
-                          <span>(45 reseñas)</span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold text-slate-400">Puesto #7</span>
-                    </div>
-
-                    {/* Competitor row 2 */}
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between opacity-60">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-700">Bar Central tapeo</h4>
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
-                          <span>3.9</span>
-                          <span>•</span>
-                          <span>(18 reseñas)</span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold text-slate-400">Puesto #12</span>
-                    </div>
-                  </div>
-
-                </div>
-
-              </div>
-
+          {/* SLIDE 1: HERO SECTION - "El Secreto de la Cola" */}
+          <section className="relative min-h-[85vh] flex items-center justify-center py-20 px-6 text-center overflow-hidden border-b border-brand-gold/10">
+            {/* Background Tavern Image with beautiful dark overlay */}
+            <div className="absolute inset-0 bg-cover bg-center pointer-events-none -z-25" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1600&q=80')" }}>
+              <div className="absolute inset-0 bg-brand-dark/95 via-brand-dark/80 to-brand-dark" />
             </div>
-          </section>
 
-          {/* THE COST OF INVISIBILITY SECTION - styled in response to user updates!
-              Used the exact requested 'brand-orange' elements for consistent aesthetics */}
-          <section id="ventajas" className="py-24 bg-[#1E3E3E] text-white">
-            <div className="max-w-7xl mx-auto px-6">
-              <div className="max-w-3xl mx-auto text-center space-y-4 mb-20">
-                <span className="text-xs font-bold uppercase tracking-[0.25em] text-brand-orange block">Métricas que Importan</span>
-                <h2 className="text-3xl md:text-5xl font-black leading-tight text-white tracking-tight">El costo insoportable de la invisibilidad digital</h2>
-                <div className="w-16 h-1 bg-brand-orange mx-auto rounded-full mt-4" />
+            <div className="max-w-4xl space-y-10 relative z-20 animate-fade-in">
+              <div className="inline-flex items-center gap-2.5 px-4.5 py-2 rounded-full bg-brand-gold/10 text-brand-gold text-xs font-black uppercase tracking-widest border border-brand-gold/25">
+                <Sparkles className="w-4 h-4 text-brand-gold animate-pulse" />
+                <span>Impulsa Tu Negocio Local</span>
               </div>
 
-              {/* 2 Big visual panels representing local reach */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-                
-                {/* Stat 1 - Modified color background in response to last feedback: bg-brand-orange/10 & text-brand-orange */}
-                <div className="p-10 bg-brand-orange/10 rounded-[3rem] border border-brand-orange/20 flex flex-col justify-between gap-8 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
-                  <div className="space-y-4">
-                    <span className="w-12 h-12 rounded-2xl bg-brand-orange/20 text-brand-orange flex items-center justify-center font-black">1</span>
-                    <h3 className="text-2xl font-extrabold text-white">El Costo de la Invisiblidad</h3>
-                    <p className="text-slate-300 leading-relaxed text-sm">
-                      La inmensa mayoría de las intenciones de compra offline inician online. Si su negocio no destaca en este paso, está regalando clientes directamente.
-                    </p>
-                  </div>
-                  <div className="pt-6 border-t border-white/10 flex items-baseline gap-4">
-                    <span className="text-6xl font-black text-brand-orange">94%</span>
-                    <span className="text-sm font-semibold text-slate-300">De los clientes consultan Google antes de visitar un negocio local.</span>
-                  </div>
-                </div>
+              {/* Serif elegant title from slide 1 */}
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif text-[#F8F4EC] leading-[1.15] tracking-tight max-w-3xl mx-auto">
+                ¿Sabes por qué algunos locales en Valladolid <br />
+                <span className="text-brand-gold italic block mt-2">siempre tienen cola?</span>
+              </h1>
 
-                {/* Stat 2 */}
-                <div className="p-10 bg-white/5 rounded-[3rem] border border-white/10 flex flex-col justify-between gap-8 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
-                  <div className="space-y-4">
-                    <span className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black">2</span>
-                    <h3 className="text-2xl font-extrabold text-white">Dominancia del Top 3</h3>
-                    <p className="text-slate-300 leading-relaxed text-sm">
-                      Google Maps preselecciona los 3 mejores negocios en el buscador principal. No aparecer allí significa un abandono digital completo.
-                    </p>
-                  </div>
-                  <div className="pt-6 border-t border-white/10 flex items-baseline gap-4">
-                    <span className="text-6xl font-black text-amber-400">Top 3</span>
-                    <span className="text-sm font-semibold text-slate-300">Los 3 primeros resultados se quedan con el 75% de las llamadas totales.</span>
-                  </div>
-                </div>
+              {/* Subheading in clean tracking-widest sans */}
+              <p className="text-stone-400 text-xs sm:text-sm font-black tracking-[0.22em] uppercase max-w-2xl mx-auto leading-normal">
+                NO ES SOLO LA COMIDA. ES EL SECRETO QUE TUS CLIENTES YA CONOCEN.
+              </p>
 
-              </div>
-
-              {/* Action and warning tag as noted in previous edits */}
-              <div className="text-center pt-16 space-y-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-extrabold font-['Space_Grotesk']">Si no es el primero, no existe.</p>
+              {/* Action down controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4.5 pt-4">
                 <button 
-                  onClick={() => scrollToId('auditoria')} 
-                  className="px-10 py-5 bg-brand-orange hover:bg-amber-600 text-slate-900 rounded-2xl font-extrabold uppercase tracking-wide text-xs shadow-xl shadow-brand-orange/10 hover:shadow-brand-orange/20 transition-all hover:scale-105 inline-block"
+                  onClick={() => scrollToId('auditoria')}
+                  className="w-full sm:w-auto px-9 py-4 bg-brand-gold hover:bg-amber-600 text-brand-dark font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl transition-all hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
                 >
-                  Diferenciarse Ahora
+                  <span>Auditar Mi Ficha Gratis</span>
+                  <ArrowRight className="w-4 h-4 text-brand-dark" />
+                </button>
+                <button 
+                  onClick={() => scrollToId('ventajas')}
+                  className="w-full sm:w-auto px-9 py-4 bg-white/5 hover:bg-white/10 text-stone-200 hover:text-white rounded-2xl border border-white/10 font-bold transition-all text-xs uppercase tracking-wider"
+                >
+                  Descúbrelo <ChevronDown className="w-4 h-4 inline ml-1 animate-bounce" />
                 </button>
               </div>
 
+              {/* Quick stats ribbon */}
+              <div className="grid grid-cols-3 gap-6 pt-10 border-t border-white/5 max-w-lg mx-auto">
+                <div>
+                  <span className="block text-2xl sm:text-3xl font-black text-white">+350%</span>
+                  <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-widest">Llamadas directas</span>
+                </div>
+                <div>
+                  <span className="block text-2xl sm:text-3xl font-black text-white">Top 3</span>
+                  <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-widest">Garantizado</span>
+                </div>
+                <div>
+                  <span className="block text-2xl sm:text-3xl font-black text-white">60 Días</span>
+                  <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-widest">Ejecución</span>
+                </div>
+              </div>
             </div>
           </section>
 
-          {/* INTERACTIVE AUDIT SECTION */}
-          <section id="auditoria" className="py-24 px-6 bg-[#FAF6EE] relative overflow-hidden">
-            <div className="max-w-4xl mx-auto relative z-10">
+          {/* SLIDE 2: THE 82% SECTION - "Escaparate Digital" */}
+          <section id="ventajas" className="py-24 px-6 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
               
-              {/* Header inside container */}
-              <div className="text-center space-y-3 mb-12">
-                <span className="text-[#1E3E3E] text-xs font-black uppercase tracking-[0.2em] bg-[#1E3E3E]/5 px-3.5 py-1.5 rounded-full inline-block">Informe de Posicionamiento Gratis</span>
-                <h2 className="text-3xl md:text-5xl font-black text-[#1E3E3E] tracking-tight">Consiga su auditoría gratuita inmediata</h2>
-                <p className="text-slate-500 text-sm max-w-md mx-auto">
-                  Analizamos la salud de su ficha de Google Business Profile, SEO web local, reseñas locales y competencia en tiempo real.
+              {/* Text side */}
+              <div className="lg:col-span-7 space-y-8">
+                {/* Big stat badge */}
+                <div className="text-8xl md:text-9xl font-black text-brand-gold font-serif leading-none tracking-tight">
+                  82%
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-white font-medium leading-tight">
+                  Ya te han visitado... <br />
+                  <span className="text-brand-crimson italic">sin que lo sigan sabiendo.</span>
+                </h2>
+
+                <p className="text-stone-300 text-base sm:text-lg leading-relaxed max-w-2xl font-sans font-medium">
+                  Antes de cruzar tu puerta física, tus clientes ya han explorado tu <strong className="text-brand-gold">escaparate digital</strong>. La decisión se toma mucho antes del primer bocado.
                 </p>
+
+                <div className="pt-4">
+                  <button 
+                    onClick={() => scrollToId('auditoria')}
+                    className="px-8 py-3.5 bg-brand-gold/10 hover:bg-brand-gold/15 text-brand-gold rounded-xl border border-brand-gold/25 font-bold transition-all text-xs uppercase tracking-widest"
+                  >
+                    Diferenciarse en Google Maps
+                  </button>
+                </div>
               </div>
 
-              {/* Main Panel Box container */}
-              <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl border border-slate-150 relative">
+              {/* iPhone Maps Mockup side */}
+              <div className="lg:col-span-5 flex justify-center">
+                <GoogleMapsMobileMockup />
+              </div>
+
+            </div>
+          </section>
+
+          {/* SLIDE 3: EL HAMBRE ENTRA POR LOS OJOS */}
+          <section className="py-24 bg-brand-dark-sec border-y border-brand-gold/10 relative overflow-hidden">
+            {/* Background Tapas Board blurred */}
+            <div className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-10" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=1600&q=80')" }} />
+
+            <div className="max-w-7xl mx-auto px-6 relative z-10 space-y-16">
+              
+              <div className="max-w-3xl mx-auto text-center space-y-4">
+                <span className="text-brand-crimson text-xs font-black uppercase tracking-[0.25em] block">Presencia Crítica</span>
+                <h2 className="text-3xl md:text-5xl font-serif font-medium text-white leading-tight">
+                  El hambre entra por los ojos, <br />
+                  pero la decisión se toma en la <span className="text-brand-gold italic">pantalla.</span>
+                </h2>
+                <div className="w-16 h-1 bg-brand-crimson mx-auto rounded-full mt-4" />
+              </div>
+
+              {/* Three Columns of slide 3 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 
-                {/* Auditor is auditing state overlay */}
-                {isAuditing && (
-                  <div className="absolute inset-0 bg-white/95 rounded-[2.5rem] z-30 flex flex-col items-center justify-center p-8 text-center space-y-6">
-                    <div className="relative w-24 h-24">
-                      {/* Modern circular spin loader */}
-                      <span className="absolute inset-0 rounded-full border-4 border-slate-100" />
-                      <span className="absolute inset-0 rounded-full border-4 border-t-brand-orange animate-spin" />
-                      <div className="absolute inset-4 rounded-full bg-slate-50 flex items-center justify-center">
-                        <TrendingUp className="w-8 h-8 text-[#1E3E3E]" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 max-w-sm">
-                      <h4 className="text-lg font-black text-[#1E3E3E]">Generando informe de auditoría</h4>
-                      <p className="text-sm font-bold text-slate-500 animate-pulse">{auditProgress}</p>
-                    </div>
-
-                    <div className="text-[10px] uppercase font-black text-slate-400 tracking-widest bg-slate-100 px-3 py-1.5 rounded-full">
-                      Esto tomará unos segundos
-                    </div>
+                {/* Point 1 */}
+                <div className="bg-brand-dark p-8 rounded-3xl border border-white/5 space-y-4 hover:-translate-y-1 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-crimson/10 flex items-center justify-center text-brand-crimson">
+                    <Camera className="w-6 h-6" />
                   </div>
-                )}
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Impacto Visual</h3>
+                  <p className="text-stone-400 text-sm leading-relaxed">
+                    Una foto de baja calidad apaga el apetito y aleja al cliente de su restaurante al instante. El cliente digital necesita saborear con la mirada.
+                  </p>
+                </div>
 
-                {/* Audit Input Form */}
-                {!currentScore ? (
-                  <form onSubmit={runAudit} className="space-y-8">
-                    
-                    {/* Select dynamic city indicator */}
-                    <div className="bg-slate-50 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-slate-200">
-                      <div>
-                        <span className="block text-xs font-black uppercase text-slate-400 tracking-wider">Provincia Principal de Operaciones</span>
-                        <span className="block text-sm font-bold text-slate-700">Analizando competencia localizada en:</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {['Valladolid', 'Madrid'].map((city) => (
-                          <button
-                            type="button"
-                            key={city}
-                            onClick={() => setDynamicCity(city)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                              dynamicCity === city 
-                                ? 'bg-[#1E3E3E] text-white shadow-md' 
-                                : 'bg-white hover:bg-slate-100 text-[#1E3E3E] border border-slate-200'
-                            }`}
-                          >
-                            {city}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                {/* Point 2 */}
+                <div className="bg-brand-dark p-8 rounded-3xl border border-white/5 space-y-4 hover:-translate-y-1 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-crimson/10 flex items-center justify-center text-brand-crimson">
+                    <Ghost className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Invisibilidad</h3>
+                  <p className="text-stone-400 text-sm leading-relaxed">
+                    Un perfil vacío en Google es un restaurante cerrado a ojos del cliente digital. Si no te encuentran rápido, sencillamente no existes.
+                  </p>
+                </div>
 
-                    {/* Inputs fields grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      
-                      <div className="space-y-2">
-                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-                          <MapPin className="w-4 h-4 text-[#1E3E3E]" /> Nombre del Negocio <span className="text-red-500">*</span>
-                        </label>
-                        <input 
-                          type="text"
-                          required
-                          value={businessName}
-                          onChange={(e) => setBusinessName(e.target.value)}
-                          placeholder="Ej. Restaurante San Pablo o Clínica Serna"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
-                        />
-                      </div>
+                {/* Point 3 */}
+                <div className="bg-brand-dark p-8 rounded-3xl border border-white/5 space-y-4 hover:-translate-y-1 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-crimson/10 flex items-center justify-center text-brand-crimson">
+                    <MousePointer className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Un solo clic</h3>
+                  <p className="text-stone-400 text-sm leading-relaxed">
+                    Tu competencia local está a un solo toque de distancia en Valladolid. ¿Por qué deberían elegirte a ti si no destacas en las valoraciones?
+                  </p>
+                </div>
 
-                      <div className="space-y-2">
-                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-                          <Phone className="w-4 h-4 text-[#1E3E3E]" /> WhatsApp / Teléfono <span className="text-red-500">*</span>
-                        </label>
-                        <input 
-                          type="text"
-                          required
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="Ej. +34 600 112 233"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
-                        />
-                      </div>
+              </div>
 
-                      <div className="space-y-2">
-                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-                          <User className="w-4 h-4 text-[#1E3E3E]" /> Su Nombre (Contacto)
-                        </label>
-                        <input 
-                          type="text"
-                          value={contactName}
-                          onChange={(e) => setContactName(e.target.value)}
-                          placeholder="Ej. Carlos Martínez"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
-                        />
-                      </div>
+            </div>
+          </section>
 
-                      <div className="space-y-2">
-                        <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-                          <Map className="w-4 h-4 text-[#1E3E3E]" /> Dirección del Negocio / Link de Maps
-                        </label>
-                        <input 
-                          type="text"
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          placeholder="Ej. Plaza España 4 o pegue link de Maps"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
-                        />
-                      </div>
+          {/* INTERACTIVE COMPARISON SLIDE: BEFORE & AFTER (O que o usuário pediu para restaurar) */}
+          <section className="py-24 px-6 max-w-7xl mx-auto">
+            <AntesDespues />
+          </section>
 
-                    </div>
+          {/* SLIDE 4: IMPULSAMOS LO QUE YA HACES BIEN */}
+          <section className="py-24 bg-brand-dark-sec border-t border-brand-gold/10 relative overflow-hidden">
+            {/* Cathedral background image blurred */}
+            <div className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1600&q=80')" }} />
 
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-                        <MessageSquare className="w-4 h-4 text-[#1E3E3E]" /> ¿Algún comentario extra sobre sus competidores directos?
-                      </label>
-                      <textarea 
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        placeholder="Ej. Me cuesta superar a Restaurante X en los mapas..."
-                        rows={3}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all resize-none"
-                      />
-                    </div>
+            <div className="max-w-7xl mx-auto px-6 relative z-10 space-y-16">
+              
+              <div className="max-w-3xl mx-auto text-center space-y-4">
+                <span className="text-brand-gold text-xs font-black uppercase tracking-[0.25em] block">Nuestra Filosofía</span>
+                <h2 className="text-3xl md:text-5xl font-serif text-white leading-tight">
+                  Impulsamos lo que <br />
+                  <span className="text-brand-gold italic">ya haces bien.</span>
+                </h2>
+                <p className="text-stone-400 text-sm max-w-xl mx-auto">
+                  No inventamos historias. Capturamos la esencia de tu cocina y la ponemos donde todos la vean en Google Valladolid.
+                </p>
+                <div className="w-16 h-1 bg-brand-gold mx-auto rounded-full mt-4" />
+              </div>
 
-                    <button 
-                      type="submit"
-                      className="w-full py-4.5 bg-[#1E3E3E] hover:bg-[#285353] text-[#FAF6EE] text-sm font-extrabold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-teal/10 hover:shadow-brand-teal/20 transition-all flex items-center justify-center gap-2 mt-4"
-                    >
-                      <Sparkles className="w-4 h-4 text-brand-orange" />
-                      <span>Iniciar Auditoría Automatizada</span>
-                    </button>
+              {/* Three gold icon columns */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                {/* Card 1 */}
+                <div className="bg-brand-dark p-8 rounded-3xl border border-brand-gold/10 space-y-4 hover:border-brand-gold/25 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
+                    <Handshake className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Tu Socio Local</h3>
+                  <p className="text-stone-400 text-sm leading-relaxed">
+                    No somos una agencia externa y fría. Somos tus vecinos reales aquí en Valladolid, enfocados en levantar los negocios de nuestra comarca.
+                  </p>
+                </div>
 
-                  </form>
-                ) : (
+                {/* Card 2 */}
+                <div className="bg-brand-dark p-8 rounded-3xl border border-brand-gold/10 space-y-4 hover:border-brand-gold/25 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
+                    <Target className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Foco en Mesas</h3>
+                  <p className="text-stone-400 text-sm leading-relaxed">
+                    No buscamos "likes" vacíos o métricas de vanidad. Buscamos reservas de mesas reales, clientes físicos y comandas calientes los fines de semana.
+                  </p>
+                </div>
+
+                {/* Card 3 */}
+                <div className="bg-brand-dark p-8 rounded-3xl border border-brand-gold/10 space-y-4 hover:border-brand-gold/25 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
+                    <Gem className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Calidad Real</h3>
+                  <p className="text-stone-400 text-sm leading-relaxed">
+                    Amplificamos tu esfuerzo y sudor diario en la cocina para que el mundo digital lo descubra y reserve con anticipación.
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+          </section>
+
+          {/* SLIDE 5: TU ESCAPARATE EN EL TOP 3 */}
+          <section className="py-24 px-6 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+              
+              {/* Storefront graphic */}
+              <div className="lg:col-span-5 flex justify-center">
+                <StorefrontLaCasa />
+              </div>
+
+              {/* Right column list elements */}
+              <div className="lg:col-span-7 space-y-8">
+                <span className="text-brand-gold text-xs font-black uppercase tracking-[0.25em] block">Algoritmo de Google</span>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-white font-medium leading-tight">
+                  Tu escaparate en el <br />
+                  <span className="text-brand-gold italic">Top 3 de Valladolid.</span>
+                </h2>
+
+                <div className="space-y-6 pt-4">
                   
-                  // Score Results Display State
-                  <div className="space-y-8 animate-fade-in-up">
-                    
-                    {/* Header back & score badge */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                      <div className="text-center sm:text-left">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[#1E3E3E] bg-[#1E3E3E]/5 px-2.5 py-1 rounded-md">Auditoría Finalizada</span>
-                        <h3 className="text-xl font-extrabold text-[#1E3E3E] mt-1">{currentScore.businessName}</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">Analizado el {new Date(currentScore.datetime).toLocaleString('es-ES')}</p>
-                      </div>
-                      
-                      {/* Overall Rating Score view */}
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Puntaje General</span>
-                          <span className="block text-xs text-slate-500">Salud de presencia local en {dynamicCity}</span>
-                        </div>
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1E3E3E] to-[#2d5c5c] text-white flex flex-col items-center justify-center shadow-lg">
-                          <span className="text-3xl font-black text-amber-400">{currentScore.auditScore}</span>
-                          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider -mt-1">/100</span>
-                        </div>
-                      </div>
+                  <div className="flex gap-4">
+                    <span className="text-2xl font-black text-brand-gold">01</span>
+                    <div>
+                      <h4 className="text-base font-bold text-white uppercase tracking-wider">Perfil Pro</h4>
+                      <p className="text-sm text-stone-450 mt-1 leading-relaxed">
+                        Optimización real y técnica de tu perfil de Google Business para dominar de forma total las búsquedas locales del mapa.
+                      </p>
                     </div>
-
-                    {/* SEO analysis commentary text banner */}
-                    {currentScore.report?.analysis && (
-                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-150 text-sm leading-relaxed text-slate-600 block italic">
-                        &ldquo; {currentScore.report.analysis} &rdquo;
-                      </div>
-                    )}
-
-                    {/* Breakdown sub scores */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      
-                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
-                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">SEO Google Maps</span>
-                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.mapsScore || 65}%</span>
-                      </div>
-
-                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
-                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Densidad Semántica</span>
-                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.seoScore || 68}%</span>
-                      </div>
-
-                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
-                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Reputación Reseñas</span>
-                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.contentScore || 70}%</span>
-                      </div>
-
-                      <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 text-center">
-                        <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Velocidad Móvil</span>
-                        <span className="text-2xl font-black text-[#1E3E3E]">{currentScore.report?.speedScore || 72}%</span>
-                      </div>
-
-                    </div>
-
-                    {/* Recommendations checklist block */}
-                    <div className="space-y-4">
-                      <span className="text-xs font-black uppercase tracking-widest text-[#1E3E3E] flex items-center gap-2">
-                        <Award className="w-5 h-5 text-brand-orange" /> 3 Medidas Correctivas Inmediatas Recomendadas:
-                      </span>
-
-                      <div className="space-y-3">
-                        {currentScore.report?.recommendations?.map((rec: string, idx: number) => (
-                          <div key={idx} className="p-4 rounded-xl border border-[#1E3E3E]/10 bg-[#1E3E3E]/2 flex items-start gap-3.5">
-                            <span className="w-6 h-6 rounded-lg bg-brand-orange/20 text-[#1E3E3E] font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                              {idx + 1}
-                            </span>
-                            <p className="text-sm font-semibold text-slate-700 leading-relaxed">{rec}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Call to action panel */}
-                    <div className="bg-[#1E3E3E] text-white p-6.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl leading-normal">
-                      <div className="text-center sm:text-left">
-                        <h4 className="font-extrabold text-base text-white">¿Quiere el plan de ejecución guiado?</h4>
-                        <p className="text-xs text-slate-300 mt-1">Hablemos por WhatsApp para ayudarle a implementar este informe paso a paso.</p>
-                      </div>
-                      <button 
-                        onClick={() => handleWhatsAppContact(currentScore)}
-                        className="w-full sm:w-auto px-6 py-3.5 bg-brand-orange hover:bg-amber-600 text-slate-900 rounded-xl font-extrabold text-xs uppercase tracking-wide transition-all shadow-md shrink-0 cursor-pointer text-center"
-                      >
-                        Recibir Informe Completo 🚀
-                      </button>
-                    </div>
-
-                    {/* Reset audit form action */}
-                    <button 
-                      onClick={() => {
-                        setBusinessName('');
-                        setPhone('');
-                        setContactName('');
-                        setAddress('');
-                        setComments('');
-                        setCurrentScore(null);
-                      }}
-                      className="text-xs font-bold text-[#1E3E3E] hover:underline mx-auto block mt-4"
-                    >
-                      Realizar auditoría para otro negocio local
-                    </button>
-
                   </div>
-                )}
 
+                  <div className="flex gap-4">
+                    <span className="text-2xl font-black text-brand-gold">02</span>
+                    <div>
+                      <h4 className="text-base font-bold text-white uppercase tracking-wider">Confianza</h4>
+                      <p className="text-sm text-stone-450 mt-1 leading-relaxed">
+                        Gestión estratégica de reseñas e interacciones directas que generan confianza inmediata e impulsan visitas de nuevos turistas.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <span className="text-2xl font-black text-brand-gold">03</span>
+                    <div>
+                      <h4 className="text-base font-bold text-white uppercase tracking-wider">Impacto Visual Gastronómico</h4>
+                      <p className="text-sm text-stone-450 mt-1 leading-relaxed">
+                        Fotos profesionales con ángulo cinematográfico que abren el apetito de los vallisoletanos e impiden que pasen de largo.
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
               </div>
 
             </div>
           </section>
 
-          {/* DYNAMIC SUCCESS STORIES TESTIMONIALS */}
-          <section id="casos" className="py-24 px-6 max-w-7xl mx-auto">
-            <div className="text-center space-y-3 mb-20 max-w-2xl mx-auto">
-              <span className="text-xs font-bold uppercase tracking-widest text-brand-orange block">Liderazgo Verificado</span>
-              <h2 className="text-3xl md:text-5xl font-black text-[#1E3E3E] tracking-tight">Vallisoletanos que ya encabezan el mapa</h2>
-              <p className="text-slate-500 text-sm">
-                Vea cómo de pasar desapercibidos en Google pasaron a colapsar sus teléfonos con reservas reales optimizando su SEO local de nuestra mano.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* SLIDE 6: CONTENIDO QUE DETIENE EL SCROLL */}
+          <section className="py-24 bg-brand-dark-sec border-t border-brand-gold/10">
+            <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
               
-              <div className="bg-white p-8 rounded-3xl border border-slate-150 hover:shadow-xl transition-all flex flex-col justify-between gap-6">
-                <div className="space-y-4">
-                  <div className="flex text-amber-400">
-                    {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+              {/* Left description */}
+              <div className="lg:col-span-7 space-y-8">
+                <span className="text-brand-crimson text-xs font-black uppercase tracking-[0.25em] block">Seducción en Redes</span>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-white leading-tight">
+                  Contenido que detiene el scroll <br />
+                  <span className="text-brand-gold italic">y llena mesas de comensales.</span>
+                </h2>
+
+                <div className="space-y-6 pt-2">
+                  <div className="flex gap-4">
+                    <span className="w-1.5 h-10 bg-brand-crimson rounded-full block flex-shrink-0" />
+                    <div>
+                      <h4 className="text-md font-bold text-white">Reels Virales Gastronómicos</h4>
+                      <p className="text-xs text-stone-400 leading-relaxed mt-1">
+                        Vídeos cortos que muestran la magia del detrás de escena en los fogones e invitan a los clientes locales a descubrir su salón en Valladolid.
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-[#1E3E3E]">Taverna Platerías</h3>
-                  <p className="text-slate-600 text-sm leading-relaxed font-sans">
-                    "Increíble ver los resultados antes del primer mes. Nuestra taberna tradicional pasó al Puesto #1 en la búsqueda 'tapas centro' de nuestra ciudad, logrando hasta 3 mesas ocupadas extras al día."
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Restauración • Plaza Mayor</span>
-                  <span className="text-xs font-black text-emerald-600 uppercase">+150% Reservas</span>
+
+                  <div className="flex gap-4">
+                    <span className="w-1.5 h-10 bg-brand-gold rounded-full block flex-shrink-0" />
+                    <div>
+                      <h4 className="text-md font-bold text-white">Deseo Visual en Pantalla</h4>
+                      <p className="text-xs text-stone-400 leading-relaxed mt-1">
+                        Fotografía gastronómica de alto impacto diseñada con iluminación cálida para hacer salivar a tu audiencia de forma inmediata.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <span className="w-1.5 h-10 bg-brand-crimson rounded-full block flex-shrink-0" />
+                    <div>
+                      <h4 className="text-md font-bold text-white">Invitación Directa (Llamadas a la Acción)</h4>
+                      <p className="text-xs text-stone-400 leading-relaxed mt-1">
+                        No son simples publicaciones estéticas en el feed. Son llamadas a la acción estratégicas y optimizadas para rellenar el formulario de reserva real.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white p-8 rounded-3xl border border-slate-150 hover:shadow-xl transition-all flex flex-col justify-between gap-6">
-                <div className="space-y-4">
-                  <div className="flex text-amber-400">
-                    {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
-                  </div>
-                  <h3 className="text-lg font-bold text-[#1E3E3E]">Fisioterapia Recoletas</h3>
-                  <p className="text-slate-600 text-sm leading-relaxed font-sans">
-                    "Tener una web no nos servía si la gente de la zona buscaba 'fisioterapeuta urgente' y no nos encontraba en el móvil. Con el optimizador de Google Maps hemos duplicado llamadas."
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Salud • Paseo Zorrilla</span>
-                  <span className="text-xs font-black text-emerald-600 uppercase">+88% Contactos</span>
-                </div>
-              </div>
-
-              <div className="bg-white p-8 rounded-3xl border border-slate-150 hover:shadow-xl transition-all flex flex-col justify-between gap-6">
-                <div className="space-y-4">
-                  <div className="flex text-amber-400">
-                    {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
-                  </div>
-                  <h3 className="text-lg font-bold text-[#1E3E3E]">Peluquería Delicias</h3>
-                  <p className="text-slate-600 text-sm leading-relaxed font-sans">
-                    "Nuestros clientes fieles nos querían mucho pero no atraíamos clientes nuevos de otras zonas de Valladolid. Ocupando las primeras posiciones de los mapas, nuestra agenda está al completo."
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Estética • Barrio Delicias</span>
-                  <span className="text-xs font-black text-emerald-600 uppercase">+120% Agenda</span>
-                </div>
+              {/* Instagram Reel Mockup */}
+              <div className="lg:col-span-5 flex justify-center">
+                <InstagramReelsMockup />
               </div>
 
             </div>
           </section>
 
-          {/* PLANS AND PRICING pricing plans requested id */}
-          <section id="planes" className="py-24 px-4 bg-[#1E3E3E]/5 relative">
-            <div className="max-w-7xl mx-auto px-6">
-              <div className="text-center space-y-3 mb-16 max-w-xl mx-auto">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#1E3E3E] bg-[#1E3E3E]/5 px-3 py-1 rounded-md">Transparencia Total</span>
-                <h2 className="text-2xl md:text-4xl font-black text-[#1E3E3E] tracking-tight">Planes de Optimización y Posicionamiento Local</h2>
-                <p className="text-slate-500 text-sm">
-                  Tarifas planas adaptadas al tamaño y sector de su negocio local. Sin letra pequeña.
+          {/* SLIDE 7: DE LA INVISIBILIDAD AL LLENO TOTAL */}
+          <section id="casos-reales" className="py-24 px-6 max-w-7xl mx-auto text-center space-y-16">
+            
+            <div className="space-y-4">
+              <span className="text-brand-crimson text-xs font-black tracking-[0.3em] uppercase block">Resultados Históricos</span>
+              <h2 className="text-3xl md:text-5xl font-serif text-white">
+                DE LA INVISIBILIDAD AL <span className="text-brand-crimson italic">LLENO TOTAL</span>
+              </h2>
+            </div>
+
+            {/* Glowing huge number */}
+            <div className="max-w-xl mx-auto py-10 bg-brand-gold/5 rounded-[3rem] border border-brand-gold/15 shadow-xl shadow-brand-gold/2 relative">
+              <span className="block text-8xl md:text-9xl font-serif font-black text-brand-gold animate-pulse">45</span>
+              <span className="block text-sm font-black uppercase tracking-[0.25em] text-brand-crimson mt-2">Reservas Diarias</span>
+            </div>
+
+            {/* Sub metric tags */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              <div className="p-6 bg-brand-dark-sec rounded-2xl border border-white/5">
+                <span className="block text-3xl font-black text-white">+350%</span>
+                <span className="block text-xs font-semibold text-stone-400 mt-1 uppercase tracking-wider">Llamadas directas</span>
+              </div>
+              <div className="p-6 bg-brand-dark-sec rounded-2xl border border-white/5">
+                <span className="block text-3xl font-black text-brand-gold">TOP 3</span>
+                <span className="block text-xs font-semibold text-stone-400 mt-1 uppercase tracking-wider">En Google Maps Valladolid</span>
+              </div>
+              <div className="p-6 bg-brand-dark-sec rounded-2xl border border-white/5">
+                <span className="block text-3xl font-black text-white">60 DÍAS</span>
+                <span className="block text-xs font-semibold text-stone-400 mt-1 uppercase tracking-wider">Tiempo de ejecución promedio</span>
+              </div>
+            </div>
+
+            {/* Vallisoletanos success stories */}
+            <div className="pt-10">
+              <h3 className="text-xl font-bold font-serif text-white mb-10">Vallisoletanos que ya encabezan el mapa</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+                
+                {/* Story 1 */}
+                <div className="bg-brand-dark-sec p-8 rounded-3xl border border-white/5 flex flex-col justify-between gap-6 hover:shadow-xl transition-all">
+                  <div className="space-y-4">
+                    <div className="flex text-brand-gold">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current text-brand-gold" />)}
+                    </div>
+                    <h4 className="text-lg font-bold text-white font-serif">Taverna Platerías</h4>
+                    <p className="text-stone-400 text-sm leading-relaxed">
+                      "Increíble ver los resultados antes del primer mes. Nuestra taberna tradicional pasó al Puesto #1 en la búsqueda 'tapas centro' de Valladolid, logrando hasta 3 mesas ocupadas extras al día."
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="font-bold text-stone-500">Restauración • Plaza Mayor</span>
+                    <span className="font-black text-emerald-400 uppercase">+150% Reservas</span>
+                  </div>
+                </div>
+
+                {/* Story 2 */}
+                <div className="bg-brand-dark-sec p-8 rounded-3xl border border-white/5 flex flex-col justify-between gap-6 hover:shadow-xl transition-all">
+                  <div className="space-y-4">
+                    <div className="flex text-brand-gold">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current text-brand-gold" />)}
+                    </div>
+                    <h4 className="text-lg font-bold text-white font-serif">Fisioterapia Recoletas</h4>
+                    <p className="text-stone-400 text-sm leading-relaxed">
+                      "Tener una web no nos servía si la gente de la zona buscaba 'fisioterapeuta urgente' y no nos encontraba en el móvil. Con el optimizador de Google Maps de Impulsa hemos duplicado llamadas."
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="font-bold text-stone-500">Salud • Paseo Zorrilla</span>
+                    <span className="font-black text-emerald-400 uppercase">+88% Contactos</span>
+                  </div>
+                </div>
+
+                {/* Story 3 */}
+                <div className="bg-brand-dark-sec p-8 rounded-3xl border border-white/5 flex flex-col justify-between gap-6 hover:shadow-xl transition-all">
+                  <div className="space-y-4">
+                    <div className="flex text-brand-gold">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current text-brand-gold" />)}
+                    </div>
+                    <h4 className="text-lg font-bold text-white font-serif">Peluquería Delicias</h4>
+                    <p className="text-stone-400 text-sm leading-relaxed">
+                      "Nuestros clientes fieles nos querían mucho pero no atraíamos clientes nuevos de otras zonas de Valladolid. Ocupando las primeras posiciones de los mapas, nuestra agenda está al completo."
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="font-bold text-stone-500">Estética • Barrio Delicias</span>
+                    <span className="font-black text-emerald-400 uppercase">+120% Agenda</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
+          {/* SLIDE 8: DOS CAMINOS PARA DOMINAR VALLADOLID (PRICING) */}
+          <section id="planes-precios" className="py-24 px-6 bg-brand-dark-sec border-y border-brand-gold/10">
+            <div className="max-w-7xl mx-auto space-y-16">
+              <div className="text-center space-y-3 max-w-xl mx-auto">
+                <span className="text-brand-gold text-xs font-black uppercase tracking-widest block">Transparencia Total</span>
+                <h2 className="text-3xl md:text-5xl font-serif text-white">
+                  Dos caminos para <span className="text-brand-gold italic">dominar Valladolid.</span>
+                </h2>
+                <p className="text-stone-400 text-xs sm:text-sm leading-relaxed">
+                  Planes de optimización adaptados a la madurez digital y el sector de su local tradicional.
                 </p>
               </div>
 
-              {/* Plans pricing grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {/* Plans pricing layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-4xl mx-auto">
                 
-                {/* Plan 1 */}
-                <div className="bg-white rounded-3xl p-8 border border-slate-150 flex flex-col justify-between gap-8 hover:shadow-lg transition-all">
+                {/* Card 1: Plan Básico */}
+                <div className="bg-brand-dark rounded-3xl p-8 border border-white/5 flex flex-col justify-between gap-8 hover:border-brand-gold/20 transition-all">
                   <div className="space-y-6">
                     <div>
-                      <h4 className="text-sm font-extrabold uppercase tracking-wider text-slate-400">Pila Básica</h4>
-                      <h3 className="text-xl font-bold text-[#1E3E3E] mt-1">Configuración Ficha</h3>
-                      <div className="mt-4 flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-[#1E3E3E]">149€</span>
-                        <span className="text-xs font-bold text-slate-400">/pago único</span>
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-500">Visibilidad & Confianza</h4>
+                      <h3 className="text-2xl font-bold text-white font-serif mt-1">Plan Básico</h3>
+                      <div className="mt-4 flex items-baseline gap-1.5">
+                        <span className="text-4xl font-black text-brand-gold font-serif">89€</span>
+                        <span className="text-xs text-stone-500">/ MES</span>
                       </div>
                     </div>
-                    
-                    <ul className="space-y-3 text-xs font-semibold text-slate-600">
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Configuración NAP exacta (Nombre, Dirección, Teléfono)</li>
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Selección de categorías primarias y secundarias</li>
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Subida de primeras 15 fotos GEO-optimizadas</li>
+
+                    <ul className="space-y-3.5 text-xs font-semibold text-stone-300">
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> Google Business Profile Pro</li>
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> Gestión de Reseñas Estratégica</li>
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> 8 Publicaciones Mensuales de Fidelización</li>
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> Informe de Visibilidad Local de tu sector</li>
                     </ul>
                   </div>
 
-                  <button onClick={() => scrollToId('auditoria')} className="w-full py-3 bg-[#1E3E3E] hover:bg-slate-800 text-white rounded-xl text-xs font-bold tracking-wider uppercase transition-all">
+                  <button onClick={() => scrollToId('auditoria')} className="w-full py-4.5 bg-brand-gold hover:bg-amber-600 text-brand-dark rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer">
                     Empezar Ahora
                   </button>
                 </div>
 
-                {/* Plan 2 - REcommended */}
-                <div className="bg-white rounded-3xl p-8 border-2 border-brand-orange flex flex-col justify-between gap-8 shadow-xl relative scale-105">
-                  <div className="absolute top-0 right-8 -translate-y-1/2 bg-brand-orange text-slate-900 text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-md">
-                    Más Popular
+                {/* Card 2: Plan Premium */}
+                <div className="bg-brand-dark rounded-3xl p-8 border-2 border-brand-gold flex flex-col justify-between gap-8 shadow-2xl relative scale-105 shadow-brand-gold/2">
+                  <div className="absolute top-0 right-10 -translate-y-1/2 bg-brand-gold text-brand-dark text-[9px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-md">
+                    Más Popular • Dominio Completo
                   </div>
-                  
+
                   <div className="space-y-6">
                     <div>
-                      <h4 className="text-sm font-extrabold uppercase tracking-wider text-brand-orange">Impulso Maps</h4>
-                      <h3 className="text-xl font-bold text-[#1E3E3E] mt-1">Optimización & Reseñas</h3>
-                      <div className="mt-4 flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-[#1E3E3E]">299€</span>
-                        <span className="text-xs font-bold text-slate-400">/único pago</span>
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold">Dominio & Crecimiento</h4>
+                      <h3 className="text-2xl font-bold text-white font-serif mt-1">Plan Premium</h3>
+                      <div className="mt-4 flex items-baseline gap-1.5">
+                        <span className="text-4xl font-black text-brand-gold font-serif">147€</span>
+                        <span className="text-xs text-stone-400">/ MES</span>
                       </div>
                     </div>
-                    
-                    <ul className="space-y-3 text-xs font-semibold text-slate-600">
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Todo lo de la "Pila Básica" configurado</li>
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Redacción optimizada de descripciones con IA</li>
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Código QR físico personalizado para vuestro local</li>
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Campaña inicial de incentivo de opiniones</li>
+
+                    <ul className="space-y-3.5 text-xs font-semibold text-stone-200">
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> Todo lo incluido en el Plan Básico</li>
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> SEO Local Avanzado (Top 3 Garantizado)</li>
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> 16 Publicaciones + Creación de Reels Virales</li>
+                      <li className="flex items-center gap-2.5"><Check className="text-brand-gold w-4 h-4 flex-shrink-0" /> Sistema de Captación Activa de clientes</li>
                     </ul>
                   </div>
 
-                  <button onClick={() => scrollToId('auditoria')} className="w-full py-3.5 bg-brand-orange hover:bg-amber-600 text-slate-900 rounded-xl text-xs font-black tracking-wider uppercase transition-all">
-                    Reclamar mi Impulso
-                  </button>
-                </div>
-
-                {/* Plan 3 */}
-                <div className="bg-white rounded-3xl p-8 border border-slate-150 flex flex-col justify-between gap-8 hover:shadow-lg transition-all">
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-extrabold uppercase tracking-wider text-slate-400">Crecimiento Total</h4>
-                      <h3 className="text-xl font-bold text-[#1E3E3E] mt-1">Presencia Infinita</h3>
-                      <div className="mt-4 flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-[#1E3E3E]">99€</span>
-                        <span className="text-xs font-bold text-slate-400">/al mes (Suscripción)</span>
-                      </div>
-                    </div>
-                    
-                    <ul className="space-y-3 text-xs font-semibold text-slate-600">
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Gestión mensual completa de reviews locales</li>
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Publicaciones quincenales en la ficha de Maps</li>
-                      <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-orange flex-shrink-0" /> Dashboard mensual de llamadas y visitas locales</li>
-                    </ul>
-                  </div>
-
-                  <button onClick={() => scrollToId('auditoria')} className="w-full py-3 bg-[#1E3E3E] hover:bg-slate-800 text-white rounded-xl text-xs font-bold tracking-wider uppercase transition-all">
-                    Saber Más
+                  <button onClick={() => scrollToId('auditoria')} className="w-full py-4.5 bg-brand-gold hover:bg-amber-600 text-brand-dark rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer">
+                    Reclamar Mi Impulso
                   </button>
                 </div>
 
               </div>
+            </div>
+          </section>
+
+          {/* SLIDE 9: SIN PERMANENCIA. SOLO RESULTADOS */}
+          <section className="py-24 px-6 max-w-7xl mx-auto text-center space-y-16">
+            
+            <div className="max-w-2xl mx-auto space-y-4">
+              <span className="text-brand-gold text-xs font-black uppercase tracking-widest block">Nuestra Garantía</span>
+              <h2 className="text-3xl md:text-5xl font-serif text-white">
+                Sin permanencia. <span className="text-brand-crimson italic">Solo resultados.</span>
+              </h2>
+              <p className="text-stone-400 text-sm max-w-xl mx-auto leading-relaxed">
+                Nuestra mejor garantía es que tus mesas estén llenas cada fin de semana. No te atamos con contratos abusivos de larga duración, te convencemos con hechos.
+              </p>
+            </div>
+
+            {/* Grid of Slide 9 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              <div className="bg-brand-dark-sec p-8 rounded-3xl border border-white/5 space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold mx-auto">
+                  <Shield className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-white uppercase tracking-wider">Sin Letra Pequeña</h3>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Transparencia absoluta. Sin costes ocultos a final de mes ni sorpresas desagradables e inesperadas.
+                </p>
+              </div>
+
+              <div className="bg-brand-dark-sec p-8 rounded-3xl border border-white/5 space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold mx-auto">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-white uppercase tracking-wider">Foco en Retorno</h3>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Cada euro que invierte genera nuevos clientes reales para comer o cenar en su establecimiento local.
+                </p>
+              </div>
+
+              <div className="bg-brand-dark-sec p-8 rounded-3xl border border-white/5 space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center text-brand-gold mx-auto">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-white uppercase tracking-wider">Libertad Total</h3>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Usted decide el camino. Nos ganamos su confianza mes a mes, ofreciendo el mejor servicio local sin ataduras.
+                </p>
+              </div>
+
+            </div>
+          </section>
+
+          {/* SLIDE 10 / AUDIT FORM CARD */}
+          <AuditForm triggerAlert={triggerAlert} />
+
+          {/* SLIDE 10: CONTACT DETAILS OPTIONS - "¿Hacemos que te descubran?" */}
+          <section className="py-24 bg-brand-dark-sec border-t border-brand-gold/10 text-center">
+            <div className="max-w-4xl mx-auto px-6 space-y-12">
+              
+              <div className="space-y-4">
+                <h2 className="text-4xl md:text-6xl font-serif text-white font-medium">
+                  ¿Hacemos que <span className="text-brand-gold italic">te descubran?</span>
+                </h2>
+                <p className="text-brand-crimson text-xs sm:text-sm font-black tracking-widest uppercase">
+                  AUDITORÍA DE VISIBILIDAD GRATUITA PARA LOCALES SELECCIONADOS.
+                </p>
+              </div>
+
+              {/* Grid of contact links from slide 10 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6">
+                
+                {/* Whatsapp */}
+                <a 
+                  href="https://wa.me/34325678398" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="bg-brand-dark p-8 rounded-3xl border border-white/5 hover:border-brand-gold/20 transition-all block group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-950/40 text-emerald-400 flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-all">
+                    <Phone className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-black uppercase text-stone-400 tracking-wider">WhatsApp</h4>
+                  <p className="text-md font-bold text-white mt-1.5">+34 325 678 398</p>
+                </a>
+
+                {/* Email */}
+                <a 
+                  href="mailto:hola@impulsavalladolid.com" 
+                  className="bg-brand-dark p-8 rounded-3xl border border-white/5 hover:border-brand-gold/20 transition-all block group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-all">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-black uppercase text-stone-400 tracking-wider">Email</h4>
+                  <p className="text-md font-bold text-white mt-1.5 truncate">hola@impulsavalladolid.com</p>
+                </a>
+
+                {/* Web */}
+                <div className="bg-brand-dark p-8 rounded-3xl border border-white/5 hover:border-brand-gold/20 transition-all block group">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 text-brand-gold flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-all">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-black uppercase text-stone-400 tracking-wider">Web</h4>
+                  <p className="text-md font-bold text-white mt-1.5">impulsavalladolid.com</p>
+                </div>
+
+              </div>
+
+              <div className="text-[10px] tracking-[0.3em] uppercase text-stone-500 font-black pt-10">
+                IMPULSA VALLADOLID
+              </div>
+
             </div>
           </section>
 
@@ -940,283 +765,39 @@ export default function App() {
 
       {/* ADMIN DATA MANAGEMENT VIEW */}
       {view === 'admin' && (
-        <main className="flex-grow py-12 px-6 max-w-7xl mx-auto w-full">
-          
-          <div className="mb-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-brand-orange block">Panel de Control Interno</span>
-              <h2 className="text-2xl md:text-4xl font-black text-[#1E3E3E]">Administración de Leads de Auditoría</h2>
-              <p className="text-slate-500 text-xs mt-0.5">Siga los leads capturados y gestióne sus contactos fácilmente.</p>
-            </div>
-            
-            <button 
-              onClick={() => setView('landing')} 
-              className="text-xs font-bold tracking-wider uppercase bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-3 rounded-xl border border-slate-200"
-            >
-              Volver a la Web
-            </button>
-          </div>
-
-          {!isAdminAuthenticated ? (
-            
-            /* Login Box panel */
-            <div className="bg-white max-w-md mx-auto p-10 rounded-3xl border border-slate-150 shadow-2xl relative">
-              <div className="text-center space-y-2 mb-8">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-[#1E3E3E] mx-auto flex items-center justify-center">
-                  <Lock className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-700">Identificación de Administrador</h3>
-                <p className="text-xs text-slate-400">Escriba su contraseña secreta asignada en el archivo de configuración.</p>
-              </div>
-
-              {loginError && (
-                <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{loginError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAdminLogin} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Contraseña Secreta (ADMIN_PASSWORD)</label>
-                  <input 
-                    type="password"
-                    required
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-orange focus:bg-white transition-all"
-                  />
-                </div>
-
-                <button 
-                  type="submit"
-                  disabled={isLoggingIn}
-                  className="w-full py-4 bg-[#1E3E3E] hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all shadow-md disabled:bg-slate-300"
-                >
-                  {isLoggingIn ? 'Verificando con Servidor...' : 'Entrar al Panel Admin'}
-                </button>
-              </form>
-            </div>
-
-          ) : (
-            
-            /* Authenticated Admin View elements */
-            <div className="space-y-8 animate-fade-in-up">
-              
-              {/* Table details list */}
-              <div className="bg-white rounded-[2.5rem] border border-slate-150 overflow-hidden shadow-2xl">
-                <div className="p-8 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
-                  <h3 className="text-lg font-extrabold text-[#1E3E3E] flex items-center gap-2">
-                    <Database className="w-5 h-5 text-brand-orange" /> Registro Histórico de Leads de Impulsa ({adminLeads.length})
-                  </h3>
-                  <button 
-                    onClick={() => fetchLeads()} 
-                    className="text-xs font-bold text-slate-500 hover:text-[#1E3E3E] bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200"
-                  >
-                    Actualizar Lista
-                  </button>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
-                        <th className="px-8 py-5">Negocio</th>
-                        <th className="px-6 py-5">Ubicación</th>
-                        <th className="px-6 py-5">Contacto / Teléfono</th>
-                        <th className="px-6 py-5">Puntaje Auditoría</th>
-                        <th className="px-8 py-5 text-right">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {adminLeads.length === 0 ? (
-                        <tr>
-                          {/* Matches exact template placeholder style from the last edit session! */}
-                          <td colSpan={5} className="px-8 py-24 text-center">
-                            <div className="flex flex-col items-center justify-center gap-4 text-slate-300">
-                              <Database className="w-16 h-16 opacity-20" />
-                              <p className="text-lg font-bold italic">No hay leads registrados todavía.</p>
-                              <p className="text-[10px] uppercase tracking-widest font-black opacity-50">Sincronización activa en tiempo real</p>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        adminLeads.map((lg) => (
-                          <tr key={lg.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-8 py-5">
-                              <span className="block text-sm font-extrabold text-[#1E3E3E]">{lg.businessName}</span>
-                              <span className="block text-[10px] text-slate-400">{new Date(lg.datetime).toLocaleString('es') || 'Reciente'}</span>
-                            </td>
-                            <td className="px-6 py-5">
-                              <span className="text-xs font-bold text-slate-600 block">{lg.dynamicCity}</span>
-                              <span className="text-[10px] text-slate-400 block truncate max-w-[200px]">{lg.address || 'Sin dirección registrada'}</span>
-                            </td>
-                            <td className="px-6 py-5">
-                              <span className="text-xs font-bold text-slate-700 block">{lg.contactName || 'No especificado'}</span>
-                              <span className="text-xs text-slate-500 font-mono block">{lg.phone || 'Sin número'}</span>
-                            </td>
-                            <td className="px-6 py-5">
-                              <div className="inline-flex items-center gap-2">
-                                <span className={`text-xs font-extrabold px-2 py-1 rounded-md ${
-                                  (lg.auditScore || 60) > 75 
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                    : 'bg-amber-50 text-amber-700 border border-amber-100'
-                                }`}>
-                                  {lg.auditScore || 65}/100
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-8 py-5 text-right space-x-2">
-                              <button 
-                                onClick={() => setSelectedLead(lg)}
-                                className="text-xs font-bold text-[#1E3E3E] bg-slate-50 border border-slate-200 hover:bg-slate-100 px-3 py-1.5 rounded-lg"
-                              >
-                                Ver Informe
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-              </div>
-
-              {/* Lead Details Modal Popover Dialog */}
-              {selectedLead && (
-                <div className="fixed inset-0 bg-[#1E3E3E]/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-                  <div className="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-3xl border border-slate-100 max-h-[90vh] flex flex-col animate-fade-in-up">
-                    
-                    {/* Header modal */}
-                    <div className="p-6.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
-                      <div>
-                        <span className="text-[10px] font-black uppercase text-brand-orange tracking-widest">Resumen de Auditoría Completa</span>
-                        <h4 className="text-lg font-black text-[#1E3E3E] mt-0.5">{selectedLead.businessName}</h4>
-                      </div>
-                      <button 
-                        onClick={() => setSelectedLead(null)}
-                        className="p-1.5 hover:bg-slate-200 rounded-xl transition-all"
-                      >
-                        <X className="w-5 h-5 text-slate-400" />
-                      </button>
-                    </div>
-
-                    {/* Scrollable Modal Content */}
-                    <div className="p-8 space-y-6 overflow-y-auto">
-                      
-                      {/* Lead particulars */}
-                      <div className="grid grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-150">
-                        <div>
-                          <span className="block text-[10px] uppercase font-black text-slate-400">Nombre del Contacto</span>
-                          <span className="text-sm font-bold text-slate-700">{selectedLead.contactName || 'No indicado'}</span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] uppercase font-black text-slate-400">WhatsApp / Teléfono</span>
-                          <span className="text-sm font-bold text-slate-700 font-mono">{selectedLead.phone || 'No indicado'}</span>
-                        </div>
-                        <div className="col-span-2 pt-2 border-t border-slate-200/50 mt-1">
-                          <span className="block text-[10px] uppercase font-black text-slate-400">Comentarios Adicionales</span>
-                          <span className="text-xs font-bold text-slate-600 leading-normal block">{selectedLead.comments || 'Sin comentarios registrados por el cliente'}</span>
-                        </div>
-                      </div>
-
-                      {/* Audit Metrics */}
-                      <div className="space-y-3">
-                        <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">Puntajes de Rendimiento Local</span>
-                        
-                        <div className="grid grid-cols-4 gap-3 text-center">
-                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
-                            <span className="block text-[9px] text-slate-400 font-bold">SEO Maps</span>
-                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.mapsScore || 70}%</span>
-                          </div>
-                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
-                            <span className="block text-[9px] text-slate-400 font-bold">Semántico</span>
-                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.seoScore || 65}%</span>
-                          </div>
-                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
-                            <span className="block text-[9px] text-slate-400 font-bold">Reseñas</span>
-                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.contentScore || 68}%</span>
-                          </div>
-                          <div className="bg-[#1E3E3E]/5 p-3 rounded-xl">
-                            <span className="block text-[9px] text-slate-400 font-bold">Velocidad</span>
-                            <span className="text-md font-extrabold text-[#1E3E3E]">{selectedLead.report?.speedScore || 72}%</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Generated Recommendations by AI */}
-                      <div className="space-y-3">
-                        <span className="text-xs font-black uppercase tracking-wider text-[#1E3E3E] block">Recomendaciones del Analista de IA:</span>
-                        
-                        <div className="space-y-2">
-                          {selectedLead.report?.recommendations?.map((item: string, i: number) => (
-                            <div key={i} className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold text-slate-700 flex items-start gap-2.5 leading-normal">
-                              <span className="bg-amber-100 text-[#1E3E3E] text-[10px] font-bold w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0">{i+1}</span>
-                              <p>{item}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0 gap-4 flex-wrap">
-                      <button 
-                        onClick={() => handleWhatsAppContact(selectedLead)}
-                        className="px-5 py-3.5 bg-brand-orange hover:bg-amber-600 rounded-xl text-slate-900 text-xs font-black uppercase tracking-wider flex items-center gap-2"
-                      >
-                        <MessageSquare className="w-4 h-4 fill-current" />
-                        <span>Abrir WhatsApp para contactar</span>
-                      </button>
-                      
-                      <button 
-                        onClick={() => setSelectedLead(null)}
-                        className="px-5 py-3.5 hover:bg-slate-200 text-slate-500 rounded-xl text-xs font-bold"
-                      >
-                        Cerrar Detalles
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-
-            </div>
-          )}
-
-        </main>
+        <AdminPanel setView={setView} triggerAlert={triggerAlert} />
       )}
 
       {/* FOOTER SECTION */}
-      <footer className="bg-slate-950 text-slate-400 py-16 px-6 border-t border-white/5 mt-auto">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 font-sans">
+      <footer className="bg-brand-dark border-t border-white/5 py-16 px-6 mt-auto">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 text-stone-400">
           
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-white">
-              <TrendingUp className="w-6 h-6 text-brand-orange" />
-              <span className="text-md font-extrabold">Impulsa Valladolid</span>
+            <div className="flex items-center gap-2.5 text-white">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 5.02944 7.02944 1 12 1C16.9706 1 21 5.02944 21 10Z" fill="#CE2D30" stroke="#CE2D30" strokeWidth="1.5" />
+                <circle cx="12" cy="10" r="5" fill="#0E0908" />
+              </svg>
+              <span className="text-md font-extrabold text-white">Impulsa Valladolid</span>
             </div>
-            <p className="text-xs leading-relaxed text-slate-400">
-              Expertos en posicionamiento de Google Maps local para restauración, turismo y profesionales en Valladolid & Madrid.
+            <p className="text-xs leading-relaxed text-stone-550">
+              Socios de posicionamiento de Google Maps local para restauración, turismo, ocio y profesionales locales en Valladolid & Madrid Capital.
             </p>
           </div>
 
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">Localizaciones de Operación</h4>
             <div className="space-y-2 text-xs">
-              <span className="block hover:underline cursor-pointer" onClick={() => { setDynamicCity('Valladolid'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>📍 Valladolid Capital IP</span>
-              <span className="block hover:underline cursor-pointer" onClick={() => { setDynamicCity('Madrid'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>📍 Madrid & Castilla León</span>
+              <span className="block hover:underline cursor-pointer">📍 Valladolid Capital</span>
+              <span className="block hover:underline cursor-pointer">📍 Madrid & Castilla León</span>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Soporte Express</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Contacto Directo</h4>
             <div className="space-y-2 text-xs">
-              <a href="https://wa.me/351929051990" className="block text-brand-orange hover:underline font-bold">📲 +351 929 051 990 (Contacto Directo)</a>
-              <span className="block">✉️ contacto@impulsavalladolid.es</span>
+              <a href="https://wa.me/34325678398" className="block text-brand-gold hover:underline font-bold">📲 +34 325 678 398</a>
+              <span className="block">✉️ hola@impulsavalladolid.com</span>
             </div>
           </div>
 
@@ -1224,7 +805,7 @@ export default function App() {
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">Acceso Interno</h4>
             <button 
               onClick={() => { setView('admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
-              className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-2 rounded-xl text-slate-300 inline-flex items-center gap-1.5 transition-all"
+              className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-2.5 rounded-xl text-stone-300 inline-flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5" /> Ficha de Control Admin
             </button>
@@ -1232,7 +813,7 @@ export default function App() {
 
         </div>
 
-        <div className="max-w-7xl mx-auto pt-10 mt-10 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500">
+        <div className="max-w-7xl mx-auto pt-10 mt-10 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-600">
           <p>© {new Date().getFullYear()} Impulsa Valladolid. Todos los derechos reservados.</p>
           <div className="flex gap-4">
             <span className="hover:underline cursor-pointer">Aviso Legal</span>
@@ -1244,7 +825,7 @@ export default function App() {
 
       {/* Floating WhatsApp Action Button in bottom right corner */}
       <a 
-        href={`https://wa.me/351929051990?text=${encodeURIComponent("Hola Impulsa Valladolid, me gustaría impulsar mi negocio local. ¿Podemos hablar?")}`}
+        href={`https://wa.me/34325678398?text=${encodeURIComponent("Hola Impulsa Valladolid, me gustaría impulsar mi negocio local. ¿Podemos hablar?")}`}
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-8 right-8 z-[100] bg-[#25D366] text-white p-4.5 rounded-full shadow-2xl hover:scale-110 transition-all group"
