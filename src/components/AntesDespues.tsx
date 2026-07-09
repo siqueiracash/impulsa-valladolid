@@ -155,8 +155,8 @@ const BUSINESS_DATA = {
   comercio: {
     name: "Productos Típicos La Casa",
     typeLabel: "Comercio Local / Alimentación",
-    beforeImg: "https://images.unsplash.com/photo-1559715745-e1b34a270d88?auto=format&fit=crop&w=600&q=50",
-    afterImg: "https://images.unsplash.com/photo-1559715745-e1b34a270d88?auto=format&fit=crop&w=600&q=80",
+    beforeImg: "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=600&q=50",
+    afterImg: "https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=600&q=80",
     beforeRating: 3.7,
     beforeReviews: 32,
     afterRating: 4.8,

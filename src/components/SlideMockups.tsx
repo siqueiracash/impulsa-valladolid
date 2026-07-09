@@ -102,7 +102,7 @@ export function StorefrontLaCasa() {
         {/* Store display food photo */}
         <div className="relative h-44 rounded-xl overflow-hidden bg-stone-900 border border-amber-950/40">
           <img 
-            src="https://images.unsplash.com/photo-1559715745-e1b34a270d88?auto=format&fit=crop&w=600&q=80" 
+            src="https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=600&q=80" 
             alt="Embutidos y Tapas Tradicionales"
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
