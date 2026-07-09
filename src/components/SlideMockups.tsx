@@ -154,10 +154,10 @@ export function InstagramReelsMockup() {
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-4.5 bg-black rounded-full z-20" />
 
       <div className="bg-black rounded-[2rem] overflow-hidden relative h-[480px]">
-        {/* Full background hair/barber video representation */}
+        {/* Full background aesthetic/skincare video representation */}
         <img 
-          src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80" 
-          alt="Corte de cabello y barba en el reel"
+          src="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&w=600&q=80" 
+          alt="Tratamiento de cuidado facial en el reel"
           className="w-full h-full object-cover opacity-85"
           referrerPolicy="no-referrer"
         />
@@ -169,8 +169,8 @@ export function InstagramReelsMockup() {
         <div className="absolute top-8 left-4 right-4 flex items-center justify-between text-white z-10">
           <span className="text-xs font-black tracking-widest uppercase">Reels</span>
           <div className="flex items-center gap-1.5 text-[9px] font-bold bg-black/40 px-2 py-1 rounded-full">
-            <Flame className="w-3 h-3 text-brand-crimson" />
-            <span>Barber & Style Vibes</span>
+            <Flame className="w-3 h-3 text-brand-gold" />
+            <span>Estética & Glow Vibes</span>
           </div>
         </div>
 
@@ -185,20 +185,20 @@ export function InstagramReelsMockup() {
         <div className="absolute bottom-6 left-4 right-16 space-y-3 text-white z-10">
           <div className="flex items-center gap-2">
             <div className="w-7.5 h-7.5 rounded-full bg-brand-gold flex items-center justify-center text-[10px] font-black border border-white/15 text-brand-dark">
-              VB
+              VE
             </div>
             <div>
-              <h5 className="text-[11px] font-extrabold">ValladolidBarber</h5>
-              <p className="text-[8px] text-stone-400">Estilo y tendencia en Valladolid</p>
+              <h5 className="text-[11px] font-extrabold">ValladolidEstetica</h5>
+              <p className="text-[8px] text-stone-400">Bienestar y belleza en Valladolid</p>
             </div>
           </div>
 
           <div className="space-y-1">
             <p className="text-xs font-black leading-tight">
-              Contenido que detiene el scroll y llena agendas 🎥✨
+              Contenido que detiene el scroll y llena la agenda de citas ✨💆‍♀️
             </p>
             <p className="text-[9px] text-stone-300">
-              Vídeos cortos de transformaciones reales y cortes impecables diseñados para captar miradas locales.
+              Vídeos cortos de tratamientos premium y transformaciones reales diseñados para captar miradas locales.
             </p>
           </div>
         </div>
