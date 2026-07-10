@@ -3,53 +3,53 @@ import { Star, ShieldAlert, CheckCircle2, TrendingUp, AlertCircle, Sparkles } fr
 
 const BUSINESS_DATA = {
   restaurante: {
-    name: "Restaurante La Parrilla",
-    typeLabel: "Restaurante",
-    beforeImg: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=50",
-    afterImg: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80",
-    beforeRating: 3.6,
-    beforeReviews: 24,
-    afterRating: 4.8,
-    afterReviews: 248,
-    searchQuery: "restaurante Valladolid",
-    address: "Calle de Santiago, 14, Valladolid",
-    scheduleBefore: "No indica horario festivo",
-    scheduleAfter: "Abierto • Horario de cocina verificado",
-    phoneBefore: "Sin enlace de reservas",
-    phoneAfter: "Reserva de mesa por WhatsApp y web",
-    badTitle: "El Estado de la Invisibilidad Digital",
-    badDescription: "Sin una ficha de Google Maps optimizada adecuadamente, su restaurante se vuelve invisible para el 82% de las búsquedas móviles de comida en Valladolid.",
+    name: "Gimnasio Castilla",
+    typeLabel: "Gimnasio / Academia de Fitness",
+    beforeImg: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=600&q=40",
+    afterImg: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80",
+    beforeRating: 3.5,
+    beforeReviews: 14,
+    afterRating: 4.9,
+    afterReviews: 196,
+    searchQuery: "gimnasio Valladolid",
+    address: "Calle de Santiago, 12, Valladolid",
+    scheduleBefore: "Ficha sin horario de clases",
+    scheduleAfter: "Abierto • Horarios de musculación y clases guiadas",
+    phoneBefore: "Llamadas perdidas sin responder",
+    phoneAfter: "Reserva directa de clase de prueba por WhatsApp",
+    badTitle: "El Fracaso en Temporada Alta",
+    badDescription: "En Valladolid, la competencia entre gimnasios y academias de fitness es feroz. Cuando un usuario busca un lugar para entrenar, compara fotos de las instalaciones, limpieza de las salas y opiniones reales de Google Maps. Una ficha abandonada ahuyenta a decenas de clientes potenciales al mes.",
     badPoints: [
       {
-        title: "Abandono de Clientes Potenciales",
-        desc: "La gente busca fotos de los platos y el menú. Las fotos oscuras o de baja calidad ahuyentan el apetito de inmediato."
+        title: "Instalaciones Deslucidas o Sin Fotos",
+        desc: "No mostrar fotos limpias y profesionales de la sala de musculación, vestuarios o zonas de cardio genera desconfianza y hace que el cliente elija la competencia."
       },
       {
-        title: "Sin Reservas ni Tracción",
-        desc: "Nadie tiene paciencia para hacer scroll hasta la página 3 de Google Maps. Tu competencia directa se queda con el 75% de las reservas."
+        title: "Invisibilidad Local",
+        desc: "No aparecer en el Top 3 de búsquedas clave como 'gimnasio Valladolid' o 'centro fitness' regala todos los nuevos socios directos a las grandes franquicias."
       },
       {
-        title: "Reseñas Negativas Desatendidas",
-        desc: "La falta de una estrategia de respuestas y nuevas opiniones genera desconfianza y reduce las visitas los fines de semana."
+        title: "Quejas de Socios Sin Resolver",
+        desc: "Las opiniones negativas desatendidas sobre mantenimiento o masificaciones espantan a los clientes con intenciones serias de matricularse."
       }
     ],
-    goodTitle: "La Transformación de la Mesa",
-    goodDescription: "Al posicionarse en el Top 3 de Google Maps y contar con fotografía gastronómica profesional, se detiene el scroll de los clientes y se llenan las mesas.",
+    goodTitle: "El Gimnasio de Referencia",
+    goodDescription: "Llevamos a su centro de fitness al Top 3 de Valladolid, mostrando la excelencia de sus instalaciones y optimizando la conversión directa de nuevos socios.",
     goodPoints: [
       {
-        title: "Impacto Gastronómico Visual",
-        desc: "Fotografías deliciosas que disparan el deseo de comer al instante, haciendo que el cliente decida antes de cruzar la puerta."
+        title: "Imágenes de Alta Motivación",
+        desc: "Fotografías profesionales y con excelente iluminación que transmiten limpieza, orden y energía, despertando las ganas de inscribirse de inmediato."
       },
       {
-        title: "Dominio Absoluto en Google",
-        desc: "Estar en el Top 3 le garantiza un flujo masivo de llamadas y clics hacia su enlace de reservas de WhatsApp."
+        title: "Captación Automatizada de Socios",
+        desc: "Acceso rápido a un pase de clase de prueba gratuita o contacto instantáneo vía WhatsApp, convirtiendo las búsquedas online en visitas físicas."
       },
       {
-        title: "Fidelización y Reseñas Positivas",
-        desc: "Códigos QR en mesa que incentivan a los clientes satisfechos a dejar opiniones de 5 estrellas de forma sencilla."
+        title: "Efecto Comunidad Imbatible",
+        desc: "Incentivamos opiniones reales de sus socios más activos, logrando una reputación intachable que atrae de forma continua a nuevos residentes."
       }
     ],
-    metricValue: "+45 reservas adicionales semanales",
+    metricValue: "+78% de nuevos socios mensuales",
     seoSubtext: "Puesto #1 en el Google Local Pack"
   }
 };
@@ -74,7 +74,7 @@ export default function AntesDespues() {
             El Impacto: Antes y Después de Impulsa
           </h3>
           <p className="text-stone-400 text-sm max-w-xl mx-auto">
-            Vea la diferencia radical que experimenta un restaurante al transformar su presencia digital en Google Maps de nuestra mano.
+            Vea la diferencia radical que experimenta un gimnasio al transformar su presencia digital en Google Maps de nuestra mano.
           </p>
         </div>
 
